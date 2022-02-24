@@ -1,0 +1,52 @@
+module Std.Compare where
+
+
+
+export data Ordering := LT |= EQ |= GT;
+
+
+
+export trait Eq a where
+    pure (==) => a, a, Boolean;
+    pure (==) => a, a, Boolean;
+
+
+export trait { Eq a }, Ord a where
+    pure (<)   => a, a, Boolean;
+    pure (<=)  => a, a, Boolean;
+    pure (>)   => a, a, Boolean;
+    pure (>=)  => a, a, Boolean;
+    pure (<=>) => a, a, Ordering;
+
+
+
+export pure min => { Ord a }, a, a, a;
+min a b {
+    match (a <=> b) {
+        [LT] { return a; }
+        [EQ] { return a; }
+        [GT] { return b; }
+    };
+}
+
+
+export pure max => { Ord a }, a, a, a;
+max a b {
+    match (a <=> b) {
+        [LT] { return b; }
+        [EQ] { return b; }
+        [GT] { return a; }
+    };
+}
+
+
+export pure clamp => { Ord a }, a, a, a, a;
+clamp mn mx x := (min mn (max mx x));
+
+
+
+impl Ord where
+    (<) := (not . (>=));
+    a <= b := ((a < b) || (a == b));
+    (>) := (not . (<=));
+    a >= b := ((a > b) || (a == b));

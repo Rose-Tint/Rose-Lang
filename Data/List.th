@@ -1,0 +1,17 @@
+module Data.List where
+
+
+export data List a
+    := Empty
+    |= Node => a, List a
+    ;
+
+
+
+export pure new => a, List a;
+new x { return (Node x (Empty)); }
+
+
+export pure insert => a, List a, List a;
+insert x [Empty] { return (new x); }
+-- insert x [Node v n] { return (Node v (insert x n)); }

@@ -1,0 +1,39 @@
+cabal-version: 2.4
+
+
+-- package information
+name:               thorn
+version:            0.1.0.0
+synopsis:           a new language written in haskell
+author:             Rose Aetherius: roseaetherius@gmail.com
+maintainer:         Rose Aetherius: roseaetherius@gmail.com
+category:           Language
+extra-source-files: README.md
+
+-- package information
+build-type:         Simple
+
+
+executable Thorn
+    main-is:
+        Main.hs
+    other-modules:
+        Color,
+        Output,
+        Parser.Data,
+        Parser.Keywords,
+        Parser.LangDef,
+        Parser.Parser,
+        Pretty
+    build-depends:
+        base == 4.*,
+        parsec,
+        containers
+    default-language:
+        Haskell2010
+    ghc-options:
+        -O0
+        -Wall
+        -Werror
+        -Wextra
+        -fhide-source-paths

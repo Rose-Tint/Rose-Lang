@@ -1,0 +1,37 @@
+module Std.Logic where
+
+
+
+export trait Logical a where
+    pure asBool => a, Boolean;
+    -- pure fromBool => Boolean, a;
+    pure non => a, a;
+    pure (&) => a, a, a;
+    pure (|) => a, a, a;
+    pure (^) => a, a, a;
+    pure (&&) => a, a, Boolean;
+    pure (||) => a, a, Boolean;
+    pure (^^) => a, a, Boolean;
+    pure not => a, Boolean;
+
+
+
+impl Logical where
+    a && b := (asBool a && asBool b);
+    a || b := (asBool a || asBool b);
+    a ^^ b := (asBool a ^^ asBool b);
+    not := (asBool . non);
+
+
+impl Logical Boolean where
+    asBool := id;
+    non := not;
+    (&) := (&&);
+    (|) := (||);
+    (^) := (^^);
+    [True] && b := b;
+    [False] && b := False;
+    [True] || b := True;
+    [False] || b := b;
+    [True] ^^ b := (not b);
+    [False] ^^ b := b;
