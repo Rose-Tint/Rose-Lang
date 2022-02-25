@@ -1,0 +1,53 @@
+Memory Layouts:
+
+- Primitives:
+  - `(U)Int`: dynamic
+  - `(U)Int{N}`: {N} bits
+  - `Array`:
+    - 32 bits for length, then contiguous values
+  - `String`: exactly an `Array Char`
+
+- User-Defined:
+  - a datatype with ONLY nullary constructores will
+      henceforth be referred to as an enum
+  - 8 bits indicating the constructor is prepended
+    - maybe a bitfield??
+  - primitives are stored normally, except for:
+    - `(U)Int`
+    - `(U)Integer`
+    - `Array`
+    - enums
+  - everything else gets stored as a heap pointer
+  - for example, given:
+      ```
+      export data Foo := Foo => Int8, Int8;
+      export data Bar := Bar => Int8, Foo;
+      ```
+      a value constructed as `Foo 10 (Bar 27 74)`
+      would have a memory layout that looks like
+      this:
+      +----------+----------+----------+----------+
+      |   addr   | ctor-id  | vals...  | ...      |
+      +----------+----------+----------+----------+
+      | address1 |        1 |       10 | address2 |
+      +----------+----------+----------+----------+
+      | address2 |        1 |       27 |       74 |
+      +----------+----------+----------+----------+
+  - a memory optimization can be made for enums: make
+      the constructor id/number a bitfield. should be
+      helpful somehow... right??
+  - because of immutability, pointers make moving and
+      copying much faster. for example, consider:
+      ```
+      export data Tuple a b := Tuple => a, b;
+
+      export pure shiftLeft => Tuple a b, c, Tuple b c
+      swap [Tuple a b] c := (Tuple b c);
+      ```
+      in this example, the memory layout goes
+      from: | address1 | 1 | ADDRESSa | ADDRESSb |
+      to:   | address4 | 1 | ADDRESSb | ADDRESSc |
+      which might look like this is NASM
+      ```
+      mov [ADDRESSa], [ADDRESSb]
+      mov [ADDRESSb], [ADDRESSc]
