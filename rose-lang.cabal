@@ -2,7 +2,7 @@ cabal-version: 2.4
 
 
 -- package information
-name:               thorn
+name:               rose-lang
 version:            0.1.0.0
 synopsis:           a new language written in haskell
 author:             Rose Aetherius: roseaetherius@gmail.com
@@ -14,10 +14,11 @@ extra-source-files: README.md
 build-type:         Simple
 
 
-executable Thorn
+executable Rose 
     main-is:
         Main.hs
     other-modules:
+        CmdLine,
         Color,
         Output,
         Parser.Data,

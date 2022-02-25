@@ -7,51 +7,14 @@ TODO:
 
 module Output where
 
-import System.Environment
 
-import Data.Maybe
-import Text.Read hiding (reset)
+import Data.List (foldl')
 import Text.Printf
 import Text.Parsec
 import Text.Parsec.Error
 
-import Data.List
-import Data.Set hiding (filter, foldl')
-
 import Color
 
-
-
-data CmdLine = CmdLine {
-    cmdVerb :: Int,
-    cmdFlgs :: Set String,
-    cmdFiles :: Set String
-}
-
-
-
-cmdLine :: IO CmdLine
-cmdLine = do
-    args <- getArgs
-    let flgs = filter ("-f" `isPrefixOf`) args
-    let files = takeWhile (not . ("-" `isPrefixOf`)) args
-    let verb = parseVerbosity $ find isVerbosityArg args
-    return $ CmdLine verb (fromList flgs) (fromList files)
-    where
-        isVerbosityArg s = "-v" `isPrefixOf` s
-                        || "--verbosity=" `isPrefixOf` s
-        parseVerbosity Nothing = 3
-        parseVerbosity (Just v) =
-            case stripPrefix "--verbosity=" v of
-                Nothing -> case stripPrefix "-v" v of
-                    Nothing -> 3
-                    Just v'  -> fromMaybe 4 (readMaybe v')
-                Just v' -> fromMaybe 3 (readMaybe v')
-
-
--- foldr  :: (Arg -> Str -> Str)
--- foldl  :: (Str -> Arg -> Str)
--- printf :: Str -> Arg -> String
 
 success, fatal, warn, message, debug ::
     Int -> String -> [String] -> IO ()

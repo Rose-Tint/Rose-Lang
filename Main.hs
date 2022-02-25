@@ -4,6 +4,7 @@ import Data.List
 import Data.Set (toList)
 import Text.Parsec
 
+import CmdLine
 import Output
 import Parser.Parser
 import Pretty
