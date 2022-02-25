@@ -360,4 +360,3 @@ matchCase = lexeme (do
             <?> "nullary constructor"
         literal = strLit <|> intLit <|> fltLit
             <?> "literal"
-    
