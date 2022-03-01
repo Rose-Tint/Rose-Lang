@@ -8,22 +8,22 @@ import Parser.LangDef
 
 
 purity :: Parser Purity
-purity = lexeme (choice [
+purity = choice [
         keyword "pure"   >> return Pure,
         keyword "impure" >> return Impure,
         keyword "unsafe" >> return Unsafe
-    ]) <?> "purity"
+    ] <?> "purity"
 
 
 visibility :: Parser Visibility
-visibility = lexeme (choice [
+visibility = choice [
         keyword "export" >> return Export,
         keyword "intern" >> return Intern
-    ]) <?> "visibility"
+    ] <?> "visibility"
 
 
 mutability :: Parser Mutability
-mutability = option Immutable (lexeme (choice [
+mutability = option Immutable (choice [
         keyword "mut"  >> return Mutable,
         keyword "imut" >> return Immutable
-    ])) <?> "mutability"
+    ]) <?> "mutability"

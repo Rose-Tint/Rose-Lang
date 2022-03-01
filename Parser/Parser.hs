@@ -22,14 +22,14 @@ thornP :: Parser [Expr]
 thornP = do
     _ <- wspace
     _ <- moduleDecl
-    manyTill (lexeme $ (choice [
+    manyTill (choice [
             modImport,
             funcDef,
             try funcTypeDecl,
             try dataDef,
             try traitDecl,
             traitImpl
-        ]))
+        ])
         eof
 
 
@@ -40,7 +40,7 @@ moduleName = intercalate "."
 
 
 moduleDecl :: Parser String
-moduleDecl = lexeme (do
+moduleDecl = (do
     _ <- keyword "module"
     name <- moduleName
     _ <- keyword "where"
@@ -49,7 +49,7 @@ moduleDecl = lexeme (do
 
 
 modImport :: Parser Expr
-modImport = lexeme (do
+modImport = (do
     _ <- keyword "import"
     vis <- option Intern visibility
     name <- moduleName
@@ -58,7 +58,7 @@ modImport = lexeme (do
 
 
 arrayLit :: Parser Value
-arrayLit = lexeme (do
+arrayLit = (do
     arr <- brackets $ commaSep term
     return $! (Array (length arr) arr))
     <?> "array"
@@ -77,7 +77,7 @@ term = lexeme (choice [
 
 
 terminalType :: Parser Type
-terminalType = lexeme (do
+terminalType = (do
     ht <- iden
     tas <- many ttype
     return $! TerminalType ht tas)
@@ -103,7 +103,7 @@ param = lexeme (choice [
 
 
 constraint :: Parser (Variable, Variable)
-constraint = lexeme (do
+constraint = (do
     con <- bigIden
     typ <- smallIden
     return $! (con, typ))
@@ -111,7 +111,7 @@ constraint = lexeme (do
 
 
 typeDecl :: Parser ([Constraint], [Type])
-typeDecl = lexeme (do
+typeDecl = (do
     cons <- option []
         (braces (commaSep constraint) <* comma)
     typs <- commaSep1 ttype
@@ -124,7 +124,7 @@ foName = smallIden <|> parens operator
 
 
 funcTypeDecl :: Parser Expr
-funcTypeDecl = lexeme (do
+funcTypeDecl = (do
     vis <- visibility
     pur <- purity
     name <- foName
@@ -138,7 +138,7 @@ funcTypeDecl = lexeme (do
  
 
 funcDef :: Parser Expr
-funcDef = lexeme (do
+funcDef = (do
     name_pars <- choice [
             try (do
                 lhs <- param
@@ -167,7 +167,7 @@ funcDef = lexeme (do
 
 
 returnE :: Parser Expr
-returnE = lexeme (do
+returnE = (do
     _ <- keyword "return"
     val <- term
     return $! Return val)
@@ -196,7 +196,7 @@ statement = lexeme (choice [
 
 
 reassign :: Parser Expr
-reassign = lexeme (do
+reassign = (do
     name <- smallIden
     _ <- resOper "="
     val <- term
@@ -205,7 +205,7 @@ reassign = lexeme (do
 
 
 newVar :: Parser Expr
-newVar = lexeme (do
+newVar = (do
     mut <- mutability
     name <- smallIden
     typ <- angles ttype
@@ -216,7 +216,7 @@ newVar = lexeme (do
 
 
 operCall :: Parser Expr
-operCall = lexeme (do
+operCall = (do
     lhs <- optionMaybe arg
     op <- operator
     rhs <- optionMaybe arg
@@ -229,7 +229,7 @@ operCall = lexeme (do
 
 
 funcCall :: Parser Expr
-funcCall = lexeme (do
+funcCall = (do
     name <- smallIden
     args <- many term
     return $! FuncCall name args)
@@ -249,7 +249,7 @@ foCallVal = ExprVal <$> foCall
 
 
 ctorCall :: Parser Value
-ctorCall = lexeme (do
+ctorCall = (do
     name <- bigIden
     as <- many term
     return $! CtorVal name as)
@@ -257,7 +257,7 @@ ctorCall = lexeme (do
 
 
 ifElse :: Parser Expr
-ifElse = lexeme (do
+ifElse = (do
     _ <- keyword "if"
     cnd <- term
     tBody <- body'
@@ -280,7 +280,7 @@ loop = (do
 
 
 dataDef :: Parser Expr
-dataDef = lexeme (do
+dataDef = (do
     vis <- visibility
     _ <- keyword "data"
     name <- bigIden
@@ -292,7 +292,7 @@ dataDef = lexeme (do
 
 
 dataCtor :: Visibility -> Parser DataCtor
-dataCtor parVis = lexeme (do
+dataCtor parVis = (do
     vis <- option parVis visibility
     name <- bigIden
     ts <- option [] (resOper "=>" >> commaSep1 ttype)
@@ -302,7 +302,7 @@ dataCtor parVis = lexeme (do
 
 methodDecl ::
     Visibility -> Constraint -> Parser Expr
-methodDecl parVis parCon = lexeme (do
+methodDecl parVis parCon = (do
     pur <- purity
     name <- foName
     _ <- resOper "=>"
@@ -314,7 +314,7 @@ methodDecl parVis parCon = lexeme (do
 
 
 traitDecl :: Parser Expr
-traitDecl = lexeme (do
+traitDecl = (do
     vis <- visibility
     _ <- keyword "trait"
     cons <- option []
@@ -331,7 +331,7 @@ traitDecl = lexeme (do
 
 
 traitImpl :: Parser Expr
-traitImpl = lexeme (do
+traitImpl = (do
     _ <- keyword "impl"
     name <- bigIden
     typ <- optionMaybe ttype
@@ -342,7 +342,7 @@ traitImpl = lexeme (do
 
 
 match :: Parser Expr
-match = lexeme (do
+match = (do
     _ <- keyword "match"
     val <- term
     cases <- braces (many matchCase)
@@ -351,7 +351,7 @@ match = lexeme (do
 
 
 matchCase :: Parser ([Value], Body)
-matchCase = lexeme (do
+matchCase = (do
     vals <- brackets (choice [
             try (commaSep nullCtor),
             (:[]) <$> ctorCall,
