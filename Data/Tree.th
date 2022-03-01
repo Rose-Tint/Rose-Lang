@@ -1,21 +1,18 @@
 module Data.Tree where
 
 
+
 export data Tree a
     := Empty
     |= Node => a, Tree a, Tree a
     ;
 
 
-export pure insert => 
-    { Ord a },
-    a, Tree a, Tree a;
+export pure insert =>  { Ord a }, a, Tree a, Tree a;
 insert a [Node v l r] {
-    if (a < v) {
-        return (Node v (insert a l) r);
-    } else if (a > v) {
-        return (Node v l (insert a r));
-    } else {
-        return (Node v l r);
+    match (a <=> v) {
+        [LT] { return (Node v (insert a l) r); }
+        [GT] { return (Node v l (insert a r)); }
+        [EQ] { return (Node v l r); }
     };
 }

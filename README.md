@@ -1,19 +1,19 @@
-# Thorn
+# Rose
 
-Thorn is a mixed paradigm language that has
+Rose is a mixed paradigm language that has
 imperative-like functions with a huge emphasis
 on FP concepts such as: function purity,
 immutability, partial application, etc.
 
 ## Intro
 ### Hello, World!
-A "Hello, world!" program in Thorn looks like this:
+A "Hello, world!" program in Rose looks like this:
 
-```Thorn
+```Rose
 1 | module Entry where
 2 |
-3 | export impure fn entry => Array String, Void;
-4 | entry _ {
+3 | export impure fn entry => Array String, Exit;
+4 | entry args {
 5 |     println "Hello, World!";
 6 | }
 7 |
@@ -24,7 +24,7 @@ signal to the compiler that this file contains
 the program entry point.
 
 On line 3, we declare the type of the entry point
-function. Functions in Thorn are what are called
+function. Functions in Rose are what are called
 "Curried". They behave the same way as Haskell
 functions in that `add a b` is the same as `(add
 a) b`. We can worry about what `export` and
@@ -32,12 +32,15 @@ a) b`. We can worry about what `export` and
 
 On line 4, we begin the definition of the entry
 function. Its single paramater (which is of type
-`Array String`) is ignored by using a single
-underscore in place of an identifier
+`Array String`) will not be used, and thus is
+ignored
 
 Finally, on line 5, we print the string "Hello,
 World" to the standard output (usually the
-console)
+console). We do not have to explicitly exit
+because an exit code of 0 (indicating success)
+is used by default when the code reaches the end
+of the entry function.
 
 
 ### Important Concepts
@@ -73,7 +76,7 @@ console)
 - `Boolean`
 - `Int`/`UInt`
     - smallest size (signed/unsigned respectively)
-    integral type needed at the given time.
+    integral type needed at the given time
     - Width can change at runtime??
 - `Char`
 - `IntN`/`UIntN` (where 'N' is a power of 2)??
@@ -83,73 +86,57 @@ console)
     - Floating (decimal) point values of width
     32 and 64 respectively
 - `String`
+    - Exactly the same as Array a
+- `Array a`
+    - Contiguous memory layout
+    - Fixed size
+    - 0-based index
     - Array length is stored immediately before
     the array in memory for O(1) length lookup
-- `Array a`
-    - 0-based index
-    - Fixed size
 
 ## Examples
 ### Binary Search Tree
-Thorn is great for recursive data structures such
+Rose is great for recursive data structures such
 as Binary Search Trees. Let's define a data type
 for such application.
 
-```Thorn
+```Rose
 module Data.Tree where
 
-export data Tree t
-    := export Empty
-    |= export Node => t, Tree t, Tree t
+export data Tree a
+    := Empty
+    |= Node => a, Tree a, Tree a
     ;
 ```
 
 We begin by declaring the module name for the
 linker. We then declare a public data type 
-(hence the `export data`) called `Tree` that
-takes one type-parameter `t`. Next, we begin to
-define constructors for `Tree`. Data constuctors
-can be thought of as the set of all possible forms
-that the data can take. In this case, a Tree can
-either be empty because it contains no data nor
-subtrees, or it can be a Node which contains a
-value of type `t`, and two subtrees of type `Tree
-t`.
+(hence `export data`) called `Tree` that takes one
+type-parameter `t`. Next, we begin to define
+constructors for `Tree`. Data constuctors can be
+thought of as the set of all possible forms that
+the data can take. In this case, a Tree can either
+be empty because it contains no data nor subtrees,
+or it can be a Node which contains a value of type
+`t`, and two subtrees of type `Tree t`.
 
 Notice the syntactical similarities between the
 a function type declaration, and a constructor
 declaration: this is because constructors can behave
 very similarily to functions. It would not be
 wise to curry a constructor (i.e. `(Node 7 Empty)
-some_tree`) because if a peice of the constructor is
-missing, it will cause a runtime error. It is
-possible, however.
+some_tree`) because if the program tries to access
+a peice of the constructor that is missing, it will
+cause a runtime error. It is however possible.
 
-Let's now write some functions to manipulate trees.
-
-```Thorn
-extern pure fn new => a, Tree a;
-new a { return (Node a Empty Empty); }
-
-extern pure fn is_empty => Tree a, Boolean;
-is_empty (Empty) { return True; }
-is_empty _ { return False; }
-```
-
-### Linked List
-
-```Thorn
-module Data.List where
-
-export data List a
-    := export Empty
-    |= export Node => a, List a
-    ;
-
-export pure fn new => a, List a;
-new x { return (Node x Empty) }
-
-export pure fn insert => a, List a, List a;
-insert x (Empty) { return (new x); }
-insert x (Node v n) { return (Node v (insert x n)); }
+Let's now write a function to insert values:
+```Rose
+export pure insert =>  { Ord a }, a, Tree a, Tree a;
+insert a [Node v l r] {
+    match (a <=> v) {
+        [LT] { return (Node v (insert a l) r); }
+        [GT] { return (Node v l (insert a r)); }
+        [EQ] { return (Node v l r); }
+    };
+}
 ```

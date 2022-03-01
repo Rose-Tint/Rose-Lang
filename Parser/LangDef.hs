@@ -48,7 +48,8 @@ smallIden = lookAhead lower >> iden
 keyword = T.reserved thornTok
 operator = T.operator thornTok
 resOper = T.reservedOp thornTok
-charLit = T.charLiteral thornTok
+chrLit = ChrLit <$> T.charLiteral thornTok
+    <?> "char literal"
 strLit = StrLit <$> T.stringLiteral thornTok
     <?> "string literal"
 intLit = IntLit <$> T.integer thornTok

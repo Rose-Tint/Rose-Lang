@@ -1,29 +1,24 @@
 {-# OPTIONS_GHC -Wno-missing-signatures #-}
 
-{-
-TODO:
-    implement verbosity
--}
-
 module Output where
 
 
 import Data.List (foldl')
-import Text.Printf
 import Text.Parsec
 import Text.Parsec.Error
 
 import Color
 
 
-success, fatal, warn, message, debug ::
-    Int -> String -> [String] -> IO ()
+success, fatal, warn, message, status, debug, trace
+    :: Int -> String -> [String] -> IO ()
 success = myPutStr Green 2
 fatal = myPutStr Red 2
 warn = myPutStr Yellow 2
 message = myPutStr Reset 2
 status = myPutStr Reset 3
 debug = myPutStr Cyan 4
+trace = myPutStr Purple 5
 
 
 myPutStr ::

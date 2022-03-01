@@ -25,11 +25,16 @@ executable Rose
         Parser.Keywords,
         Parser.LangDef,
         Parser.Parser,
-        Pretty
+        Parser.Pretty,
+        Semantics.Analysis,
+        Semantics.Error,
+        Semantics.SymbolTable,
+        Semantics.Visitor
     build-depends:
-        base == 4.*,
+        base >= 4.7.0.0,
         parsec,
-        containers
+        containers,
+        time,
     default-language:
         Haskell2010
     ghc-options:

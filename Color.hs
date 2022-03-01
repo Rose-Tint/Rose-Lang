@@ -1,5 +1,12 @@
 module Color where
 
+import Text.Printf (
+    PrintfType,
+    PrintfArg(..),
+    formatString
+    )
+import qualified Text.Printf (printf)
+
 
 data Color
     = Black
@@ -13,12 +20,37 @@ data Color
     | Reset
 
 
+color :: String -> String
+color [] = show Reset
+color [ch] = [ch]
+color ('\\':('$':rest)) = ('$':color rest)
+color ('$':(ch:rest)) = clrStr ++ color rest
+    where
+        clrStr = case ch of
+            'B' -> show Black
+            'r' -> show Red
+            'y' -> show Yellow
+            'g' -> show Green
+            'b' -> show Blue
+            'p' -> show Purple
+            'c' -> show Cyan
+            'w' -> show White
+            'R' -> show Reset
+            _   -> ['$', ch]
+color (c:cs) = (c:color cs)
+
+
 colored :: String -> Color -> String
 colored str clr = show clr ++ (str ++ show Reset)
 
 
 reset :: String -> String
 reset str = show Reset ++ str
+
+
+printf :: (PrintfType a) => String -> a
+printf = Text.Printf.printf . color
+
 
 
 instance Show Color where
@@ -31,3 +63,7 @@ instance Show Color where
     show Cyan   = "\027[36m"
     show White  = "\027[37m"
     show Reset  = "\027[0m"
+
+
+instance PrintfArg Color where
+    formatArg clr = formatString (show clr)

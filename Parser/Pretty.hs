@@ -1,4 +1,4 @@
-module Pretty (prettyExpr) where
+module Parser.Pretty (prettyExpr) where
 
 import Data.List (intercalate)
 import Text.Printf (printf)
@@ -46,7 +46,7 @@ prettyExpr (DataDef vis name tvs ctrs) = printf
     "Datatype Definition:\n\
     \    Visibility   : %s\n\
     \    Name         : %s\n\
-    \    Type Vars    : %s\n\
+    \    Type Vars    : \n%s\
     \    Constructors : \n%s"
     (show vis) name (indentAllUsing show tvs)
     (indentAllUsing prettyCtor ctrs)
@@ -136,9 +136,11 @@ prettyValue v = show v
 
 
 prettyType :: Type -> String
-prettyType (Type ht []) = ht
-prettyType (Type ht tps) = printf
+prettyType (TerminalType ht []) = ht
+prettyType (TerminalType ht tps) = printf
     "%s %s" ht (prettyTypes tps)
+prettyType (NonTermType ts) = printf
+    "(%s)" (prettyTypes ts)
 
 prettyTypes :: [Type] -> String
 prettyTypes ts = intercalate ", " (fmap prettyType ts)

@@ -11,19 +11,27 @@ type Body = [Expr]
 type Constraint = (Variable, Variable)
 
 
+-- Examples:
+-- - `TerminalType "Either" [TerminalType "String"
+--       [], TerminalType "a" []]` corresponds to
+--       a Rose signature of `=> Either String a`
+-- - `NonTermType [TerminalType "a" [],
+--       TermainalType "b" []]` corresponds to a Rose signature
+--       of `=> (a, b)`
 data Type
-    = Type Variable [Type]
-    -- | TypeVar Variable [Constraint]
+    = NonTermType [Type]
+    | TerminalType String [Type]
     deriving (Show, Eq, Ord)
 
 
 data Value
     = IntLit Integer
     | FltLit Double
+    | ChrLit Char
     | StrLit String
     | VarVal Variable
     | ExprVal Expr
-    | CtorVal Variable [Value]
+    | CtorVal String [Value]
     | Array Int [Value]
     deriving (Show, Eq, Ord)
 

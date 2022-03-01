@@ -1,11 +1,9 @@
 {-
 TODO:
-    types/ctors vs fns/vars,
-    pattern matching [WIP],
-    types in decls having type params
-        instead of being one string,
-    decl-specs,
-    traits,
+    Imports are not working (expects extranuous "."),
+    USE A MONAD TO AUTOMATICALLY STORE POSITION INFORMATION,
+    Use `try` in `thornP` and some sort of monad to store
+        multiple errors
 -}
 
 module Parser.Parser where
@@ -25,9 +23,9 @@ thornP = do
     _ <- wspace
     _ <- moduleDecl
     manyTill (lexeme $ (choice [
-            try modImport,
+            modImport,
+            funcDef,
             try funcTypeDecl,
-            try funcDef,
             try dataDef,
             try traitDecl,
             traitImpl
@@ -36,8 +34,8 @@ thornP = do
 
 
 moduleName :: Parser String
-moduleName = lexeme (intercalate "."
-        <$> (bigIden `sepBy1` dot))
+moduleName = intercalate "."
+    <$> (bigIden `sepBy1` dot)
     <?> "module name"
 
 
@@ -46,7 +44,7 @@ moduleDecl = lexeme (do
     _ <- keyword "module"
     name <- moduleName
     _ <- keyword "where"
-    return name)
+    return $! name)
     <?> "module declaration"
 
 
@@ -55,36 +53,45 @@ modImport = lexeme (do
     _ <- keyword "import"
     vis <- option Intern visibility
     name <- moduleName
-    return $ ModImport vis name)
+    return $! ModImport vis name)
     <?> "module import"
 
 
 arrayLit :: Parser Value
 arrayLit = lexeme (do
     arr <- brackets $ commaSep term
-    return (Array (length arr) arr))
+    return $! (Array (length arr) arr))
     <?> "array"
 
 
 term :: Parser Value
 term = lexeme (choice [
-        strLit, intLit, fltLit, arrayLit,
-        try (VarVal <$> iden),
+        chrLit, strLit,
+        intLit, fltLit,
+        arrayLit,
+        VarVal <$> iden,
         parens (ctorCall
             <|> foCallVal
             <|> term)
     ]) <?> "term"
 
 
+terminalType :: Parser Type
+terminalType = lexeme (do
+    ht <- iden
+    tas <- many ttype
+    return $! TerminalType ht tas)
+    <?> "terminal type"
+
+
+nonTermType :: Parser Type
+nonTermType = lexeme
+    (parens (NonTermType <$> commaSep1 ttype))
+    <?> "non-terminal type"
+
+
 ttype :: Parser Type
-ttype = lexeme (do
-    ht <- iden -- head type
-    -- type params
-    tps <- choice [
-            parens $ commaSep ttype,
-            many ttype
-        ]
-    return $ Type ht tps)
+ttype = terminalType <|> nonTermType
     <?> "type"
 
 
@@ -99,7 +106,7 @@ constraint :: Parser (Variable, Variable)
 constraint = lexeme (do
     con <- bigIden
     typ <- smallIden
-    return (con, typ))
+    return $! (con, typ))
     <?> "constraint"
 
 
@@ -108,7 +115,7 @@ typeDecl = lexeme (do
     cons <- option []
         (braces (commaSep constraint) <* comma)
     typs <- commaSep1 ttype
-    return (cons, typs))
+    return $! (cons, typs))
     <?> "type declaration"
 
 
@@ -125,7 +132,7 @@ funcTypeDecl = lexeme (do
     typDcl <- typeDecl
     let (cons, typs) = typDcl
     _ <- semi
-    return $ FuncTypeDecl
+    return $! FuncTypeDecl
         pur vis name cons typs)
     <?> "func-type-decl"
  
@@ -137,17 +144,17 @@ funcDef = lexeme (do
                 lhs <- param
                 op <- operator
                 rhs <- param
-                return (op, [lhs, rhs])
+                return $! (op, [lhs, rhs])
             ),
             (do
                 name <- foName
                 pars <- many param
-                return (name, pars)
+                return $! (name, pars)
             )
         ]
     let (name, pars) = name_pars
     bdy <- fnBody
-    return $ FuncDef name pars bdy)
+    return $! FuncDef name pars bdy)
     <?> "func-def"
     where
         fnBody = choice [
@@ -155,7 +162,7 @@ funcDef = lexeme (do
             (do _ <- resOper ":="
                 bdy <- Return <$> term
                 _ <- semi
-                return [bdy])
+                return $! [bdy])
             ]
 
 
@@ -163,7 +170,7 @@ returnE :: Parser Expr
 returnE = lexeme (do
     _ <- keyword "return"
     val <- term
-    return $ Return val)
+    return $! Return val)
     <?> "return expression"
 
 
@@ -193,7 +200,7 @@ reassign = lexeme (do
     name <- smallIden
     _ <- resOper "="
     val <- term
-    return $ Reassign name val)
+    return $! Reassign name val)
     <?> "reassignment"
 
 
@@ -204,7 +211,7 @@ newVar = lexeme (do
     typ <- angles ttype
     _ <- resOper ":="
     val <- term
-    return $ NewVar mut typ name val)
+    return $! NewVar mut typ name val)
     <?> "new var"
 
 
@@ -214,7 +221,7 @@ operCall = lexeme (do
     op <- operator
     rhs <- optionMaybe arg
     let args = catMaybes [lhs, rhs]
-    return $ FuncCall op args)
+    return $! FuncCall op args)
     <?> "operator call"
     where
         -- MAY OR MAY NOT NEED A TRY
@@ -225,7 +232,7 @@ funcCall :: Parser Expr
 funcCall = lexeme (do
     name <- smallIden
     args <- many term
-    return $ FuncCall name args)
+    return $! FuncCall name args)
     <?> "function call"
 
 
@@ -245,7 +252,7 @@ ctorCall :: Parser Value
 ctorCall = lexeme (do
     name <- bigIden
     as <- many term
-    return $ CtorVal name as)
+    return $! CtorVal name as)
     <?> "constructor call"
 
 
@@ -255,7 +262,7 @@ ifElse = lexeme (do
     cnd <- term
     tBody <- body'
     fBody <- option [] (keyword "else" >> body')
-    return $ IfElse cnd tBody fBody)
+    return $! IfElse cnd tBody fBody)
     <?> "if-else"
 
 
@@ -268,7 +275,7 @@ loop = (do
     itr <- optionMaybe $ comma *> statement
     _ <- lexeme $ char ')'
     bdy <- body'
-    return $ Loop ini cnd itr bdy)
+    return $! Loop ini cnd itr bdy)
     <?> "loop"
 
 
@@ -280,7 +287,7 @@ dataDef = lexeme (do
     tps <- manyTill smallIden (resOper ":=")
     ctrs <- dataCtor vis `sepBy1` resOper "|="
     _ <- semi
-    return $ DataDef vis name tps ctrs)
+    return $! DataDef vis name tps ctrs)
     <?> "data-def"
 
 
@@ -289,7 +296,7 @@ dataCtor parVis = lexeme (do
     vis <- option parVis visibility
     name <- bigIden
     ts <- option [] (resOper "=>" >> commaSep1 ttype)
-    return $ DataCtor vis name ts)
+    return $! DataCtor vis name ts)
     <?> "constructor"
 
 
@@ -301,7 +308,7 @@ methodDecl parVis parCon = lexeme (do
     _ <- resOper "=>"
     typDcl <- typeDecl
     let (cons, typs) = typDcl
-    return $ FuncTypeDecl
+    return $! FuncTypeDecl
         pur parVis name (parCon:cons) typs)
     <?> "method declaration"
 
@@ -319,7 +326,7 @@ traitDecl = lexeme (do
     fns <- semiSepEnd
         (try $ (methodDecl vis thisCon
             <?> "method declaration"))
-    return $ TraitDecl vis cons name typ fns)
+    return $! TraitDecl vis cons name typ fns)
     <?> "trait declaration"
 
 
@@ -330,7 +337,7 @@ traitImpl = lexeme (do
     typ <- optionMaybe ttype
     _ <- keyword "where"
     defs <- many1 (funcDef <?> "method definition")
-    return $ TraitImpl name typ defs)
+    return $! TraitImpl name typ defs)
     <?> "trait def"
 
 
@@ -339,7 +346,7 @@ match = lexeme (do
     _ <- keyword "match"
     val <- term
     cases <- braces (many matchCase)
-    return $ Pattern val cases)
+    return $! Pattern val cases)
     <?> "pattern"
 
 
@@ -351,12 +358,12 @@ matchCase = lexeme (do
             commaSep literal
         ])
     bdy <- body
-    return (vals, bdy))
+    return $! (vals, bdy))
     <?> "match case"
     where
         nullCtor = (do
             nm <- bigIden
-            return $ CtorVal nm [])
+            return $! CtorVal nm [])
             <?> "nullary constructor"
         literal = strLit <|> intLit <|> fltLit
             <?> "literal"
