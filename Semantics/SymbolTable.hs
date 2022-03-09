@@ -163,7 +163,7 @@ boolData = primTypeData "Boolean"
 
 prettySymbolData :: (Variable, SymbolData) -> String
 prettySymbolData (sym, dta) = printf
-    "%15s %30s"
+    "%15s | %30s"
     (varName sym) (prettyType (sdType dta))
 
 
@@ -173,7 +173,8 @@ prettySymMap m = indentAllUsing prettySymbolData (Map.toList m)
 
 prettySymbolTable :: SymbolTable -> String
 prettySymbolTable st = printf
-    "Types:\n%s\
+    "       | Symbol Name    | Symbol Type\n\
+    \Types:\n%s\
     \Globals:\n%s\
     \Scopeds:\n%s\
     \Undefined Types:\n%s\

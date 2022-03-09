@@ -42,17 +42,12 @@ buildFile cmd relPath = do
     let verb = cmdVerb cmd
     let buildDir = (cmdBuildDir cmd) ++ "/" ++
             modPathToRelDir relPath
-    createDirectoryIfMissing True buildDir
     message verb "Building Module [%s]\n" [modName]
-    modPath <- makeAbsolute (relPath)
-    status verb "Reading File [%s]\n" [modName]
     debug verb "module build dir: %s\n" [buildDir]
-    src <- readFile modPath
-    status verb "Parsing Contents [%s]\n" [modName]
+    src <- makeAbsolute relPath >>= readFile
     parseRes <- parseFile cmd src modName
     trace cmd (buildDir ++ "Abstract-Syntax-Tree.txt")
         (concat $ fmap prettyExpr parseRes)
-    status verb "Analyzing Expressions [%s]\n" [modName]
     symTbl <- analyzeFile cmd src modName parseRes
     trace cmd (buildDir ++ "Symbol-Table.txt")
         (prettySymbolTable symTbl)
@@ -60,8 +55,9 @@ buildFile cmd relPath = do
 
 
 parseFile :: CmdLine -> Text -> ModuleName -> IO [Expr]
-parseFile cmd src modName =
-    case parse roseParser modName src of
+parseFile cmd src name = do
+    info (cmdVerb cmd) "Parsing [%s]\n" [name]
+    case parse roseParser name src of
         Left err -> do
             printParseErr (cmdVerb cmd) err src
             fatal (cmdVerb cmd)
@@ -71,14 +67,16 @@ parseFile cmd src modName =
 
 analyzeFile :: CmdLine -> Text -> ModuleName -> [Expr]
             -> IO SymbolTable
-analyzeFile cmd src name exprs = case visit name visitor of
-    Okay _ st err -> do
-        unless (err == UnknownError)
-            (message v (prettyError srcLines name err) []
-            >> return ())
-        return st
-    Error _ err ->
-        fatal v (prettyError srcLines name err) []
+analyzeFile cmd src name exprs = do
+    info (cmdVerb cmd) "Analyzing [%s]\n" [name]
+    case visit name visitor of
+        Okay _ st err -> do
+            unless (err == UnknownError)
+                (message v (prettyError srcLines name err) []
+                >> return ())
+            return st
+        Error _ err ->
+            fatal v (prettyError srcLines name err) []
     where
         v = cmdVerb cmd
         srcLines = lines src

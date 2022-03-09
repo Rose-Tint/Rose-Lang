@@ -1,9 +1,0 @@
-Types:
-    |           Boolean                        Boolean
-Globals:
-    |           combine                (Int, Int, Int)
-Scopeds:
-Undefined Types:
-Undefined Symbols:
-    |                 ^                (Int, Int, Int)
-    |            result                            Int

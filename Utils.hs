@@ -1,8 +1,4 @@
-module Utils (
-    pathToModule,
-    indentUsing,
-    indentAllUsing,
-) where
+module Utils where
 
 
 pathToModule :: String -> String
@@ -13,6 +9,12 @@ pathToModule ('/':rest) = ('.':pathToModule rest)
 -- for windows
 pathToModule ('\\':rest) = ('.':pathToModule rest)
 pathToModule (ch:chs) = (ch:pathToModule chs)
+
+
+moduleToPath :: String -> String
+moduleToPath [] = ".th"
+moduleToPath ('.':rest) = ('/':moduleToPath rest)
+moduleToPath (ch:rest) = (ch:moduleToPath rest)
 
 
 indentAllUsing :: (a -> String) -> [a] -> String

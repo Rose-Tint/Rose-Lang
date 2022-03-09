@@ -3,7 +3,6 @@ module Main (main) where
 -- import Control.Concurrent (forkIO)
 import Control.Monad (foldM_, when)
 import Data.Time (diffUTCTime, getCurrentTime)
-import System.Environment (getArgs)
 import System.Exit (exitSuccess)
 
 import CmdLine (CmdLine(..), getCmdLine)
@@ -14,8 +13,7 @@ import Build (buildFile)
 
 main :: IO ()
 main = do
-    cmdArgs <- getArgs
-    cmdLine <- getCmdLine (reverse cmdArgs)
+    cmdLine <- getCmdLine
     let verb = cmdVerb cmdLine
         errs = cmdErrors cmdLine
     when (not (null errs))

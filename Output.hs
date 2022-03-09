@@ -5,6 +5,7 @@ module Output (
     warn,
     message,
     status,
+    info,
     debug,
     trace,
     fatal,
@@ -14,21 +15,24 @@ import Control.Concurrent (forkIO)
 import Data.List (foldl')
 import System.Directory
 import System.Exit (exitFailure)
+import System.IO (Handle, stdout, stderr, hPutStr)
 
 import CmdLine
 import Color
 
 
-success, warn, message, status, debug
+success, warn, message, status, debug, info
     :: Int -> String -> [String] -> IO ()
-success = myPutStr Green 2
-warn = myPutStr Yellow 2
-message = myPutStr Reset 2
-status = myPutStr Reset 3
-debug = myPutStr Cyan 4
+success = myPutStr Green 1 stdout
+warn = myPutStr Yellow 2 stderr
+message = myPutStr Reset 1 stdout
+status = myPutStr Reset 3 stdout
+info = myPutStr Reset 4 stdout
+debug = myPutStr Cyan 5 stderr
+
 
 fatal :: Int -> String -> [String] -> IO a
-fatal v str as = myPutStr Red 2 v str as
+fatal v str as = myPutStr Red 2 stderr v str as
     >> exitFailure
 
 
@@ -42,11 +46,11 @@ trace cmd path str = forkIO (if cmdTrace cmd then do
 
 
 myPutStr ::
-    Color -> Int -> Int -> String -> [String] -> IO ()
-myPutStr clr thresh vrb fStr args =
+    Color -> Int -> Handle -> Int -> String -> [String] -> IO ()
+myPutStr clr thresh hdl vrb fStr args =
     if vrb >= thresh then
         -- i tried using stderr, but it printed weird
         -- characters and really slow
-        putStr $ foldl' printf fStr args `colored` clr
+        hPutStr hdl $ foldl' printf fStr args `colored` clr
     else
         return ()

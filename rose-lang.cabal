@@ -14,9 +14,7 @@ extra-source-files: README.md
 build-type:         Simple
 
 
-executable Rose 
-    main-is:
-        Main.hs
+common general
     other-modules:
         Build,
         CmdLine,
@@ -44,9 +42,25 @@ executable Rose
     default-language:
         Haskell2010
     ghc-options:
-        -O0
         -Wall
         -Werror
-        -Wextra
         -Wno-unused-do-bind
         -fhide-source-paths
+
+
+executable Rose 
+    import: general
+    main-is: Main.hs
+    ghc-options:
+        -O3
+        -threaded
+
+-- https://nikita-volkov.github.io/profiling-cabal-projects/
+executable Rose-Prof
+    import: general
+    main-is: Main.hs
+    ghc-options:
+        -O0
+        -threaded
+        -fprof-auto
+        "-with-rtsopts=-N -p -s -h -i0.1"
