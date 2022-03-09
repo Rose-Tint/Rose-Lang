@@ -1,0 +1,423 @@
+Datatype Definition:
+    Visibility   : Export
+    Name         : Ordering
+    Type Vars    : 
+    Constructors : 
+    |   Export LT
+    |   Export EQ
+    |   Export GT
+Trait Declaration:
+    Visibility  : Export
+    Constraints : 
+    Name        : Eq
+    Type Var    : a
+    Methods     : 
+    |   Function Type Declaration:
+    |       Visibility  : Export
+    |       Purity      : Pure
+    |       Name        : ==
+    |       Constraints : 
+    |       |   { Eq (a) }
+    |       Type        : a, a, Boolean
+    |   Function Type Declaration:
+    |       Visibility  : Export
+    |       Purity      : Pure
+    |       Name        : ==
+    |       Constraints : 
+    |       |   { Eq (a) }
+    |       Type        : a, a, Boolean
+Trait Declaration:
+    Visibility  : Export
+    Constraints : 
+    |   { Eq (a) }
+    Name        : Ord
+    Type Var    : a
+    Methods     : 
+    |   Function Type Declaration:
+    |       Visibility  : Export
+    |       Purity      : Pure
+    |       Name        : <
+    |       Constraints : 
+    |       |   { Ord (a) }
+    |       Type        : a, a, Boolean
+    |   Function Type Declaration:
+    |       Visibility  : Export
+    |       Purity      : Pure
+    |       Name        : <=
+    |       Constraints : 
+    |       |   { Ord (a) }
+    |       Type        : a, a, Boolean
+    |   Function Type Declaration:
+    |       Visibility  : Export
+    |       Purity      : Pure
+    |       Name        : >
+    |       Constraints : 
+    |       |   { Ord (a) }
+    |       Type        : a, a, Boolean
+    |   Function Type Declaration:
+    |       Visibility  : Export
+    |       Purity      : Pure
+    |       Name        : >=
+    |       Constraints : 
+    |       |   { Ord (a) }
+    |       Type        : a, a, Boolean
+    |   Function Type Declaration:
+    |       Visibility  : Export
+    |       Purity      : Pure
+    |       Name        : <=>
+    |       Constraints : 
+    |       |   { Ord (a) }
+    |       Type        : a, a, Ordering
+Trait Declaration:
+    Visibility  : Export
+    Constraints : 
+    Name        : Logical
+    Type Var    : a
+    Methods     : 
+    |   Function Type Declaration:
+    |       Visibility  : Export
+    |       Purity      : Pure
+    |       Name        : asBool
+    |       Constraints : 
+    |       |   { Logical (a) }
+    |       Type        : a, Boolean
+    |   Function Type Declaration:
+    |       Visibility  : Export
+    |       Purity      : Pure
+    |       Name        : &&
+    |       Constraints : 
+    |       |   { Logical (a) }
+    |       Type        : a, a, Boolean
+    |   Function Type Declaration:
+    |       Visibility  : Export
+    |       Purity      : Pure
+    |       Name        : ||
+    |       Constraints : 
+    |       |   { Logical (a) }
+    |       Type        : a, a, Boolean
+    |   Function Type Declaration:
+    |       Visibility  : Export
+    |       Purity      : Pure
+    |       Name        : ^^
+    |       Constraints : 
+    |       |   { Logical (a) }
+    |       Type        : a, a, Boolean
+    |   Function Type Declaration:
+    |       Visibility  : Export
+    |       Purity      : Pure
+    |       Name        : not
+    |       Constraints : 
+    |       |   { Logical (a) }
+    |       Type        : a, Boolean
+Function Type Declaration:
+    Visibility  : Export
+    Purity      : Pure
+    Name        : min
+    Constraints : 
+    |   { Ord (a) }
+    Type        : a, a, a
+Function Definition:
+    Name       : min
+    Parameters : 
+    |   a
+    |   b
+    Body       : 
+    |   Return: ExprVal: Pattern Match:
+    |       Value : ExprVal: Function Call:
+    |       Name      : <=>
+    |       Arguments : 
+    |       |   ExprVal: Function Call:
+    |       |       Name      : a
+    |       |       Arguments : 
+    |       |   ExprVal: Function Call:
+    |       |       Name      : b
+    |       |       Arguments : 
+    |   
+    |       Cases : 
+    |       |   (CtorVal (Var {varName = "LT", varLine = 39, varStart = 10, varEnd = 12}) [],[Return (ExprVal (FuncCall (Var {varName = "a", varLine = 39, varStart = 17, varEnd = 18}) []))])
+    |       |   (CtorVal (Var {varName = "EQ", varLine = 40, varStart = 10, varEnd = 12}) [],[Return (ExprVal (FuncCall (Var {varName = "a", varLine = 40, varStart = 17, varEnd = 18}) []))])
+    |       |   (CtorVal (Var {varName = "GT", varLine = 41, varStart = 10, varEnd = 12}) [],[Return (ExprVal (FuncCall (Var {varName = "b", varLine = 41, varStart = 17, varEnd = 18}) []))])
+Function Type Declaration:
+    Visibility  : Export
+    Purity      : Pure
+    Name        : max
+    Constraints : 
+    |   { Ord (a) }
+    Type        : a, a, a
+Function Definition:
+    Name       : max
+    Parameters : 
+    |   a
+    |   b
+    Body       : 
+    |   Return: ExprVal: Pattern Match:
+    |       Value : ExprVal: Function Call:
+    |       Name      : <=>
+    |       Arguments : 
+    |       |   ExprVal: Function Call:
+    |       |       Name      : a
+    |       |       Arguments : 
+    |       |   ExprVal: Function Call:
+    |       |       Name      : b
+    |       |       Arguments : 
+    |   
+    |       Cases : 
+    |       |   (CtorVal (Var {varName = "LT", varLine = 47, varStart = 10, varEnd = 12}) [],[Return (ExprVal (FuncCall (Var {varName = "b", varLine = 47, varStart = 17, varEnd = 18}) []))])
+    |       |   (CtorVal (Var {varName = "EQ", varLine = 48, varStart = 10, varEnd = 12}) [],[Return (ExprVal (FuncCall (Var {varName = "b", varLine = 48, varStart = 17, varEnd = 18}) []))])
+    |       |   (CtorVal (Var {varName = "GT", varLine = 49, varStart = 10, varEnd = 12}) [],[Return (ExprVal (FuncCall (Var {varName = "a", varLine = 49, varStart = 17, varEnd = 18}) []))])
+Function Type Declaration:
+    Visibility  : Export
+    Purity      : Pure
+    Name        : clamp
+    Constraints : 
+    |   { Ord (a) }
+    Type        : a, a, a, a
+Function Definition:
+    Name       : clamp
+    Parameters : 
+    |   mn
+    |   mx
+    |   x
+    Body       : 
+    |   Return: ExprVal: Function Call:
+    |       Name      : min
+    |       Arguments : 
+    |       |   mn
+    |       |   ExprVal: Function Call:
+    |       |       Name      : max
+    |       |       Arguments : 
+    |       |       |   mx
+    |       |       |   x
+Trait Defaults:
+    Name        : Ord
+    Constraints : 
+    Method Defs : 
+    |   Function Definition:
+    |       Name       : <
+    |       Parameters : 
+    |       Body       : 
+    |       |   Return: ExprVal: Function Call:
+    |       |       Name      : .
+    |       |       Arguments : 
+    |       |       |   ExprVal: Function Call:
+    |       |       |       Name      : not
+    |       |       |       Arguments : 
+    |       |       |   ExprVal: Function Call:
+    |       |       |       Name      : >=
+    |       |       |       Arguments : 
+    |   Function Definition:
+    |       Name       : <=
+    |       Parameters : 
+    |       |   a
+    |       |   b
+    |       Body       : 
+    |       |   Return: ExprVal: Function Call:
+    |       |       Name      : ||
+    |       |       Arguments : 
+    |       |       |   ExprVal: Function Call:
+    |       |       |       Name      : <
+    |       |       |       Arguments : 
+    |       |       |       |   ExprVal: Function Call:
+    |       |       |       |       Name      : a
+    |       |       |       |       Arguments : 
+    |       |       |       |   ExprVal: Function Call:
+    |       |       |       |       Name      : b
+    |       |       |       |       Arguments : 
+    |       |       |   ExprVal: Function Call:
+    |       |       |       Name      : ==
+    |       |       |       Arguments : 
+    |       |       |       |   ExprVal: Function Call:
+    |       |       |       |       Name      : a
+    |       |       |       |       Arguments : 
+    |       |       |       |   ExprVal: Function Call:
+    |       |       |       |       Name      : b
+    |       |       |       |       Arguments : 
+    |   Function Definition:
+    |       Name       : >
+    |       Parameters : 
+    |       Body       : 
+    |       |   Return: ExprVal: Function Call:
+    |       |       Name      : .
+    |       |       Arguments : 
+    |       |       |   ExprVal: Function Call:
+    |       |       |       Name      : not
+    |       |       |       Arguments : 
+    |       |       |   ExprVal: Function Call:
+    |       |       |       Name      : <=
+    |       |       |       Arguments : 
+    |   Function Definition:
+    |       Name       : >=
+    |       Parameters : 
+    |       |   a
+    |       |   b
+    |       Body       : 
+    |       |   Return: ExprVal: Function Call:
+    |       |       Name      : ||
+    |       |       Arguments : 
+    |       |       |   ExprVal: Function Call:
+    |       |       |       Name      : >
+    |       |       |       Arguments : 
+    |       |       |       |   ExprVal: Function Call:
+    |       |       |       |       Name      : a
+    |       |       |       |       Arguments : 
+    |       |       |       |   ExprVal: Function Call:
+    |       |       |       |       Name      : b
+    |       |       |       |       Arguments : 
+    |       |       |   ExprVal: Function Call:
+    |       |       |       Name      : ==
+    |       |       |       Arguments : 
+    |       |       |       |   ExprVal: Function Call:
+    |       |       |       |       Name      : a
+    |       |       |       |       Arguments : 
+    |       |       |       |   ExprVal: Function Call:
+    |       |       |       |       Name      : b
+    |       |       |       |       Arguments : 
+Trait Defaults:
+    Name        : Logical
+    Constraints : 
+    Method Defs : 
+    |   Function Definition:
+    |       Name       : &&
+    |       Parameters : 
+    |       |   a
+    |       |   b
+    |       Body       : 
+    |       |   Return: ExprVal: Function Call:
+    |       |       Name      : &&
+    |       |       Arguments : 
+    |       |       |   ExprVal: Function Call:
+    |       |       |       Name      : asBool
+    |       |       |       Arguments : 
+    |       |       |       |   a
+    |       |       |   ExprVal: Function Call:
+    |       |       |       Name      : asBool
+    |       |       |       Arguments : 
+    |       |       |       |   b
+    |   Function Definition:
+    |       Name       : ||
+    |       Parameters : 
+    |       |   a
+    |       |   b
+    |       Body       : 
+    |       |   Return: ExprVal: Function Call:
+    |       |       Name      : ||
+    |       |       Arguments : 
+    |       |       |   ExprVal: Function Call:
+    |       |       |       Name      : asBool
+    |       |       |       Arguments : 
+    |       |       |       |   a
+    |       |       |   ExprVal: Function Call:
+    |       |       |       Name      : asBool
+    |       |       |       Arguments : 
+    |       |       |       |   b
+    |   Function Definition:
+    |       Name       : ^^
+    |       Parameters : 
+    |       |   a
+    |       |   b
+    |       Body       : 
+    |       |   Return: ExprVal: Function Call:
+    |       |       Name      : ^^
+    |       |       Arguments : 
+    |       |       |   ExprVal: Function Call:
+    |       |       |       Name      : asBool
+    |       |       |       Arguments : 
+    |       |       |       |   a
+    |       |       |   ExprVal: Function Call:
+    |       |       |       Name      : asBool
+    |       |       |       Arguments : 
+    |       |       |       |   b
+    |   Function Definition:
+    |       Name       : not
+    |       Parameters : 
+    |       Body       : 
+    |       |   Return: ExprVal: Function Call:
+    |       |       Name      : .
+    |       |       Arguments : 
+    |       |       |   ExprVal: Function Call:
+    |       |       |       Name      : not
+    |       |       |       Arguments : 
+    |       |       |   ExprVal: Function Call:
+    |       |       |       Name      : asBool
+    |       |       |       Arguments : 
+Trait Implementation:
+    Name        : Logical
+    Constraints : 
+    Type Name   : Int
+    Method Defs : 
+    |   Function Definition:
+    |       Name       : asBool
+    |       Parameters : 
+    |       |   IntLit 0
+    |       Body       : 
+    |       |   Return: Nullary Ctor Call: False
+    |   Function Definition:
+    |       Name       : asBool
+    |       Parameters : 
+    |       |   n
+    |       Body       : 
+    |       |   Return: Nullary Ctor Call: True
+Trait Implementation:
+    Name        : Logical
+    Constraints : 
+    Type Name   : Boolean
+    Method Defs : 
+    |   Function Definition:
+    |       Name       : asBool
+    |       Parameters : 
+    |       |   b
+    |       Body       : 
+    |       |   Return: ExprVal: Function Call:
+    |       |       Name      : b
+    |       |       Arguments : 
+    |   Function Definition:
+    |       Name       : &&
+    |       Parameters : 
+    |       |   Nullary Ctor Call: True
+    |       |   b
+    |       Body       : 
+    |       |   Return: ExprVal: Function Call:
+    |       |       Name      : b
+    |       |       Arguments : 
+    |   Function Definition:
+    |       Name       : &&
+    |       Parameters : 
+    |       |   Nullary Ctor Call: False
+    |       |   b
+    |       Body       : 
+    |       |   Return: Nullary Ctor Call: False
+    |   Function Definition:
+    |       Name       : ||
+    |       Parameters : 
+    |       |   Nullary Ctor Call: True
+    |       |   b
+    |       Body       : 
+    |       |   Return: Nullary Ctor Call: True
+    |   Function Definition:
+    |       Name       : ||
+    |       Parameters : 
+    |       |   Nullary Ctor Call: False
+    |       |   b
+    |       Body       : 
+    |       |   Return: ExprVal: Function Call:
+    |       |       Name      : b
+    |       |       Arguments : 
+    |   Function Definition:
+    |       Name       : ^^
+    |       Parameters : 
+    |       |   Nullary Ctor Call: True
+    |       |   b
+    |       Body       : 
+    |       |   Return: ExprVal: Function Call:
+    |       |       Name      : not
+    |       |       Arguments : 
+    |       |       |   b
+    |   Function Definition:
+    |       Name       : ^^
+    |       Parameters : 
+    |       |   Nullary Ctor Call: False
+    |       |   b
+    |       Body       : 
+    |       |   Return: ExprVal: Function Call:
+    |       |       Name      : b
+    |       |       Arguments : 

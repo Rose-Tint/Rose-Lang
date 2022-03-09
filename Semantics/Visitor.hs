@@ -24,7 +24,7 @@ data State
         stateModule :: String,
         statePurity :: Maybe Purity,
         stateExpTypes :: [Type],
-        stateFuncName :: String
+        stateFunc :: Maybe Variable
     }
 
 
@@ -46,7 +46,7 @@ data Reply a
 visit :: String -> Visitor a -> Reply a
 visit modName (Visitor v) = v state okay err
     where
-        state = State newTable modName Nothing [] []
+        state = State newTable modName Nothing [] Nothing
         okay a s e = Okay a (stateTable s) e
         err st e = Error st e
 
@@ -76,9 +76,13 @@ visitorModule = Visitor $ \s okay _ ->
     okay (stateModule s) s UnknownError
 
 
-setCurrentFunc :: String -> Visitor ()
+setCurrentFunc :: Variable -> Visitor ()
 setCurrentFunc name = Visitor $ \s okay _ ->
-    okay () (s { stateFuncName = name }) UnknownError
+    okay () (s { stateFunc = Just name }) UnknownError
+
+getCurrentFunc :: Visitor (Maybe Variable)
+getCurrentFunc = Visitor $ \s okay _ ->
+    okay (stateFunc s) s UnknownError
 
 
 expectedType :: Visitor (Maybe Type)
@@ -151,7 +155,7 @@ matchSymToType sym typ = do
             if symType == typ then
                 return dta
             else
-                typeMismatch typ symType
+                typeMismatch sym typ symType
         NotFound err -> do
             addError err
             pushUndefSym sym
@@ -236,9 +240,9 @@ addError err = Visitor $ \s okay _ -> okay () s err
 throw :: Error -> Visitor a
 throw err' = Visitor $ \s _ err -> err (stateTable s) err'
 
-typeMismatch :: Type -> Type -> Visitor a
-typeMismatch t1 t2 = Visitor $ \s _ err ->
-    err (stateTable s) (TypeMismatch t1 t2)
+typeMismatch :: Variable -> Type -> Type -> Visitor a
+typeMismatch var t1 t2 = Visitor $ \s _ err ->
+    err (stateTable s) (TypeMismatch var t1 t2)
 
 redefinition :: Variable -> Variable -> Visitor a
 redefinition orig new = Visitor $ \s _ err ->

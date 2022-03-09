@@ -1,0 +1,90 @@
+Function Type Declaration:
+    Visibility  : Export
+    Purity      : Pure
+    Name        : <<
+    Constraints : 
+    |   { Integral (n) }
+    Type        : n, n, n
+Function Definition:
+    Name       : <<
+    Parameters : 
+    |   a
+    |   b
+    Body       : 
+    |   Return: ExprVal: Function Call:
+    |       Name      : rose_shiftl__
+    |       Arguments : 
+    |       |   a
+    |       |   b
+Function Type Declaration:
+    Visibility  : Export
+    Purity      : Pure
+    Name        : &
+    Constraints : 
+    |   { Integral (n) }
+    Type        : n, n, n
+Function Definition:
+    Name       : &
+    Parameters : 
+    |   a
+    |   b
+    Body       : 
+    |   Return: ExprVal: Function Call:
+    |       Name      : rose_and__
+    |       Arguments : 
+    |       |   a
+    |       |   b
+Function Type Declaration:
+    Visibility  : Export
+    Purity      : Pure
+    Name        : |
+    Constraints : 
+    |   { Integral (n) }
+    Type        : n, n, n
+Function Definition:
+    Name       : |
+    Parameters : 
+    |   a
+    |   b
+    Body       : 
+    |   Return: ExprVal: Function Call:
+    |       Name      : rose_or__
+    |       Arguments : 
+    |       |   a
+    |       |   b
+Function Type Declaration:
+    Visibility  : Export
+    Purity      : Pure
+    Name        : ^
+    Constraints : 
+    |   { Integral (n) }
+    Type        : n, n, n
+Function Definition:
+    Name       : ^
+    Parameters : 
+    |   a
+    |   b
+    Body       : 
+    |   Return: ExprVal: Function Call:
+    |       Name      : rose_xor__
+    |       Arguments : 
+    |       |   a
+    |       |   b
+Function Type Declaration:
+    Visibility  : Export
+    Purity      : Pure
+    Name        : >>
+    Constraints : 
+    |   { Integral (n) }
+    Type        : n, n, n
+Function Definition:
+    Name       : >>
+    Parameters : 
+    |   a
+    |   b
+    Body       : 
+    |   Return: ExprVal: Function Call:
+    |       Name      : rose_shiftr__
+    |       Arguments : 
+    |       |   a
+    |       |   b

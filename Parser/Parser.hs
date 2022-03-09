@@ -209,7 +209,7 @@ statement = choice [
         loop,
         match,
         newVar,
-        reassign,
+        try reassign,
         funcCall
     ]
 

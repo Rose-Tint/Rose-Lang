@@ -10,7 +10,7 @@ import Parser.Pretty
 
 
 data Error
-    = TypeMismatch Type Type
+    = TypeMismatch Variable Type Type
     | Redefinition Variable Variable
     | OutOfScope Variable
     | IndetType Variable
@@ -44,11 +44,12 @@ highlightVar src (Var _ ln begin end) = printf
 
 
 prettyError :: [T.Text] -> String -> Error -> String
-prettyError _ modName (TypeMismatch t1 t2) = printf
+prettyError src modName (TypeMismatch var t1 t2) = printf
     "$rError in [%s]: $yMismatching types:$y\n\
     \    Expected Type: `$r%s$y`\n\
     \      Actual Type: `$r%s$y`\n\n"
     modName (prettyType t1) (prettyType t2)
+    (highlightVar src var)
 prettyError src modName (Redefinition orig new) = printf
     "$rError in [%s]: $yRedefinition of identifier:$y\n\
     \    First defined here: \n%s\n\

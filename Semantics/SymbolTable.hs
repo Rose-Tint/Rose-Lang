@@ -173,7 +173,7 @@ prettySymMap m = indentAllUsing prettySymbolData (Map.toList m)
 
 prettySymbolTable :: SymbolTable -> String
 prettySymbolTable st = printf
-    "       | Symbol Name    | Symbol Type\n\
+    "    | Symbol Name       | Symbol Type\n\
     \Types:\n%s\
     \Globals:\n%s\
     \Scopeds:\n%s\

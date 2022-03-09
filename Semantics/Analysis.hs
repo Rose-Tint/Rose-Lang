@@ -61,6 +61,7 @@ analyzeExpr (FuncDef name pars bdy) = do
     pushScope
     dta <- globalData name
     setPurity (Just $! sdPurity dta)
+    setCurrentFunc name
     newType <- pushParams (sdType dta) pars
     pushExpType newType
     retAnl <- analyzeBody bdy
@@ -71,14 +72,14 @@ analyzeExpr (FuncDef name pars bdy) = do
             if newType == retType then
                 return $! Just (dta { sdType = newType })
             else
-                typeMismatch retType newType
+                typeMismatch (sdVar retDta) retType newType
 analyzeExpr (DataDef _ _ _ _) = return Nothing
 analyzeExpr (IfElse cnd tb fb) = do
     pushExpType boolType
-    cndType <- sdType <$> analyzeValue cnd
+    cndDta <- analyzeValue cnd
     popExpType
     -- loop condition must be a Boolean
-    if cndType == boolType then do
+    if sdType cndDta == boolType then do
         tDta <- analyzeBody tb
         fDta <- analyzeBody fb
         case (tDta, fDta) of
@@ -88,13 +89,16 @@ analyzeExpr (IfElse cnd tb fb) = do
                 let (tType, fType) =
                         (sdType tDta', sdType fDta')
                 when (tType /= fType)
-                    (typeMismatch tType fType
+                    (typeMismatch (sdVar fDta') tType fType
                     >> return ())
                 return Nothing
     else
-        typeMismatch boolType cndType
+        typeMismatch (sdVar cndDta) boolType (sdType cndDta)
 analyzeExpr (Pattern _ []) = return Nothing
 analyzeExpr (Pattern mat pats) = do
+    -- this is not quite right. this does not work in cases where
+    -- only match is used, and nothing is returned in at least
+    -- one case
     valType <- sdType <$> analyzeValue mat
     cases <- verifyCaseTypes valType (fmap fst pats)
     if not cases then return Nothing else
@@ -103,16 +107,29 @@ analyzeExpr (Pattern mat pats) = do
         verifyCaseTypes :: Type -> [Value] -> Visitor Bool
         verifyCaseTypes _ [] = return True
         verifyCaseTypes typ (val:vals) = do
-            valType <- sdType <$> analyzeValue val
-            if valType /= typ then
-                typeMismatch typ valType
+            valDta <- analyzeValue val
+            if sdType valDta /= typ then
+                typeMismatch (sdVar valDta) typ (sdType valDta)
                 -- verifyCaseTypes typ vals
                 -- return False
             else
                 verifyCaseTypes typ vals
         bodiesType :: [Body] -> Visitor (Maybe SymbolData)
-        bodiesType bdys =
-            analyzeBody (head bdys) -- temp
+        bodiesType [] = return $! Nothing
+        bodiesType (bdy:bdys) = do
+            bdyDta <- analyzeBody bdy
+            case bdyDta of
+                Nothing -> return $! Nothing
+                Just dta -> do
+                    restDta <- bodiesType bdys
+                    case restDta of
+                        Nothing -> return $! bdyDta
+                        Just rDta ->
+                            if sdType dta /= sdType rDta then
+                                typeMismatch (sdVar rDta)
+                                    (sdType dta) (sdType rDta)
+                            else
+                                return $! Just dta
 analyzeExpr (NewVar mut typ name val) = do
     st <- symbolTable
     case lookupSymbol st name of
@@ -124,7 +141,7 @@ analyzeExpr (NewVar mut typ name val) = do
                 pushScoped name mut typ
                 return Nothing
             else
-                typeMismatch typ valType
+                typeMismatch name typ valType
 analyzeExpr (FuncCall name args) = do
     _ <- do
         et <- typeFromValues args
@@ -132,6 +149,7 @@ analyzeExpr (FuncCall name args) = do
             Nothing -> indetType name
             Just typ -> pushExpType typ
     dta <- symbolData name
+    setCurrentFunc name
     newType <- applyArgs args (sdType dta)
     popExpType
     return $! Just (dta { sdType = newType })
@@ -141,7 +159,7 @@ analyzeExpr (Reassign name val) = do
     if varType == valType then
         return Nothing
     else
-        typeMismatch varType valType
+        typeMismatch name varType valType
 analyzeExpr (Return val) = Just <$> analyzeValue val
 analyzeExpr (TraitDecl _ _ _ _ _) = return Nothing
 analyzeExpr (TraitImpl _ _ _ _) = return Nothing
@@ -178,8 +196,12 @@ pushParams (NonTermType (typ:typs)) (p:ps) = do
             dta <- analyzeValue p
             if typ == sdType dta then
                 pushRest
-            else
-                typeMismatch typ (sdType dta)
+            else do
+                func <- getCurrentFunc
+                case func of
+                    Nothing -> otherError "no func for params"
+                    Just func' ->
+                        typeMismatch func' typ (sdType dta)
     where
         pushRest = popExpType >>
             pushParams (NonTermType typs) ps
@@ -200,6 +222,7 @@ analyzeValue (ExprVal expr) = do
         Nothing -> otherError "expression does not return value"
 analyzeValue (CtorVal name args) = do
     dta <- globalData name
+    setCurrentFunc name
     newType <- applyArgs args (sdType dta)
     return $! dta { sdType = newType }
 analyzeValue (Array _ _) = -- primTypeData "Array"
@@ -235,8 +258,12 @@ applyArgs (a:as) (NonTermType (t:ts)) = do
             return ()
         _ -> do
             aType <- sdType <$> analyzeValue a
-            when (aType /= t)
-                (typeMismatch t aType)
+            when (aType /= t) (do
+                func <- getCurrentFunc
+                case func of
+                    Nothing -> otherError "no function for args"
+                    Just func' ->
+                        typeMismatch func' t aType)
     popExpType
     applyArgs as (simplifyType (NonTermType ts))
 applyArgs _ typ = return typ

@@ -24,11 +24,11 @@ import Color
 success, warn, message, status, debug, info
     :: Int -> String -> [String] -> IO ()
 success = myPutStr Green 1 stdout
-warn = myPutStr Yellow 2 stderr
+warn = myPutStr Yellow 2 stdout -- stderr
 message = myPutStr Reset 1 stdout
 status = myPutStr Reset 3 stdout
 info = myPutStr Reset 4 stdout
-debug = myPutStr Cyan 5 stderr
+debug = myPutStr Cyan 5 stdout -- stderr
 
 
 fatal :: Int -> String -> [String] -> IO a

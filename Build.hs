@@ -2,7 +2,7 @@ module Build where
 
 import Prelude hiding (readFile, lines)
 
-import Control.Monad (foldM_, unless)
+import Control.Monad (foldM_, unless, when)
 import Data.Text (Text, lines)
 import Data.Text.IO (readFile)
 -- import Data.Time (diffUTCTime, getCurrentTime)
@@ -42,7 +42,9 @@ buildFile cmd relPath = do
     let verb = cmdVerb cmd
     let buildDir = (cmdBuildDir cmd) ++ "/" ++
             modPathToRelDir relPath
-    message verb "Building Module [%s]\n" [modName]
+    when (cmdTrace cmd) $!
+        createDirectoryIfMissing True buildDir
+    message verb "Building Module   [%s]\n" [modName]
     debug verb "module build dir: %s\n" [buildDir]
     src <- makeAbsolute relPath >>= readFile
     parseRes <- parseFile cmd src modName

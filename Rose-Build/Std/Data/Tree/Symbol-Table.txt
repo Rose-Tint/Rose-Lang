@@ -1,0 +1,21 @@
+    | Symbol Name       | Symbol Type
+Types:
+    |           Boolean |                        Boolean
+    |              Tree |                         Tree a
+Globals:
+    |             Empty |                         Tree a
+    |              Node |    (a, Tree a, Tree a, Tree a)
+    |            height |                  (Tree a, Int)
+    |            insert |            (a, Tree a, Tree a)
+    |            invert |               (Tree a, Tree a)
+    |            search |            (a, Tree a, Tree a)
+    |              size |                  (Tree a, Int)
+Scopeds:
+Undefined Types:
+Undefined Symbols:
+    |                 + |                (Int, Int, Int)
+    |               <=> |                 (a, a, Tree a)
+    |                EQ |                         Tree a
+    |                GT |                         Tree a
+    |                LT |                         Tree a
+    |               max |           (Int, Int, Int, Int)

@@ -1,0 +1,126 @@
+Datatype Definition:
+    Visibility   : Export
+    Name         : Pointer
+    Type Vars    : 
+    |   a
+    Constructors : 
+    |   Intern Ptr => Int
+Function Type Declaration:
+    Visibility  : Export
+    Purity      : Impure
+    Name        : malloc
+    Constraints : 
+    Type        : Int, Pointer a
+Function Definition:
+    Name       : malloc
+    Parameters : 
+    Body       : 
+    |   Return: ExprVal: Function Call:
+    |       Name      : rose_malloc__
+    |       Arguments : 
+Function Type Declaration:
+    Visibility  : Export
+    Purity      : Impure
+    Name        : alloc
+    Constraints : 
+    Type        : a, Pointer a
+Function Definition:
+    Name       : alloc
+    Parameters : 
+    |   a
+    Body       : 
+    |   New Variable Definition:
+    |       Mutability : Pure
+    |       Type       : Pointer a
+    |       Name       : ptr
+    |       Value      : 
+    |       |   Data Ctor Call:
+    |       |       Name   : Ptr
+    |       |       Params : 
+    |       |       |   ExprVal: Function Call:
+    |       |       |       Name      : malloc
+    |       |       |       Arguments : 
+    |       |       |       |   ExprVal: Function Call:
+    |       |       |       |       Name      : memSizeOf
+    |       |       |       |       Arguments : 
+    |       |       |       |       |   a
+    |   Function Call:
+    |       Name      : setPtr
+    |       Arguments : 
+    |       |   a
+    |       |   ptr
+    |   Return: ExprVal: Function Call:
+    |       Name      : ptr
+    |       Arguments : 
+Function Type Declaration:
+    Visibility  : Export
+    Purity      : Impure
+    Name        : deref
+    Constraints : 
+    Type        : Pointer a, a
+Function Definition:
+    Name       : deref
+    Parameters : 
+    |   Data Ctor Call:
+    |       Name   : Ptr
+    |       Params : 
+    |       |   p
+    Body       : 
+    |   Return: ExprVal: Function Call:
+    |       Name      : rose_ptr_deref__
+    |       Arguments : 
+    |       |   p
+Function Type Declaration:
+    Visibility  : Export
+    Purity      : Impure
+    Name        : free
+    Constraints : 
+    Type        : Pointer a, Void
+Function Definition:
+    Name       : free
+    Parameters : 
+    |   Data Ctor Call:
+    |       Name   : Ptr
+    |       Params : 
+    |       |   p
+    Body       : 
+    |   Function Call:
+    |       Name      : rose_free__
+    |       Arguments : 
+    |       |   p
+    |   Return: Nullary Ctor Call: Void
+Function Type Declaration:
+    Visibility  : Export
+    Purity      : Impure
+    Name        : setPtr
+    Constraints : 
+    Type        : a, Pointer a, Void
+Function Definition:
+    Name       : setPtr
+    Parameters : 
+    |   a
+    |   Data Ctor Call:
+    |       Name   : Ptr
+    |       Params : 
+    |       |   p
+    Body       : 
+    |   Function Call:
+    |       Name      : rose_mem_set__
+    |       Arguments : 
+    |       |   p
+    |       |   a
+    |   Return: Nullary Ctor Call: Void
+Function Type Declaration:
+    Visibility  : Export
+    Purity      : Pure
+    Name        : nullptr
+    Constraints : 
+    Type        : Pointer a
+Function Definition:
+    Name       : nullptr
+    Parameters : 
+    Body       : 
+    |   Return: Data Ctor Call:
+    |       Name   : Ptr
+    |       Params : 
+    |       |   IntLit 0

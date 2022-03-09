@@ -1,0 +1,112 @@
+Trait Declaration:
+    Visibility  : Export
+    Constraints : 
+    Name        : Hashable
+    Type Var    : a
+    Methods     : 
+    |   Function Type Declaration:
+    |       Visibility  : Export
+    |       Purity      : Pure
+    |       Name        : hash
+    |       Constraints : 
+    |       |   { Hashable (a) }
+    |       Type        : a, Int
+    |   Function Type Declaration:
+    |       Visibility  : Export
+    |       Purity      : Pure
+    |       Name        : salted
+    |       Constraints : 
+    |       |   { Hashable (a) }
+    |       Type        : Int, a, Int
+Function Type Declaration:
+    Visibility  : Export
+    Purity      : Pure
+    Name        : combine
+    Constraints : 
+    Type        : Int, Int, Int
+Function Definition:
+    Name       : combine
+    Parameters : 
+    |   a
+    |   b
+    Body       : 
+    |   New Variable Definition:
+    |       Mutability : Pure
+    |       Type       : Int
+    |       Name       : result
+    |       Value      : 
+    |       |   ExprVal: Function Call:
+    |       |       Name      : b
+    |       |       Arguments : 
+    |   Variable Reassignment:
+    |       Name  : result
+    |       Value : 
+    |       |   ExprVal: Function Call:
+    |       |       Name      : +
+    |       |       Arguments : 
+    |       |       |   ExprVal: Function Call:
+    |       |       |       Name      : result
+    |       |       |       Arguments : 
+    |       |       |   ExprVal: Function Call:
+    |       |       |       Name      : <<
+    |       |       |       Arguments : 
+    |       |       |       |   ExprVal: Function Call:
+    |       |       |       |       Name      : a
+    |       |       |       |       Arguments : 
+    |       |       |       |   IntLit 6
+    |   Variable Reassignment:
+    |       Name  : result
+    |       Value : 
+    |       |   ExprVal: Function Call:
+    |       |       Name      : +
+    |       |       Arguments : 
+    |       |       |   ExprVal: Function Call:
+    |       |       |       Name      : result
+    |       |       |       Arguments : 
+    |       |       |   ExprVal: Function Call:
+    |       |       |       Name      : >>
+    |       |       |       Arguments : 
+    |       |       |       |   ExprVal: Function Call:
+    |       |       |       |       Name      : a
+    |       |       |       |       Arguments : 
+    |       |       |       |   IntLit 2
+    |   Return: ExprVal: Function Call:
+    |       Name      : ^
+    |       Arguments : 
+    |       |   ExprVal: Function Call:
+    |       |       Name      : a
+    |       |       Arguments : 
+    |       |   ExprVal: Function Call:
+    |       |       Name      : result
+    |       |       Arguments : 
+Trait Defaults:
+    Name        : Hashable
+    Constraints : 
+    Method Defs : 
+    |   Function Definition:
+    |       Name       : salted
+    |       Parameters : 
+    |       |   s
+    |       |   a
+    |       Body       : 
+    |       |   Return: ExprVal: Function Call:
+    |       |       Name      : combine
+    |       |       Arguments : 
+    |       |       |   s
+    |       |       |   ExprVal: Function Call:
+    |       |       |       Name      : hash
+    |       |       |       Arguments : 
+    |       |       |       |   a
+Trait Implementation:
+    Name        : Hashable
+    Constraints : 
+    Type Name   : Int
+    Method Defs : 
+    |   Function Definition:
+    |       Name       : hash
+    |       Parameters : 
+    |       |   n
+    |       Body       : 
+    |       |   Return: ExprVal: Function Call:
+    |       |       Name      : n
+    |       |       Arguments : 

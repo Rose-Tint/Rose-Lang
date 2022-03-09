@@ -1,0 +1,40 @@
+module Std.Memory where
+
+
+
+export data Pointer a := intern Ptr => Int
+
+
+
+export impure malloc => Int, Pointer a;
+malloc := rose_malloc__;
+
+
+export impure alloc => a, Pointer a;
+alloc a {
+    let ptr<Pointer a> := Ptr (malloc (memSizeOf a));
+    setPtr a ptr;
+    return ptr;
+}
+
+
+export impure deref => Pointer a, a;
+deref [Ptr p] := rose_ptr_deref__ p;
+
+
+export impure free => Pointer a, Void;
+free [Ptr p] {
+    rose_free__ p;
+    return Void;
+}
+
+
+export impure setPtr => a, Pointer a, Void;
+setPtr a [Ptr p] {
+    rose_mem_set__ p a;
+    return Void;
+}
+
+
+export pure nullptr => Pointer a;
+nullptr := Ptr 0;
