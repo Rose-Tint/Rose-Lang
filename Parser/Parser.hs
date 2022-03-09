@@ -1,14 +1,13 @@
 {-
 TODO:
     Imports are not working (expects extranuous "."),
-    USE A MONAD TO AUTOMATICALLY STORE POSITION INFORMATION,
-    Use `try` in `thornP` and some sort of monad to store
+    some sort of monad to store
         multiple errors
 -}
 
-module Parser.Parser where
+module Parser.Parser (roseParser) where
 
-import Data.List (intercalate)
+import Data.Char (isLower)
 import Data.Maybe (catMaybes)
 import Text.Parsec
 
@@ -18,11 +17,11 @@ import Parser.LangDef
 
 
 
-thornP :: Parser [Expr]
-thornP = do
-    _ <- wspace
-    _ <- moduleDecl
-    manyTill (choice [
+roseParser :: Parser [Expr]
+roseParser = do
+    wspace
+    moduleDecl
+    exprs <- manyTill (choice [
             modImport,
             funcDef,
             try funcTypeDecl,
@@ -31,26 +30,21 @@ thornP = do
             traitImpl
         ])
         eof
+    return $! exprs
 
 
-moduleName :: Parser String
-moduleName = intercalate "."
-    <$> (bigIden `sepBy1` dot)
-    <?> "module name"
-
-
-moduleDecl :: Parser String
+moduleDecl :: Parser Variable
 moduleDecl = (do
-    _ <- keyword "module"
+    keyword "module"
     name <- moduleName
-    _ <- keyword "where"
-    return $! name)
+    keyword "where"
+    return $ name)
     <?> "module declaration"
 
 
 modImport :: Parser Expr
 modImport = (do
-    _ <- keyword "import"
+    keyword "import"
     vis <- option Intern visibility
     name <- moduleName
     return $! ModImport vis name)
@@ -64,29 +58,45 @@ arrayLit = (do
     <?> "array"
 
 
-term :: Parser Value
-term = lexeme (choice [
+literal :: Parser Value
+literal = choice [
         chrLit, strLit,
-        intLit, fltLit,
-        arrayLit,
+        intLit, fltLit
+    ] <?> "literal"
+
+
+term :: Parser Value
+term = choice [
+        try literal, arrayLit,
         VarVal <$> iden,
         parens (ctorCall
             <|> foCallVal
             <|> term)
-    ]) <?> "term"
+    ] <?> "term"
+
+
+term' :: Parser Value
+term' = choice [
+        ctorCall,
+        foCallVal,
+        term
+    ] <?> "term'"
 
 
 terminalType :: Parser Type
 terminalType = (do
     ht <- iden
     tas <- many ttype
-    return $! TerminalType ht tas)
+    return $! if isLower (head $ varName ht) then
+        TerminalType (TypeParam ht) tas
+    else
+        TerminalType (RealType ht) tas)
     <?> "terminal type"
 
 
 nonTermType :: Parser Type
-nonTermType = lexeme
-    (parens (NonTermType <$> commaSep1 ttype))
+nonTermType = parens
+    (NonTermType <$> commaSep1 ttype)
     <?> "non-terminal type"
 
 
@@ -96,13 +106,13 @@ ttype = terminalType <|> nonTermType
 
 
 param :: Parser Value
-param = lexeme (choice [
+param = choice [
         VarVal <$> smallIden,
-        brackets ctorCall
-    ]) <?> "param"
+        brackets (ctorCall <|> literal)
+    ] <?> "param"
 
 
-constraint :: Parser (Variable, Variable)
+constraint :: Parser Constraint
 constraint = (do
     con <- bigIden
     typ <- smallIden
@@ -119,7 +129,7 @@ typeDecl = (do
     <?> "type declaration"
 
 
-foName :: Parser String
+foName :: Parser Variable
 foName = smallIden <|> parens operator
 
 
@@ -128,10 +138,10 @@ funcTypeDecl = (do
     vis <- visibility
     pur <- purity
     name <- foName
-    _ <- resOper "=>"
+    resOper "=>"
     typDcl <- typeDecl
     let (cons, typs) = typDcl
-    _ <- semi
+    semi
     return $! FuncTypeDecl
         pur vis name cons typs)
     <?> "func-type-decl"
@@ -153,25 +163,20 @@ funcDef = (do
             )
         ]
     let (name, pars) = name_pars
-    bdy <- fnBody
+    bdy <- bodyAssignment
     return $! FuncDef name pars bdy)
     <?> "func-def"
-    where
-        fnBody = choice [
-            body,
-            (do _ <- resOper ":="
-                bdy <- Return <$> term
-                _ <- semi
-                return $! [bdy])
-            ]
 
 
 returnE :: Parser Expr
 returnE = (do
-    _ <- keyword "return"
-    val <- term
+    keyword "return"
+    val <- expr <|> term'
     return $! Return val)
     <?> "return expression"
+    where
+        expr = resOper "::"
+            >> ExprVal <$> (try match <|> ifElse)
 
 
 body :: Parser [Expr]
@@ -183,34 +188,49 @@ body' = ((:[]) <$> statement)
     <|> braces (semiSepEnd statement)
 
 
+bodyAssignment :: Parser [Expr]
+bodyAssignment = choice [
+    body,
+    (do resOper ":="
+        bdy <- Return <$> choice [
+                try (ExprVal <$> match),
+                try (ExprVal <$> ifElse),
+                term'
+            ]
+        semi
+        return $! [bdy])
+    ]
+
+
 statement :: Parser Expr
-statement = lexeme (choice [
-    try returnE,
-    try ifElse,
-    try loop,
-    try reassign,
-    try newVar,
-    try match,
-    funcCall
-    ]) <?> "statement"
+statement = choice [
+        returnE,
+        ifElse,
+        loop,
+        match,
+        newVar,
+        reassign,
+        funcCall
+    ]
 
 
 reassign :: Parser Expr
 reassign = (do
     name <- smallIden
-    _ <- resOper "="
-    val <- term
+    resOper "="
+    val <- term'
     return $! Reassign name val)
     <?> "reassignment"
 
 
 newVar :: Parser Expr
 newVar = (do
+    keyword "let"
     mut <- mutability
     name <- smallIden
     typ <- angles ttype
-    _ <- resOper ":="
-    val <- term
+    resOper ":="
+    val <- term'
     return $! NewVar mut typ name val)
     <?> "new var"
 
@@ -224,7 +244,6 @@ operCall = (do
     return $! FuncCall op args)
     <?> "operator call"
     where
-        -- MAY OR MAY NOT NEED A TRY
         arg = funcCallVal <|> term
 
 
@@ -241,10 +260,10 @@ foCall :: Parser Expr
 foCall = try operCall <|> funcCall
 
 
-funcCallVal, operCallVal, foCallVal
+funcCallVal, {- operCallVal, -}foCallVal
     :: Parser Value
 funcCallVal = ExprVal <$> funcCall
-operCallVal = ExprVal <$> operCall
+-- operCallVal = ExprVal <$> operCall
 foCallVal = ExprVal <$> foCall
 
 
@@ -258,7 +277,7 @@ ctorCall = (do
 
 ifElse :: Parser Expr
 ifElse = (do
-    _ <- keyword "if"
+    keyword "if"
     cnd <- term
     tBody <- body'
     fBody <- option [] (keyword "else" >> body')
@@ -268,12 +287,12 @@ ifElse = (do
 
 loop :: Parser Expr
 loop = (do
-    _ <- keyword "loop"
-    _ <- lexeme $ char '('
+    keyword "loop"
+    lexeme $ char '('
     ini <- optionMaybe $ statement <* comma
-    cnd <- term
+    cnd <- term'
     itr <- optionMaybe $ comma *> statement
-    _ <- lexeme $ char ')'
+    lexeme $ char ')'
     bdy <- body'
     return $! Loop ini cnd itr bdy)
     <?> "loop"
@@ -282,11 +301,10 @@ loop = (do
 dataDef :: Parser Expr
 dataDef = (do
     vis <- visibility
-    _ <- keyword "data"
+    keyword "data"
     name <- bigIden
     tps <- manyTill smallIden (resOper ":=")
-    ctrs <- dataCtor vis `sepBy1` resOper "|="
-    _ <- semi
+    ctrs <- try (dataCtor vis) `sepBy1` resOper "|="
     return $! DataDef vis name tps ctrs)
     <?> "data-def"
 
@@ -305,7 +323,7 @@ methodDecl ::
 methodDecl parVis parCon = (do
     pur <- purity
     name <- foName
-    _ <- resOper "=>"
+    resOper "=>"
     typDcl <- typeDecl
     let (cons, typs) = typDcl
     return $! FuncTypeDecl
@@ -316,14 +334,13 @@ methodDecl parVis parCon = (do
 traitDecl :: Parser Expr
 traitDecl = (do
     vis <- visibility
-    _ <- keyword "trait"
+    keyword "trait"
     cons <- option []
         (braces (commaSep1 constraint) <* comma)
     name <- bigIden
     typ <- smallIden
-    let thisCon = (name, typ)
-    _ <- keyword "where"
-    fns <- semiSepEnd
+    let thisCon = (name, typ) :: Constraint
+    fns <- braces $ semiSepEnd
         (try $ (methodDecl vis thisCon
             <?> "method declaration"))
     return $! TraitDecl vis cons name typ fns)
@@ -332,38 +349,28 @@ traitDecl = (do
 
 traitImpl :: Parser Expr
 traitImpl = (do
-    _ <- keyword "impl"
+    keyword "impl"
+    cons <- option []
+        (braces (commaSep1 constraint) <* comma)
     name <- bigIden
     typ <- optionMaybe ttype
-    _ <- keyword "where"
-    defs <- many1 (funcDef <?> "method definition")
-    return $! TraitImpl name typ defs)
+    defs <- braces $ many1 (funcDef <?> "method definition")
+    return $! TraitImpl name cons typ defs)
     <?> "trait def"
 
 
 match :: Parser Expr
 match = (do
-    _ <- keyword "match"
+    keyword "match"
     val <- term
     cases <- braces (many matchCase)
     return $! Pattern val cases)
     <?> "pattern"
 
 
-matchCase :: Parser ([Value], Body)
+matchCase :: Parser (Value, Body)
 matchCase = (do
-    vals <- brackets (choice [
-            try (commaSep nullCtor),
-            (:[]) <$> ctorCall,
-            commaSep literal
-        ])
-    bdy <- body
-    return $! (vals, bdy))
+    val <- brackets (ctorCall <|> literal)
+    bdy <- bodyAssignment
+    return $! (val, bdy))
     <?> "match case"
-    where
-        nullCtor = (do
-            nm <- bigIden
-            return $! CtorVal nm [])
-            <?> "nullary constructor"
-        literal = strLit <|> intLit <|> fltLit
-            <?> "literal"

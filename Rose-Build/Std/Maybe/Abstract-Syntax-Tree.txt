@@ -1,0 +1,105 @@
+Datatype Definition:
+    Visibility   : Export
+    Name         : Maybe
+    Type Vars    : 
+    |   Var {varName = "a", varLine = 5, varStart = 19, varEnd = 20}
+    Constructors : 
+    |   Export Nothing
+    |   Export Just => a
+Function Type Declaration:
+    Visibility  : Export
+    Purity      : Pure
+    Name        : onMaybe
+    Constraints : 
+    Type        : (a, b), Maybe a, Maybe b
+Function Definition:
+    Name       : onMaybe
+    Parameters : 
+    |   VarVal (Var {varName = "f", varLine = 12, varStart = 9, varEnd = 10})
+    |   Nullary Ctor Call: Nothing
+    Body       : 
+    |   Return: Nullary Ctor Call: Nothing
+Function Definition:
+    Name       : onMaybe
+    Parameters : 
+    |   VarVal (Var {varName = "f", varLine = 13, varStart = 9, varEnd = 10})
+    |   Data Ctor Call:
+    |       Name   : Just
+    |       Params : 
+    |       |   VarVal (Var {varName = "a", varLine = 13, varStart = 17, varEnd = 18})
+    Body       : 
+    |   Return: Data Ctor Call:
+    |       Name   : Just
+    |       Params : 
+    |       |   ExprVal: Function Call:
+    |       |       Name      : f
+    |       |       Arguments : 
+    |       |       |   VarVal (Var {varName = "a", varLine = 13, varStart = 31, varEnd = 32})
+Function Type Declaration:
+    Visibility  : Export
+    Purity      : Pure
+    Name        : maybeApply
+    Constraints : 
+    Type        : b, Maybe a, (a, b), b
+Function Definition:
+    Name       : maybeApply
+    Parameters : 
+    |   VarVal (Var {varName = "b", varLine = 17, varStart = 12, varEnd = 13})
+    |   Nullary Ctor Call: Nothing
+    |   VarVal (Var {varName = "f", varLine = 17, varStart = 24, varEnd = 25})
+    Body       : 
+    |   Return: ExprVal: Function Call:
+    |       Name      : b
+    |       Arguments : 
+Function Definition:
+    Name       : maybeApply
+    Parameters : 
+    |   VarVal (Var {varName = "b", varLine = 18, varStart = 12, varEnd = 13})
+    |   Data Ctor Call:
+    |       Name   : Just
+    |       Params : 
+    |       |   VarVal (Var {varName = "a", varLine = 18, varStart = 20, varEnd = 21})
+    |   VarVal (Var {varName = "f", varLine = 18, varStart = 23, varEnd = 24})
+    Body       : 
+    |   Return: ExprVal: Function Call:
+    |       Name      : f
+    |       Arguments : 
+    |       |   VarVal (Var {varName = "a", varLine = 18, varStart = 30, varEnd = 31})
+Function Type Declaration:
+    Visibility  : Export
+    Purity      : Pure
+    Name        : exists
+    Constraints : 
+    Type        : Maybe a, Boolean
+Function Definition:
+    Name       : exists
+    Parameters : 
+    |   Nullary Ctor Call: Nothing
+    Body       : 
+    |   Return: Nullary Ctor Call: False
+Function Definition:
+    Name       : exists
+    Parameters : 
+    |   VarVal (Var {varName = "m", varLine = 23, varStart = 8, varEnd = 9})
+    Body       : 
+    |   Return: Nullary Ctor Call: True
+Trait Implementation:
+    Name        : Logical
+    Constraints : 
+    Type Name   : (Maybe a)
+    Method Defs : 
+    |   Function Definition:
+    |       Name       : asBool
+    |       Parameters : 
+    |       |   Nullary Ctor Call: Nothing
+    |       Body       : 
+    |       |   Return: Nullary Ctor Call: False
+    |   Function Definition:
+    |       Name       : asBool
+    |       Parameters : 
+    |       |   Data Ctor Call:
+    |       |       Name   : Just
+    |       |       Params : 
+    |       |       |   VarVal (Var {varName = "a", varLine = 40, varStart = 18, varEnd = 19})
+    |       Body       : 
+    |       |   Return: Nullary Ctor Call: True

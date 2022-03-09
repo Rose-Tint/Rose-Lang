@@ -1,4 +1,10 @@
-module Color where
+module Color (
+    Color(..),
+    color,
+    colored,
+    reset,
+    printf,
+) where
 
 import Text.Printf (
     PrintfType,

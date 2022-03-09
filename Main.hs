@@ -1,57 +1,37 @@
-module Main where
+module Main (main) where
 
-import Data.Set (toList)
-import Data.Time
-import Text.Parsec
+-- import Control.Concurrent (forkIO)
+import Control.Monad (foldM_, when)
+import Data.Time (diffUTCTime, getCurrentTime)
+import System.Environment (getArgs)
+import System.Exit (exitSuccess)
 
-import CmdLine
-import Output
-import Parser.Parser
-import Parser.Pretty
+import CmdLine (CmdLine(..), getCmdLine)
+import Output (fatal, status)
+import Build (buildFile)
 
-
-parseFiles :: Int -> [String] -> IO Bool
-parseFiles _ [] = return True
-parseFiles v (file:files) = do
-    suc <- parseFile v file
-    if suc then
-        parseFiles v files
-    else
-        return False
-    
-
-parseFile :: Int -> String -> IO Bool
-parseFile v fname = do
-    _ <- status v "Parsing [%s]\n" [fname]
-    input <- readFile fname
-    case parse thornP fname input of
-        Left err    -> do
-            _ <- printParseErr v err input
-            return False
-        Right exprs -> do
-            let exprStrs = fmap prettyExpr exprs
-            _ <- trace v "AST results:\n%s\n"
-                [concat exprStrs]
-            return True
 
 
 main :: IO ()
 main = do
-    cmd <- cmdLine
-    let verb = cmdVerb cmd
-        files = toList $ cmdFiles cmd
-    _ <- debug verb
-        "Parsing the following files in order:\n%s\n"
-        [show files]
-    parseStart <- getCurrentTime
-    _ <- debug verb "Began parsing at %s\n" [show parseStart]
-    err <- parseFiles verb files
-    parseEnd <- getCurrentTime
-    _ <- debug verb "Finished parsing at %s\n" [show parseEnd]
-    _ <- (if err then
-        success verb "Finished parsing successfully\n" []
-    else
-        fatal verb "Finished parsing with an error\n" [])
-    _ <- debug verb "Finished in %s\n"
-        [show (diffUTCTime parseEnd parseStart)]
-    return ()
+    cmdArgs <- getArgs
+    cmdLine <- getCmdLine (reverse cmdArgs)
+    let verb = cmdVerb cmdLine
+        errs = cmdErrors cmdLine
+    when (not (null errs))
+        (fatal verb (concat errs) [])
+    when (null (cmdFiles cmdLine))
+        exitSuccess
+
+    timeStart <- getCurrentTime
+
+    -- foldM_ (\_ a -> forkIO (buildFile cmdLine a)
+    --             >> return ())
+    --     () (cmdFiles cmdLine)
+    foldM_ (\_ -> buildFile cmdLine)
+        () (cmdFiles cmdLine)
+
+    timeEnd <- getCurrentTime
+    status verb "Finished in %s\n"
+        [show (diffUTCTime timeEnd timeStart )]
+    exitSuccess

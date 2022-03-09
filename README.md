@@ -24,28 +24,24 @@ signal to the compiler that this file contains
 the program entry point.
 
 On line 3, we declare the type of the entry point
-function. Functions in Rose are what are called
-"Curried". They behave the same way as Haskell
-functions in that `add a b` is the same as `(add
-a) b`. We can worry about what `export` and
+function. We can worry about what `export` and
 `impure` mean soon.
 
 On line 4, we begin the definition of the entry
 function. Its single paramater (which is of type
 `Array String`) will not be used, and thus is
-ignored
+ignored and never evaluated ??
 
 Finally, on line 5, we print the string "Hello,
 World" to the standard output (usually the
-console). We do not have to explicitly exit
-because an exit code of 0 (indicating success)
-is used by default when the code reaches the end
-of the entry function.
+console). Rose differentiates strings and
+characters by using double-quotes versus single
+quotes, respectively.
 
 
 ### Important Concepts
 - #### Immutability
-    - All variables are immutable by default.
+    - All variables are immutable
     - arguments passed to pure functions are
       passed by immutable reference.
 - #### Currying / Partial Application

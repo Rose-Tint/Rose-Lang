@@ -23,7 +23,7 @@ visibility = choice [
 
 
 mutability :: Parser Mutability
-mutability = option Immutable (choice [
-        keyword "mut"  >> return Mutable,
-        keyword "imut" >> return Immutable
+mutability = option Pure (choice [
+        keyword "mut"  >> return Pure,
+        keyword "imut" >> return Impure
     ]) <?> "mutability"

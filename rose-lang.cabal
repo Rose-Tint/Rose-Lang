@@ -18,10 +18,13 @@ executable Rose
     main-is:
         Main.hs
     other-modules:
+        Build,
         CmdLine,
         Color,
         Output,
+        Utils,
         Parser.Data,
+        Parser.Error,
         Parser.Keywords,
         Parser.LangDef,
         Parser.Parser,
@@ -32,9 +35,12 @@ executable Rose
         Semantics.Visitor
     build-depends:
         base >= 4.7.0.0,
+        text,
         parsec,
         containers,
         time,
+        directory,
+        -- unordered-containers
     default-language:
         Haskell2010
     ghc-options:
@@ -42,4 +48,5 @@ executable Rose
         -Wall
         -Werror
         -Wextra
+        -Wno-unused-do-bind
         -fhide-source-paths

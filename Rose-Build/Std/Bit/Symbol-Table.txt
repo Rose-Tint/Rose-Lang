@@ -1,0 +1,16 @@
+Types:
+    |           Boolean                        Boolean
+Globals:
+    |                 &                      (n, n, n)
+    |                <<                      (n, n, n)
+    |                >>                      (n, n, n)
+    |                 ^                      (n, n, n)
+    |                 |                      (n, n, n)
+Scopeds:
+Undefined Types:
+Undefined Symbols:
+    |        rose_and__                      (n, n, n)
+    |         rose_or__                      (n, n, n)
+    |     rose_shiftl__                      (n, n, n)
+    |     rose_shiftr__                      (n, n, n)
+    |        rose_xor__                      (n, n, n)

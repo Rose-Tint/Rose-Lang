@@ -1,0 +1,14 @@
+Types:
+    |           Boolean                        Boolean
+    |          Ordering                       Ordering
+Globals:
+    |                EQ                       Ordering
+    |                GT                       Ordering
+    |                LT                       Ordering
+    |             clamp                   (a, a, a, a)
+    |               max                      (a, a, a)
+    |               min                      (a, a, a)
+Scopeds:
+Undefined Types:
+Undefined Symbols:
+    |               <=>                      (a, a, a)

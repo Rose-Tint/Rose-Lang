@@ -1,0 +1,41 @@
+module Std.Data.Maybe where
+
+
+
+export data Maybe a
+    := Nothing
+    |= Just => a
+
+
+
+export pure onMaybe => (a, b), Maybe a, Maybe b;
+onMaybe f [Nothing] := Nothing;
+onMaybe f [Just a] := Just (f a);
+
+
+export pure maybeApply => b, Maybe a, (a, b), b;
+maybeApply b [Nothing] f := b;
+maybeApply b [Just a] f := f a;
+
+
+export pure exists => Maybe a, Boolean;
+exists [Nothing] := False;
+exists m := True;
+
+{-
+export pure filterMaybes => List (Maybe a), List a;
+filterMaybes [Null] := Null;
+filterMaybes [List head tail] {
+    if (head == Nothing) {
+        return filterMaybes tail;
+    } else {
+        return List head (filterMaybes tail);
+    };
+}
+-}
+
+
+impl Logical (Maybe a) {
+    asBool [Nothing] := False;
+    asBool [Just a] := True;
+}

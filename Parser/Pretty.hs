@@ -1,13 +1,16 @@
-module Parser.Pretty (prettyExpr) where
+module Parser.Pretty where
 
 import Data.List (intercalate)
 import Text.Printf (printf)
 
+import Utils
 import Parser.Data (
     Expr(..),
     Value(..),
     DataCtor(..),
     Type(..),
+    Typename(..),
+    Variable(..),
     )
 
 
@@ -18,7 +21,7 @@ prettyExpr (ModImport vis name) = printf
     "Module Import:\n\
     \    Visibility : %s\n\
     \    Name       : %s"
-    (show vis) name
+    (show vis) (varName name)
 prettyExpr (FuncTypeDecl pur vis name cons ts)
     = printf
     "Function Type Declaration:\n\
@@ -27,7 +30,7 @@ prettyExpr (FuncTypeDecl pur vis name cons ts)
     \    Name        : %s\n\
     \    Constraints : \n%s\
     \    Type        : %s\n"
-    (show vis) (show pur) name
+    (show vis) (show pur) (varName name)
     (indentAllUsing show cons)
     (prettyTypes ts)
 prettyExpr (FuncDef name pars bdy) = printf
@@ -35,20 +38,23 @@ prettyExpr (FuncDef name pars bdy) = printf
     \    Name       : %s\n\
     \    Parameters : \n%s\
     \    Body       : \n%s"
-    name (indentAllUsing prettyValue pars)
+    (varName name)
+    (indentAllUsing prettyValue pars)
     (indentAllUsing prettyExpr bdy)
 prettyExpr (FuncCall name args) = printf
     "Function Call:\n\
     \    Name      : %s\n\
     \    Arguments : \n%s"
-    name (indentAllUsing prettyValue args)
+    (varName name)
+    (indentAllUsing prettyValue args)
 prettyExpr (DataDef vis name tvs ctrs) = printf
     "Datatype Definition:\n\
     \    Visibility   : %s\n\
     \    Name         : %s\n\
     \    Type Vars    : \n%s\
     \    Constructors : \n%s"
-    (show vis) name (indentAllUsing show tvs)
+    (show vis) (varName name)
+    (indentAllUsing show tvs)
     (indentAllUsing prettyCtor ctrs)
 prettyExpr (IfElse cnd tBdy fBdy) = printf
     "If Else Statement:\n\
@@ -82,19 +88,25 @@ prettyExpr (TraitDecl vis cons name tvs ms) = printf
     \    Type Var    : %s\n\
     \    Methods     : \n%s"
     (show vis) (indentAllUsing show cons)
-    name tvs
+    (varName name) (varName tvs)
     (indentAllUsing prettyExpr ms)
-prettyExpr (TraitImpl name Nothing ms) = printf
+prettyExpr (TraitImpl name cons Nothing ms) = printf
     "Trait Defaults:\n\
-    \    Trait Name  : %s\n\
+    \    Name        : %s\n\
+    \    Constraints : \n%s\
     \    Method Defs : \n%s"
-    name (indentAllUsing prettyExpr ms)
-prettyExpr (TraitImpl name (Just t) ms) = printf
+    (varName name) 
+    (indentAllUsing show cons)
+    (indentAllUsing prettyExpr ms)
+prettyExpr (TraitImpl name cons (Just t) ms) = printf
     "Trait Implementation:\n\
-    \    Trait Name  : %s\n\
+    \    Name        : %s\n\
+    \    Constraints : \n%s\
     \    Type Name   : %s\n\
     \    Method Defs : \n%s"
-    name (prettyType t)
+    (varName name) 
+    (indentAllUsing show cons)
+    (prettyType t)
     (indentAllUsing prettyExpr ms)
 prettyExpr (NewVar mut typ name val) = printf
     "New Variable Definition:\n\
@@ -102,13 +114,13 @@ prettyExpr (NewVar mut typ name val) = printf
     \    Type       : %s\n\
     \    Name       : %s\n\
     \    Value      : \n%s"
-    (show mut) (prettyType typ) name
+    (show mut) (prettyType typ) (varName name)
     (indentUsing prettyValue val)
 prettyExpr (Reassign name val) = printf
     "Variable Reassignment:\n\
     \    Name  : %s\n\
     \    Value : \n%s"
-    name (indentUsing prettyValue val)
+    (varName name) (indentUsing prettyValue val)
 prettyExpr (Return val) = printf
     "Return: %s"
     (prettyValue val)
@@ -116,41 +128,38 @@ prettyExpr (Return val) = printf
 
 prettyCtor :: DataCtor -> String
 prettyCtor (DataCtor vis name []) = printf
-    "%s %s" (show vis) name
+    "%s %s" (show vis) (varName name)
 prettyCtor (DataCtor vis name ts) = printf
     "%s %s => %s"
-    (show vis) name (prettyTypes ts)
+    (show vis) (varName name) (prettyTypes ts)
 
 
 prettyValue :: Value -> String
 prettyValue (ExprVal e)
     = "ExprVal: " ++ prettyExpr e
 prettyValue (CtorVal name [])
-    = "Nullary Ctor Call: " ++ name
+    = "Nullary Ctor Call: " ++ varName name
 prettyValue (CtorVal name as) = printf
     "Data Ctor Call:\n\
     \    Name   : %s\n\
     \    Params : \n%s"
-    name (indentAllUsing prettyValue as)
+    (varName name)
+    (indentAllUsing prettyValue as)
 prettyValue v = show v
 
 
 prettyType :: Type -> String
-prettyType (TerminalType ht []) = ht
+prettyType (TerminalType ht []) = prettyTypename ht
 prettyType (TerminalType ht tps) = printf
-    "%s %s" ht (prettyTypes tps)
+    "%s %s" (prettyTypename ht) (prettyTypes tps)
 prettyType (NonTermType ts) = printf
     "(%s)" (prettyTypes ts)
 
+
+prettyTypename :: Typename -> String
+prettyTypename (RealType name) = varName name
+prettyTypename (TypeParam name) = varName name
+
+
 prettyTypes :: [Type] -> String
 prettyTypes ts = intercalate ", " (fmap prettyType ts)
-
-
-indentAllUsing :: (a -> String) -> [a] -> String
-indentAllUsing f as = concat $ fmap (indentUsing f) as
-
-
-indentUsing :: (a -> String) -> a -> String
-indentUsing f a = unlines $ fmap
-    ((++) "    |   ")
-    (lines $ f a)
