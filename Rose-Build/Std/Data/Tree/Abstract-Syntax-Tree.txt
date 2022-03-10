@@ -36,9 +36,9 @@ Function Definition:
     |       |       Arguments : 
     |   
     |       Cases : 
-    |       |   (CtorVal (Var {varName = "LT", varLine = 13, varStart = 10, varEnd = 12}) [],[Return (CtorVal (Var {varName = "Node", varLine = 13, varStart = 18, varEnd = 22}) [VarVal (Var {varName = "v", varLine = 13, varStart = 23, varEnd = 24}),ExprVal (FuncCall (Var {varName = "insert", varLine = 13, varStart = 26, varEnd = 32}) [VarVal (Var {varName = "a", varLine = 13, varStart = 33, varEnd = 34}),VarVal (Var {varName = "l", varLine = 13, varStart = 35, varEnd = 36})]),VarVal (Var {varName = "r", varLine = 13, varStart = 38, varEnd = 39})])])
-    |       |   (CtorVal (Var {varName = "GT", varLine = 14, varStart = 10, varEnd = 12}) [],[Return (CtorVal (Var {varName = "Node", varLine = 14, varStart = 18, varEnd = 22}) [VarVal (Var {varName = "v", varLine = 14, varStart = 23, varEnd = 24}),VarVal (Var {varName = "l", varLine = 14, varStart = 25, varEnd = 26}),ExprVal (FuncCall (Var {varName = "insert", varLine = 14, varStart = 28, varEnd = 34}) [VarVal (Var {varName = "a", varLine = 14, varStart = 35, varEnd = 36}),VarVal (Var {varName = "r", varLine = 14, varStart = 37, varEnd = 38})])])])
-    |       |   (CtorVal (Var {varName = "EQ", varLine = 15, varStart = 10, varEnd = 12}) [],[Return (CtorVal (Var {varName = "Node", varLine = 15, varStart = 18, varEnd = 22}) [VarVal (Var {varName = "v", varLine = 15, varStart = 23, varEnd = 24}),VarVal (Var {varName = "l", varLine = 15, varStart = 25, varEnd = 26}),VarVal (Var {varName = "r", varLine = 15, varStart = 27, varEnd = 28})])])
+    |       |   (CtorVal (Var {varName = "LT", varLine = 13, varStart = 10}) [],[Return (CtorVal (Var {varName = "Node", varLine = 13, varStart = 18}) [VarVal (Var {varName = "v", varLine = 13, varStart = 23}),ExprVal (FuncCall (Var {varName = "insert", varLine = 13, varStart = 26}) [VarVal (Var {varName = "a", varLine = 13, varStart = 33}),VarVal (Var {varName = "l", varLine = 13, varStart = 35})]),VarVal (Var {varName = "r", varLine = 13, varStart = 38})])])
+    |       |   (CtorVal (Var {varName = "GT", varLine = 14, varStart = 10}) [],[Return (CtorVal (Var {varName = "Node", varLine = 14, varStart = 18}) [VarVal (Var {varName = "v", varLine = 14, varStart = 23}),VarVal (Var {varName = "l", varLine = 14, varStart = 25}),ExprVal (FuncCall (Var {varName = "insert", varLine = 14, varStart = 28}) [VarVal (Var {varName = "a", varLine = 14, varStart = 35}),VarVal (Var {varName = "r", varLine = 14, varStart = 37})])])])
+    |       |   (CtorVal (Var {varName = "EQ", varLine = 15, varStart = 10}) [],[Return (CtorVal (Var {varName = "Node", varLine = 15, varStart = 18}) [VarVal (Var {varName = "v", varLine = 15, varStart = 23}),VarVal (Var {varName = "l", varLine = 15, varStart = 25}),VarVal (Var {varName = "r", varLine = 15, varStart = 27})])])
 Function Type Declaration:
     Visibility  : Export
     Purity      : Pure
@@ -76,9 +76,9 @@ Function Definition:
     |       |       Arguments : 
     |   
     |       Cases : 
-    |       |   (CtorVal (Var {varName = "LT", varLine = 22, varStart = 10, varEnd = 12}) [],[Return (ExprVal (FuncCall (Var {varName = "search", varLine = 22, varStart = 18, varEnd = 24}) [VarVal (Var {varName = "a", varLine = 22, varStart = 25, varEnd = 26}),VarVal (Var {varName = "l", varLine = 22, varStart = 27, varEnd = 28})]))])
-    |       |   (CtorVal (Var {varName = "EQ", varLine = 23, varStart = 10, varEnd = 12}) [],[Return (CtorVal (Var {varName = "Node", varLine = 23, varStart = 18, varEnd = 22}) [VarVal (Var {varName = "v", varLine = 23, varStart = 23, varEnd = 24}),VarVal (Var {varName = "l", varLine = 23, varStart = 25, varEnd = 26}),VarVal (Var {varName = "r", varLine = 23, varStart = 27, varEnd = 28})])])
-    |       |   (CtorVal (Var {varName = "GT", varLine = 24, varStart = 10, varEnd = 12}) [],[Return (ExprVal (FuncCall (Var {varName = "search", varLine = 24, varStart = 18, varEnd = 24}) [VarVal (Var {varName = "a", varLine = 24, varStart = 25, varEnd = 26}),VarVal (Var {varName = "r", varLine = 24, varStart = 27, varEnd = 28})]))])
+    |       |   (CtorVal (Var {varName = "LT", varLine = 22, varStart = 10}) [],[Return (ExprVal (FuncCall (Var {varName = "search", varLine = 22, varStart = 18}) [VarVal (Var {varName = "a", varLine = 22, varStart = 25}),VarVal (Var {varName = "l", varLine = 22, varStart = 27})]))])
+    |       |   (CtorVal (Var {varName = "EQ", varLine = 23, varStart = 10}) [],[Return (CtorVal (Var {varName = "Node", varLine = 23, varStart = 18}) [VarVal (Var {varName = "v", varLine = 23, varStart = 23}),VarVal (Var {varName = "l", varLine = 23, varStart = 25}),VarVal (Var {varName = "r", varLine = 23, varStart = 27})])])
+    |       |   (CtorVal (Var {varName = "GT", varLine = 24, varStart = 10}) [],[Return (ExprVal (FuncCall (Var {varName = "search", varLine = 24, varStart = 18}) [VarVal (Var {varName = "a", varLine = 24, varStart = 25}),VarVal (Var {varName = "r", varLine = 24, varStart = 27})]))])
 Function Type Declaration:
     Visibility  : Export
     Purity      : Pure

@@ -25,3 +25,10 @@ indentUsing :: (a -> String) -> a -> String
 indentUsing f a = unlines $ fmap
     ((++) "    |   ")
     (lines $ f a)
+
+
+hamming :: String -> String -> Int
+hamming [] _ = 0 :: Int
+hamming _ [] = 0 :: Int
+hamming (lc:lcs) (rc:rcs) =
+    fromEnum (lc /= rc) + hamming lcs rcs

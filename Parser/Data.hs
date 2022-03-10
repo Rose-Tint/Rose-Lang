@@ -1,5 +1,7 @@
 module Parser.Data where
 
+import Data.List.NonEmpty (NonEmpty)
+
 import Text.Parsec.Pos
 
 
@@ -7,8 +9,7 @@ import Text.Parsec.Pos
 data Variable = Var {
         varName :: String,
         varLine :: Line,
-        varStart :: Column,
-        varEnd :: Column
+        varStart :: Column
     }
     deriving (Show)
 
@@ -24,21 +25,18 @@ data Typename
 type Body = [Expr]
 
 
-type Constraint = (Variable, Variable)
+data Constraint
+    = Constraint {
+        consTraitName :: Variable,
+        consType :: Variable
+    }
 
 
 type Mutability = Purity
 
 
--- Examples:
--- - `TerminalType "Either" [TerminalType "String"
---       [], TerminalType "a" []]` corresponds to
---       a Rose signature of `=> Either String a`
--- - `NonTermType [TerminalType "a" [],
---       TermainalType "b" []]` corresponds to a Rose signature
---       of `=> (a, b)`
 data Type
-    = NonTermType [Type]
+    = NonTermType Type (NonEmpty Type)
     | TerminalType Typename [Type]
     deriving (Show, Eq, Ord)
 
@@ -137,16 +135,7 @@ data Expr
 
 boolType :: Type
 boolType = TerminalType
-    (RealType
-        (Var "Boolean" (-1) (-1) (-1))
-    ) []
-
-
-simplifyType :: Type -> Type
-simplifyType (NonTermType [t]) = t
-simplifyType (NonTermType ts) =
-    NonTermType (fmap simplifyType ts)
-simplifyType t = t
+    (RealType $ Var "Boolean" (-1) (-1)) []
 
 
 

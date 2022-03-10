@@ -55,8 +55,7 @@ moduleName = (do
     top <- ident
     rest <- many (try (dot >> pure ('.':) <*> ident))
     let fullIdent = top ++ concat rest
-    let end = start + length fullIdent
-    return $! Var fullIdent line start end)
+    return $! Var fullIdent line start)
     <?> "module name"
     where
         ident = lookAhead upper >> T.identifier thornTok
@@ -64,8 +63,7 @@ iden = (do
     pos <- getPosition
     let (line, start) = (sourceLine pos, sourceColumn pos)
     name <- T.identifier thornTok
-    let end = start + length name
-    return $! Var name line start end)
+    return $! Var name line start)
     <?> "identifier"
 bigIden = lookAhead upper >> iden
     <?> "big identifier"
@@ -76,8 +74,7 @@ operator = (do
     pos <- getPosition
     let (line, start) = (sourceLine pos, sourceColumn pos)
     op <- T.operator thornTok
-    end <- sourceColumn <$> getPosition
-    return $! Var op line start end)
+    return $! Var op line start)
     <?> "operator"
 resOper = T.reservedOp thornTok
 chrLit = ChrLit <$> T.charLiteral thornTok

@@ -151,8 +151,8 @@ prettyType :: Type -> String
 prettyType (TerminalType ht []) = prettyTypename ht
 prettyType (TerminalType ht tps) = printf
     "%s %s" (prettyTypename ht) (prettyTypes tps)
-prettyType (NonTermType ts) = printf
-    "(%s)" (prettyTypes ts)
+prettyType (NonTermType t1 ts) = printf
+    "(%s, %s)" (prettyType t1) (prettyTypes ts)
 
 
 prettyTypename :: Typename -> String

@@ -61,12 +61,12 @@ primTypeData name = Symbol {
         sdModule = ""
     }
     where
-        var = Var name (-1) (-1) (-1)
+        var = Var name (-1) (-1)
 
 
 newTable :: SymbolTable
 newTable = SymbolTable
-    (Map.singleton (Var "Boolean" (-1) (-1) (-1)) boolData)
+    (Map.singleton (Var "Boolean" (-1) (-1)) boolData)
     empty [] empty empty
 
 

@@ -1,14 +1,18 @@
 module Analyzer.State where
 
-import SymbolTable.SymbolTable
+import Analyzer.Error
+import CmdLine (CmdLine)
+import Parser.Data
+import SymbolTable
 
-
-
-data ErrorInfo
 
 
 data State
     = State {
-        stErrInfo :: ErrorInfo,
+        stCmdLine :: !CmdLine,
+        stExpType :: [Type],
+        stErrInfo :: !ErrorInfo,
+        stErrors :: ![(ErrorInfo, Error)],
+        stWarnings :: ![(ErrorInfo, Warning)],
         stTable :: !SymbolTable
     }

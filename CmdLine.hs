@@ -14,12 +14,13 @@ import System.IO (FilePath)
 
 data CmdLine
     = CmdLine {
-        cmdFiles :: [String],
-        cmdVerb :: Int,
-        cmdBuildDir :: FilePath,
-        cmdCurrDir :: FilePath,
-        cmdTrace :: Bool,
-        cmdErrors :: [String]
+        cmdFiles :: ![String],
+        cmdVerb :: !Int,
+        cmdBuildDir :: !FilePath,
+        cmdCurrDir :: !FilePath,
+        cmdTrace :: !Bool,
+        cmdErrors :: ![String],
+        cmdShadowing :: !Bool
     }
 
 
@@ -27,7 +28,9 @@ data Flag
     = Verbosity Int
     | BuildDir FilePath
     | Trace
-    | NoOp
+    | Wall
+    | Werror
+    -- | NoOp
 
 
 
@@ -55,18 +58,22 @@ buildDir path = do
 
 options :: [OptDescr (IO Flag)]
 options = [
-        Option "h" ["help"]         (NoArg help)
+        Option "h" ["help"]              (NoArg help)
             "Displays help information",
-        Option "v" ["verbosity"]    (OptArg verbosity "LEVEL")
+        Option "v" ["verbosity"]         (OptArg verbosity "LEVEL")
             "Controls the amount and detail of messages to stderr",
-        Option "s" ["silent"]       (NoArg silent)
+        Option "s" ["silent"]            (NoArg silent)
             "No output (same as -v0)",
-        Option "t" ["trace"]        (NoArg (return Trace))
+        Option ""  ["trace"]             (NoArg (return Trace))
             "Lowest-level debug info. Not neeeded for end users",
-        Option "d" ["debug-info"]   (NoArg debug_info)
+        Option ""  ["debug-info"]        (NoArg debug_info)
             "Enables lower-level debug info.",
-        Option "B" ["build-dir"] (ReqArg buildDir "DIRECTORY")
-            "Directory to put build files"
+        Option "B" ["build-dir"]         (ReqArg buildDir "DIRECTORY")
+            "Directory to put build files",
+        Option ""  ["Werror"]            (NoArg (return Werror))
+            "Turns warnings into errors",
+        Option ""  ["Wall"]              (NoArg (return Wall))
+            "Turns on all warnings"
     ]
 
 
@@ -76,7 +83,7 @@ setFlags (flg:flgs) cmd = setFlags flgs $! case flg of
     Verbosity v -> cmd { cmdVerb = v }
     BuildDir dir -> cmd { cmdBuildDir = dir ++ "/" }
     Trace -> cmd { cmdTrace = True }
-    NoOp -> cmd
+    _ -> cmd
 
 
 mkCmdLine :: IO [Flag] -> [String] -> [String] -> IO CmdLine
@@ -90,7 +97,8 @@ mkCmdLine flgs fnames errs = do
             cmdErrors = errs,
             cmdTrace = False,
             cmdBuildDir = defBuildDir,
-            cmdCurrDir = currDir
+            cmdCurrDir = currDir,
+            cmdShadowing = True
         }
     return $! setFlags flgs' cmd
 

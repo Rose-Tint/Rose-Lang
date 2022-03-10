@@ -134,9 +134,9 @@ Function Definition:
     |       |       Arguments : 
     |   
     |       Cases : 
-    |       |   (CtorVal (Var {varName = "LT", varLine = 39, varStart = 10, varEnd = 12}) [],[Return (ExprVal (FuncCall (Var {varName = "a", varLine = 39, varStart = 17, varEnd = 18}) []))])
-    |       |   (CtorVal (Var {varName = "EQ", varLine = 40, varStart = 10, varEnd = 12}) [],[Return (ExprVal (FuncCall (Var {varName = "a", varLine = 40, varStart = 17, varEnd = 18}) []))])
-    |       |   (CtorVal (Var {varName = "GT", varLine = 41, varStart = 10, varEnd = 12}) [],[Return (ExprVal (FuncCall (Var {varName = "b", varLine = 41, varStart = 17, varEnd = 18}) []))])
+    |       |   (CtorVal (Var {varName = "LT", varLine = 39, varStart = 10}) [],[Return (ExprVal (FuncCall (Var {varName = "a", varLine = 39, varStart = 17}) []))])
+    |       |   (CtorVal (Var {varName = "EQ", varLine = 40, varStart = 10}) [],[Return (ExprVal (FuncCall (Var {varName = "a", varLine = 40, varStart = 17}) []))])
+    |       |   (CtorVal (Var {varName = "GT", varLine = 41, varStart = 10}) [],[Return (ExprVal (FuncCall (Var {varName = "b", varLine = 41, varStart = 17}) []))])
 Function Type Declaration:
     Visibility  : Export
     Purity      : Pure
@@ -162,9 +162,9 @@ Function Definition:
     |       |       Arguments : 
     |   
     |       Cases : 
-    |       |   (CtorVal (Var {varName = "LT", varLine = 47, varStart = 10, varEnd = 12}) [],[Return (ExprVal (FuncCall (Var {varName = "b", varLine = 47, varStart = 17, varEnd = 18}) []))])
-    |       |   (CtorVal (Var {varName = "EQ", varLine = 48, varStart = 10, varEnd = 12}) [],[Return (ExprVal (FuncCall (Var {varName = "b", varLine = 48, varStart = 17, varEnd = 18}) []))])
-    |       |   (CtorVal (Var {varName = "GT", varLine = 49, varStart = 10, varEnd = 12}) [],[Return (ExprVal (FuncCall (Var {varName = "a", varLine = 49, varStart = 17, varEnd = 18}) []))])
+    |       |   (CtorVal (Var {varName = "LT", varLine = 47, varStart = 10}) [],[Return (ExprVal (FuncCall (Var {varName = "b", varLine = 47, varStart = 17}) []))])
+    |       |   (CtorVal (Var {varName = "EQ", varLine = 48, varStart = 10}) [],[Return (ExprVal (FuncCall (Var {varName = "b", varLine = 48, varStart = 17}) []))])
+    |       |   (CtorVal (Var {varName = "GT", varLine = 49, varStart = 10}) [],[Return (ExprVal (FuncCall (Var {varName = "a", varLine = 49, varStart = 17}) []))])
 Function Type Declaration:
     Visibility  : Export
     Purity      : Pure

@@ -5,19 +5,27 @@ import Data.Maybe
 import Parser.Data
 
 
-type Symbol = String
+type Symbol = Variable
 
 
-data Module = Module String | ModUnknown
+data SymType
+    = Type [Constraint] Type
+    | Delayed
+    | TypeUndefined
+    deriving (Show, Eq)
+
+
+data Module = Module !String | ModUnknown
     deriving (Show, Eq, Ord)
 
 
 data SymbolData
     = SymbolData {
-        sdType :: Maybe Type,
+        sdType :: SymType,
         sdVisib :: Maybe Visibility,
         sdPurity :: Maybe Purity,
-        sdModule :: Module
+        sdVar :: Variable,
+        sdModule :: !Module
     }
 
 
@@ -26,25 +34,34 @@ stitchSD :: SymbolData -> SymbolData -> SymbolData
 stitchSD s1 _ = s1 -- TEMPORARY
 
 
-undefined :: SymbolData
-undefined = SymbolData
-    Nothing Nothing Nothing ModUnknown
+undef :: Symbol -> SymbolData
+undef sym = SymbolData {
+    sdType = TypeUndefined,
+    sdVisib = Nothing,
+    sdPurity = Nothing,
+    sdVar = sym,
+    sdModule = ModUnknown
+}
+
 
 
 isDefined :: SymbolData-> Bool
-isDefined dta = isJust (sdType dta)
-             && isJust (sdVisib dta)
+isDefined dta = isJust (sdVisib dta)
              && isJust (sdPurity dta)
+             && sdType dta /= TypeUndefined
              && sdModule dta /= ModUnknown
+
 
 isPartDefined :: SymbolData-> Bool
 isPartDefined = not . isUndefined
 
+
 isUndefined :: SymbolData-> Bool
-isUndefined dta = isNothing (sdType dta)
-               && isNothing (sdVisib dta)
+isUndefined dta = isNothing (sdVisib dta)
                && isNothing (sdPurity dta)
+               && sdType dta == TypeUndefined
                && sdModule dta == ModUnknown
+
 
 isPartUndefined :: SymbolData-> Bool
 isPartUndefined = not . isDefined

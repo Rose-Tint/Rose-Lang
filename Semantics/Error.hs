@@ -33,14 +33,14 @@ mergeErrors e1 e2 = ManyErrors [e1, e2]
 
 
 highlightVar :: [T.Text] -> Variable -> String
-highlightVar src (Var _ ln begin end) = printf
+highlightVar src (Var name ln begin) = printf
     "$R%4d | %s$r%s$R%s"
-    ln preVar name postVar
+    ln preVar name' postVar
     where
         srcLine = src !! (max 0 (ln - 1))
-        varLen = end - begin
+        varLen = (length name) - begin
         (preVar, srcPostStart) = T.splitAt (begin - 1) srcLine
-        (name, postVar) = T.splitAt varLen srcPostStart
+        (name', postVar) = T.splitAt varLen srcPostStart
 
 
 prettyError :: [T.Text] -> String -> Error -> String

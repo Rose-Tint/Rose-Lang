@@ -8,6 +8,7 @@ TODO:
 module Parser.Parser (roseParser) where
 
 import Data.Char (isLower)
+import Data.List.NonEmpty (NonEmpty((:|)), fromList)
 import Data.Maybe (catMaybes)
 import Text.Parsec
 
@@ -85,23 +86,26 @@ term' = choice [
 
 terminalType :: Parser Type
 terminalType = (do
-    ht <- iden
+    name <- iden
     tas <- many ttype
-    return $! if isLower (head $ varName ht) then
-        TerminalType (TypeParam ht) tas
+    return $! if isLower (head $ varName name) then
+        TerminalType (TypeParam name) tas
     else
-        TerminalType (RealType ht) tas)
+        TerminalType (RealType name) tas)
     <?> "terminal type"
 
 
 nonTermType :: Parser Type
-nonTermType = parens
-    (NonTermType <$> commaSep1 ttype)
+nonTermType = (do
+    typs <- fromList <$> (parens $ commaSep1 ttype)
+    case typs of
+        (typ :| []) -> return typ
+        (t1 :| (t2:ts)) -> return (NonTermType t1 (t2 :| ts)))
     <?> "non-terminal type"
 
 
 ttype :: Parser Type
-ttype = terminalType <|> nonTermType
+ttype = terminalType <|> nonTermType <|> parens ttype
     <?> "type"
 
 

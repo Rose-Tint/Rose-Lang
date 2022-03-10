@@ -19,5 +19,9 @@ search :: Symbol -> SymbolMap -> Maybe SymbolData
 search = Map.lookup
 
 
+empty :: SymbolMap
+empty = Map.empty
+
+
 insert :: Symbol -> SymbolData -> SymbolMap -> SymbolMap
 insert = Map.insertWith stitchSD
