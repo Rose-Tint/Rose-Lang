@@ -1,6 +1,7 @@
 module Parser.Pretty where
 
 import Data.List (intercalate)
+import Data.List.NonEmpty (toList)
 import Text.Printf (printf)
 
 import Utils
@@ -34,12 +35,6 @@ prettyExpr (FuncDef name pars bdy) = printf
     (prettyVar name)
     (indentAllUsing prettyValue pars)
     (indentAllUsing prettyExpr bdy)
-prettyExpr (FuncCall name args) = printf
-    "Function Call:\n\
-    \    Name      : %s\n\
-    \    Arguments : \n%s"
-    (prettyVar name)
-    (indentAllUsing prettyValue args)
 prettyExpr (DataDef vis name tvs ctrs) = printf
     "Datatype Definition:\n\
     \    Visibility   : %s\n\
@@ -128,12 +123,16 @@ prettyCtor (DataCtor vis name ts) = printf
 
 
 prettyCons :: Constraint -> String
-prettyCons (con, typ) = printf "{ %s (%s) }"
+prettyCons (Constraint con typ) = printf "{ %s (%s) }"
     (prettyVar con) (prettyVar typ)
 
 
 prettyValue :: Value -> String
-prettyValue (VarVal var) = prettyVar var
+prettyValue (FuncCall var args) = printf
+    "Function Call:\n\
+    \    Name :%s\n\
+    \    Arguments :\n%s"
+    (prettyVar var) (indentAllUsing prettyValue args)
 prettyValue (ExprVal e)
     = "ExprVal: " ++ prettyExpr e
 prettyValue (CtorVal name [])
@@ -152,7 +151,7 @@ prettyType (TerminalType ht []) = prettyTypename ht
 prettyType (TerminalType ht tps) = printf
     "%s %s" (prettyTypename ht) (prettyTypes tps)
 prettyType (NonTermType t1 ts) = printf
-    "(%s, %s)" (prettyType t1) (prettyTypes ts)
+    "(%s, %s)" (prettyType t1) (prettyTypes (toList ts))
 
 
 prettyTypename :: Typename -> String
@@ -164,6 +163,6 @@ prettyTypes :: [Type] -> String
 prettyTypes ts = intercalate ", " (fmap prettyType ts)
 
 prettyVar :: Variable -> String
-prettyVar = varName
--- prettyVar (Var name ln st end) =
---     printf "%s<%d:%d,%d>" name ln st end
+prettyVar (Var name ln st) =
+    printf "%s<%d:%d>" name ln st
+prettyVar (Prim name) = name

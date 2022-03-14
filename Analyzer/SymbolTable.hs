@@ -4,7 +4,6 @@ import Control.Monad ((<$!>), unless)
 
 import Analyzer.Analyzer
 import Analyzer.Error
--- import Analyzer.State
 import CmdLine (CmdLine(..))
 import SymbolTable
 
@@ -46,8 +45,13 @@ searchGlobals sym = do
     glbs <- tblGlobals <$!> getTable
     case search sym glbs of
         Nothing -> do
-            let dta = undefined sym
-            modifyTable (insertGlobal sym dta)
+            let dta = undef sym
+            expType <- peekExpType
+            dta' <- case expType of
+                Nothing -> return dta
+                Just typ -> return $! dta
+                    { sdType = Type [] typ }
+            modifyTable (insertGlobal sym dta')
             return dta
         Just dta -> return $! dta
 

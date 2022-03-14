@@ -6,10 +6,14 @@ import Text.Parsec.Pos
 
 
 
-data Variable = Var {
+data Variable
+    = Var {
         varName :: String,
         varLine :: Line,
         varStart :: Column
+    }
+    | Prim {
+        varName :: String
     }
     deriving (Show)
 
@@ -30,6 +34,7 @@ data Constraint
         consTraitName :: Variable,
         consType :: Variable
     }
+    deriving (Show, Eq, Ord)
 
 
 type Mutability = Purity
@@ -46,10 +51,10 @@ data Value
     | FltLit Double
     | ChrLit Char
     | StrLit String
-    | VarVal Variable
-    | ExprVal Expr
+    | FuncCall Variable [Value]
     | CtorVal Variable [Value]
     | Array Int [Value]
+    | ExprVal Expr
     deriving (Show, Eq, Ord)
 
 
@@ -125,7 +130,6 @@ data Expr
         exprTraitType :: Maybe Type,
         exprDefs :: [Expr]
     }
-    | FuncCall Variable [Value]
     | NewVar Mutability Type Variable Value
     | Reassign Variable Value
     | Return Value
@@ -134,8 +138,7 @@ data Expr
 
 
 boolType :: Type
-boolType = TerminalType
-    (RealType $ Var "Boolean" (-1) (-1)) []
+boolType = TerminalType (RealType (Prim "Boolean")) []
 
 
 

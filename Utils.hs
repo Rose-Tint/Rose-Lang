@@ -32,3 +32,17 @@ hamming [] _ = 0 :: Int
 hamming _ [] = 0 :: Int
 hamming (lc:lcs) (rc:rcs) =
     fromEnum (lc /= rc) + hamming lcs rcs
+
+
+areSimilar :: String -> String -> Bool
+areSimilar s1 s2 = hamming s1 s2 <= 2
+
+
+modPathToRelDir :: FilePath -> FilePath
+modPathToRelDir [] = "/"
+modPathToRelDir ".th" = "/"
+modPathToRelDir (c:cs) = (c:modPathToRelDir cs)
+
+
+foreachM_ :: (Monad m) => [a] -> (a -> m b) -> m ()
+foreachM_ l f = foldr (\a _ -> f a >> return ()) (return ()) l

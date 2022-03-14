@@ -17,6 +17,7 @@ build-type:         Simple
 common general
     other-modules:
         Build,
+        Cache,
         CmdLine,
         Color,
         Output,
@@ -24,6 +25,7 @@ common general
         Analyzer.Analysis,
         Analyzer.Analyzer,
         Analyzer.Error,
+        Analyzer.Prims,
         Analyzer.State,
         Analyzer.SymbolTable,
         Parser.Data,
@@ -35,10 +37,7 @@ common general
         SymbolTable,
         SymbolTable.SymbolData,
         SymbolTable.SymbolMap,
-        Semantics.Analysis,
-        Semantics.Error,
-        Semantics.SymbolTable,
-        Semantics.Visitor
+        Typing.Rules
     build-depends:
         base >= 4.7.0.0,
         text,
@@ -57,11 +56,18 @@ common general
         -fhide-source-paths
 
 
-executable Rose 
+executable Rose-Lang 
     import: general
     main-is: Main.hs
     ghc-options:
         -O3
+        -threaded
+
+executable Rose
+    import: general
+    main-is: Main.hs
+    ghc-options:
+        -O0
         -threaded
 
 -- https://nikita-volkov.github.io/profiling-cabal-projects/

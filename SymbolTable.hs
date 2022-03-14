@@ -6,6 +6,7 @@ module SymbolTable (
     insertTrait, insertUndefTrait,
     insertGlobal, insertUndefGlobal,
     insertScoped,
+    emptyTable,
 ) where
 
 import SymbolTable.SymbolData
@@ -20,6 +21,12 @@ data SymbolTable
         tblGlobals :: !SymbolMap,
         tblScopeds :: ![SymbolMap]
     }
+    deriving (Show, Eq)
+
+
+
+emptyTable :: SymbolTable
+emptyTable = SymbolTable empty empty empty []
 
 
 insertType :: Symbol -> SymbolData -> SymbolTable -> SymbolTable

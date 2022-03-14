@@ -10,7 +10,7 @@ type Symbol = Variable
 
 data SymType
     = Type [Constraint] Type
-    | Delayed
+    | Delayed [Constraint]
     | TypeUndefined
     deriving (Show, Eq)
 
@@ -27,6 +27,7 @@ data SymbolData
         sdVar :: Variable,
         sdModule :: !Module
     }
+    deriving (Show, Eq)
 
 
 
