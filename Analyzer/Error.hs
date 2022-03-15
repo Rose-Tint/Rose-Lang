@@ -1,12 +1,15 @@
 module Analyzer.Error where
 
-import Parser.Data
-import SymbolTable.SymbolData (Symbol)
+import Parser.Data (Variable)
+import SymbolTable.SymbolData
+import Typing.Types
 
 
 
 data Error
-    = TypeMismatch Variable Type Type
+    = TypeMismatch (Maybe Variable) Type Type
+    | TypeMismatch1 (Maybe Variable) Type
+    | Undefined Variable Type
     | OtherError String
 
 

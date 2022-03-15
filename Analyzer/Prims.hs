@@ -1,7 +1,7 @@
 module Analyzer.Prims where
 
-import Parser.Data
-import SymbolTable.SymbolData
+import Parser.Data hiding (Type)
+import Typing.Types
 
 
 integral :: Constraint
@@ -16,18 +16,25 @@ floating = Constraint
     (Prim "*")
 
 
-intLitType :: SymType
+intLitType :: Type
 intLitType = Delayed [integral]
 
 
-fltLitType :: SymType
+fltLitType :: Type
 fltLitType = Delayed [floating]
 
 
-strLitType :: SymType
-strLitType = Type [] (TerminalType (RealType (Prim "Array"))
-    [TerminalType (RealType (Prim "Char")) []])
+strLitType :: Type
+strLitType = Type (Prim "Array") [chrLitType] []
 
 
-chrLitType :: SymType
-chrLitType = Type [] (TerminalType (RealType (Prim "Char")) [])
+chrLitType :: Type
+chrLitType = Type (Prim "Char") [] []
+
+
+arrLitType :: Type
+arrLitType = Type (Prim "Array") [Delayed []] []
+
+
+arrayLitOf :: Type -> Type
+arrayLitOf t = Type (Prim "Array") [t] []

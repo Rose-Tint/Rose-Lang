@@ -50,7 +50,7 @@ searchGlobals sym = do
             dta' <- case expType of
                 Nothing -> return dta
                 Just typ -> return $! dta
-                    { sdType = Type [] typ }
+                    { sdType = typ }
             modifyTable (insertGlobal sym dta')
             return dta
         Just dta -> return $! dta
@@ -77,6 +77,55 @@ searchScopeds sym = tblScopeds <$!> getTable >>= go >>= \res ->
                             (ShadowsName sym (sdVar other))
                 return (Just dta)
             Nothing -> go scps
+
+
+
+findType :: Symbol -> Analyzer (Maybe SymbolData)
+findType sym = do
+    typs <- tblTypes <$!> getTable
+    return $! search sym typs
+findTrait :: Symbol -> Analyzer (Maybe SymbolData)
+findTrait sym = do
+    trts <- tblTraits <$!> getTable
+    return $! search sym trts
+findGlobal :: Symbol -> Analyzer (Maybe SymbolData)
+findGlobal sym = do
+    glbs <- tblGlobals <$!> getTable
+    return $! search sym glbs
+findScoped :: Symbol -> Analyzer (Maybe SymbolData)
+findScoped sym = do
+    scps <- tblScopeds <$!> getTable
+    go scps
+    where
+        go :: [SymbolMap] -> Analyzer (Maybe SymbolData)
+        go [] = findGlobal sym
+        go (scp:scps) = case search sym scp of
+            Nothing -> go scps
+            Just dta -> return $! Just dta
+
+
+modifyType :: Symbol -> (SymbolData -> SymbolData) -> Analyzer ()
+modifyType sym f = do
+    dta <- searchTypes sym
+    pushType sym $! f dta
+
+
+modifyTrait :: Symbol -> (SymbolData -> SymbolData) -> Analyzer ()
+modifyTrait sym f = do
+    dta <- searchTraits sym
+    pushTrait sym $! f dta
+
+
+modifyGlobal :: Symbol -> (SymbolData -> SymbolData) -> Analyzer ()
+modifyGlobal sym f = do
+    dta <- searchGlobals sym
+    pushGlobal sym $! f dta
+
+
+modifyScoped :: Symbol -> (SymbolData -> SymbolData) -> Analyzer ()
+modifyScoped sym f = do
+    dta <- searchScopeds sym
+    pushScoped sym $! f dta
 
 
 pushType :: Symbol -> SymbolData -> Analyzer ()

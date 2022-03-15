@@ -2,8 +2,8 @@ module Analyzer.State where
 
 import Analyzer.Error
 import CmdLine (CmdLine)
-import Parser.Data
 import SymbolTable
+import Typing.Types
 
 
 
@@ -14,5 +14,6 @@ data State
         stErrInfo :: !ErrorInfo,
         stErrors :: ![(ErrorInfo, Error)],
         stWarnings :: ![(ErrorInfo, Warning)],
-        stTable :: !SymbolTable
+        stTable :: !SymbolTable,
+        stImports :: ![Module]
     }

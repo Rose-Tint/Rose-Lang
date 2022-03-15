@@ -1,3 +1,5 @@
+{-# LANGUAGE BangPatterns #-}
+
 module Utils where
 
 
@@ -46,3 +48,8 @@ modPathToRelDir (c:cs) = (c:modPathToRelDir cs)
 
 foreachM_ :: (Monad m) => [a] -> (a -> m b) -> m ()
 foreachM_ l f = foldr (\a _ -> f a >> return ()) (return ()) l
+
+
+-- strict function composition
+(.!) :: (b -> c) -> (a -> b) -> (a -> c)
+bcf .! abf = (\ !b -> bcf $! b) . (\ !a -> abf $! a)
