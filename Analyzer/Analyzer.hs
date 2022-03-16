@@ -7,7 +7,7 @@ module Analyzer.Analyzer (
     enterDefinition, exitDefinition, getCurrDef,
     pushFnCall, popFnCall,
     pushScope, popScope,
-    pushExpType, popExpType, peekExpType,
+    pushExpType, popExpType, peekExpType, withExpType,
     fromCmdLine,
     addImport,
     throw, warn, catch,
@@ -119,6 +119,14 @@ popExpType = Analyzer $ \ !s okay _ -> case stExpType s of
 peekExpType :: Analyzer (Maybe Type)
 peekExpType = Analyzer $ \ !s okay _ ->
     okay (listToMaybe (stExpType s)) s
+
+
+withExpType :: Type -> Analyzer a -> Analyzer a
+withExpType t a = do
+    pushExpType t
+    x <- a
+    popExpType
+    return $! x
 
 
 addImport :: Visibility -> Variable -> Analyzer ()

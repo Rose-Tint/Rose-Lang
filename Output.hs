@@ -14,11 +14,11 @@ module Output (
 import Control.Concurrent (forkIO)
 import Data.List (foldl')
 import System.Directory
-import System.Exit (exitFailure)
 import System.IO (Handle, stdout, stderr, hPutStr)
 
 import CmdLine
 import Color
+import Threading
 
 
 success, warn, message, status, debug, info
@@ -33,7 +33,7 @@ debug = myPutStr Cyan 5 stdout -- stderr
 
 fatal :: Int -> String -> [String] -> IO a
 fatal v str as = myPutStr Red 2 stderr v str as
-    >> exitFailure
+    >> exitSelf (ExitFailure 1)
 
 
 trace :: CmdLine -> FilePath -> String -> IO ()

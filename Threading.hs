@@ -3,23 +3,30 @@
 module Threading (
     Manager,
     Status(..),
+    ExitCode(..),
     newManager,
     fork,
     threadStatus,
+    exitSelf,
     wait, waitAll,
 ) where
 
 import Control.Concurrent
-import Control.Exception (IOException, try)
+import Control.Exception (
+        IOException,
+        throwIO,
+        try
+    )
 import Control.Monad ((<$!>), join)
 import qualified Data.Map as Map
+import System.Exit (ExitCode(..))
 
 
 data Status
     = Running
     | Finished
     | Threw IOException
-    deriving (Show, Eq)
+    deriving (Show)
 
 
 newtype Manager = Mgr (MVar (Map.Map ThreadId (MVar Status)))
@@ -45,6 +52,10 @@ threadStatus (Mgr mgr) thrID = modifyMVar mgr $ \m ->
         Just st -> tryTakeMVar st >>= \mst -> case mst of
             Nothing -> return $! (m, Just Running)
             Just sth -> return $! (Map.delete thrID m, Just sth)
+
+
+exitSelf :: ExitCode -> IO a
+exitSelf ec = throwIO ec
 
 
 wait :: Manager -> ThreadId -> IO (Maybe Status)

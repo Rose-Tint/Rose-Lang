@@ -18,14 +18,6 @@ data Variable
     deriving (Show)
 
 
--- short term solution to type variables
--- not matching in semantic analysis
-data Typename
-    = RealType Variable
-    | TypeParam Variable
-    deriving (Show, Ord)
-
-
 type Body = [Expr]
 
 
@@ -42,7 +34,7 @@ type Mutability = Purity
 
 data Type
     = NonTermType Type (NonEmpty Type)
-    | TerminalType Typename [Type]
+    | TerminalType Variable [Type]
     deriving (Show, Eq, Ord)
 
 
@@ -138,14 +130,8 @@ data Expr
 
 
 boolType :: Type
-boolType = TerminalType (RealType (Prim "Boolean")) []
-
-
-
-instance Eq Typename where
-    TypeParam _ == _ = True
-    _ == TypeParam _ = True
-    RealType n1 == RealType n2 = n1 == n2
+{-# INLINABLE boolType #-}
+boolType = TerminalType (Prim "Boolean") []
 
 
 instance Eq Variable where
@@ -157,17 +143,3 @@ instance Ord Variable where
     v1 >= v2 = varName v1 >= varName v2
     v1 < v2 = varName v1 < varName v2
     v1 > v2 = varName v1 > varName v2
-
-
--- instance Eq Type where
---     TerminalType n1 ts1 == TerminalType n2 ts2 =
---         n1 == n2 && ts1 == ts2
---         where
---             cmp [] [] = False -- should not happen
---             cmp (c1:cs1) (c2:cs2) = 
---     NonTermType [] == NonTermType [] = True
---     NonTermType [t1] == NonTermType [t2] = t1 == t2
---     NonTermType [t1] == t2 = t1 == t2
---     t1 == NonTermType [t2] = t1 == t2
---     NonTermType ts1 == NonTermType ts2 = ts1 == ts2
---     _ == _ = False

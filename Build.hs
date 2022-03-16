@@ -2,21 +2,20 @@ module Build where
 
 import Prelude hiding (readFile, lines)
 
-import Control.Monad (when, foldM_)
+import Control.Monad ((<$!>), when, foldM_)
 import Data.Text (Text)
 import Data.Text.IO (readFile)
 import System.Directory
 import System.IO ()
 import Text.Parsec (parse)
 
-import Cache
 import CmdLine (CmdLine(..))
 import Parser.Data (Expr)
 import Parser.Error (printParseErr)
 import Parser.Parser (roseParser)
-import Parser.Pretty (prettyExpr)
 import SymbolTable
 import Output
+import Pretty
 import Threading
 import Utils (pathToModule, modPathToRelDir)
 
@@ -39,6 +38,8 @@ build cmd = do
             return ()
         ) () (cmdFiles cmd)
     waitAll mgr
+    status (cmdVerb cmd)
+        "Finished Building All Modules\n" []
     return ()
 
 
@@ -48,26 +49,23 @@ buildFile cmd relPath = do
     let verb = cmdVerb cmd
     let buildDir = cmdBuildDir cmd ++ "/" ++
             modPathToRelDir relPath
-    isUTD <- isUpToDate cmd relPath
-    when isUTD $!
-        message verb "Up To Date        [%s]" [modName]
-    cacheBuildTime cmd relPath
+
     when (cmdTrace cmd) $!
         createDirectoryIfMissing True buildDir
-    message verb "Building Module   [%s]\n" [modName]
+    message verb "Building Module [%s]\n" [modName]
     debug verb "module build dir: %s\n" [buildDir]
 
     src <- makeAbsolute relPath >>= readFile
 
     parseRes <- parseFile cmd src modName
     trace cmd (buildDir ++ "Abstract-Syntax-Tree.txt")
-        (concat $ fmap prettyExpr parseRes)
+        (concat $ pretty <$!> parseRes)
 
     symTbl <- analyzeFile cmd src modName parseRes
     trace cmd (buildDir ++ "Symbol-Table.txt")
         (show symTbl)
 
-    status verb "Finished Building [%s]\n" [modName]
+    -- status verb "Finished Building [%s]\n" [modName]
 
 
 parseFile :: CmdLine -> Text -> ModuleName -> IO [Expr]

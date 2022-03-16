@@ -8,6 +8,7 @@ import Parser.LangDef
 
 
 purity :: Parser Purity
+{-# INLINABLE purity #-}
 purity = choice [
         keyword "pure"   >> return Pure,
         keyword "impure" >> return Impure,
@@ -16,6 +17,7 @@ purity = choice [
 
 
 visibility :: Parser Visibility
+{-# INLINABLE visibility #-}
 visibility = choice [
         keyword "export" >> return Export,
         keyword "intern" >> return Intern
@@ -23,6 +25,7 @@ visibility = choice [
 
 
 mutability :: Parser Mutability
+{-# INLINABLE mutability #-}
 mutability = option Pure (choice [
         keyword "mut"  >> return Pure,
         keyword "imut" >> return Impure

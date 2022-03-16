@@ -1,6 +1,7 @@
 module Typing.Types where
 
 import Control.Monad ((<$!>))
+import Data.Char (isUpper)
 import Data.List (union)
 import Data.List.NonEmpty (toList)
 
@@ -34,11 +35,12 @@ data Type
 
 -- |Creates a `@Type@` from a `Parser.Data.@Type@` 
 fromPDType :: PD.Type -> Type
-fromPDType (TerminalType tn ps) = 
+fromPDType (TerminalType nm ps) = 
     let ps' = fromPDType <$!> ps
-    in case tn of
-        RealType nm -> Type nm ps' []
-        TypeParam nm -> Param nm ps' []
+    in if isUpper (head $! varName nm) then
+        Type nm ps' []
+    else
+        Param nm ps' []
 fromPDType (NonTermType t1 ts) =
     Applied (fromPDType t1: toList (fromPDType <$!> ts)) []
 

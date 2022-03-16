@@ -68,6 +68,7 @@ literal = choice [
 
 
 term :: Parser Value
+{-# INLINABLE term #-}
 term = choice [
         try literal, arrayLit,
         (\i -> FuncCall i []) <$!> iden,
@@ -78,6 +79,7 @@ term = choice [
 
 
 term' :: Parser Value
+{-# INLINABLE term' #-}
 term' = choice [
         ctorCall,
         foCall,
@@ -86,17 +88,19 @@ term' = choice [
 
 
 terminalType :: Parser Type
+{-# INLINABLE terminalType #-}
 terminalType = (do
     name <- iden
     tas <- many ttype
     return $! if isLower (head $ varName name) then
-        TerminalType (TypeParam name) tas
+        TerminalType name tas
     else
-        TerminalType (RealType name) tas)
+        TerminalType name tas)
     <?> "terminal type"
 
 
 nonTermType :: Parser Type
+{-# INLINABLE nonTermType #-}
 nonTermType = (do
     typs <- fromList <$!> (parens $ commaSep1 ttype)
     case typs of
@@ -106,6 +110,7 @@ nonTermType = (do
 
 
 ttype :: Parser Type
+{-# INLINABLE ttype #-}
 ttype = terminalType <|> nonTermType <|> parens ttype
     <?> "type"
 
@@ -135,6 +140,7 @@ typeDecl = (do
 
 
 foName :: Parser Variable
+{-# INLINABLE foName #-}
 foName = smallIden <|> parens operator
 
 
@@ -262,6 +268,7 @@ funcCall = (do
 
 -- (f)unction or (o)perator (call)
 foCall :: Parser Value
+{-# INLINABLE foCall #-}
 foCall = try operCall <|> funcCall
 
 

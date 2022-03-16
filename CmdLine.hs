@@ -7,8 +7,9 @@ import System.Console.GetOpt
 import System.Directory
     (makeAbsolute, getCurrentDirectory)
 import System.Environment (getArgs)
-import System.Exit (exitSuccess)
 import System.IO (FilePath)
+
+import Threading
 
 
 
@@ -48,7 +49,7 @@ help :: IO Flag
 help = do
     let header = "Usage: rose [FILES...] [OPTIONS...]"
     _ <- putStrLn $! usageInfo header options
-    exitSuccess
+    exitSelf ExitSuccess
 
 buildDir :: FilePath -> IO Flag
 buildDir path = do

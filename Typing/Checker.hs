@@ -34,12 +34,12 @@ instance Checker Value where
     infer (StrLit _) = return strLitType
     infer (FuncCall name args) = do
         dta <- searchScopeds name
-        pushExpType $! sdType dta
-        apply (sdType dta) args
+        withExpType (sdType dta) $!
+            apply (sdType dta) args
     infer (CtorVal name args) = do
         dta <- searchGlobals name
-        pushExpType $! sdType dta
-        apply (sdType dta) args
+        withExpType (sdType dta) $!
+            apply (sdType dta) args
     infer (ExprVal expr) = infer expr
     infer (Array _ []) = throw (OtherError "empty array")
     infer (Array _ (x:xs)) = do
@@ -143,6 +143,14 @@ apply ft (val:vals) = do
         -- areSame will be True if expT is Nothing,
         -- so fromJust is safe here
         throw (TypeMismatch Nothing valT (fromJust expT))
+
+
+checkAll :: (Checker a) => [a] -> Analyzer Bool
+checkAll [] = return True
+checkAll (x:xs) = do
+    xT <- infer x
+    foldM (\b a -> if not b then return b else do
+        check a xT) True xs
 
 
 expect :: (Checker a) => a -> Type -> Analyzer Bool
