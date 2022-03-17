@@ -1,1 +1,1 @@
-SymbolTable {tblTypes = fromList [], tblTraits = fromList [], tblGlobals = fromList [], tblScopeds = []}
+Analysis {arResult = Nothing, arErrors = [(ErrorInfo {eiDefName = Nothing, eiCalls = []},OtherError "`Checker Expr` not fully implemented")], arWarnings = [], arTable = SymbolTable {tblTypes = fromList [], tblTraits = fromList [], tblGlobals = fromList [], tblScopeds = []}, arImports = []}

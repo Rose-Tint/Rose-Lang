@@ -3,6 +3,8 @@
 
 module Analyzer.Analyzer (
     Analyzer,
+    Analysis(..),
+    analyze,
     getTable, setTable, modifyTable,
     enterDefinition, exitDefinition, getCurrDef,
     pushFnCall, popFnCall,
@@ -36,44 +38,82 @@ data Analyzer a
     }
 
 
+data Analysis a
+    = Analysis {
+        arResult :: !(Maybe a),
+        arErrors :: ![(ErrorInfo, Error)],
+        arWarnings :: ![(ErrorInfo, Warning)],
+        arTable :: !SymbolTable,
+        arImports :: ![Module]
+    }
+    deriving (Show)
+
+
+
+analyze :: CmdLine -> Analyzer a -> Analysis a
+analyze cmd a = runA a (newState cmd) okay err
+    where
+        err s = Analysis {
+                    arResult = Nothing,
+                    arErrors = stErrors s,
+                    arWarnings = stWarnings s,
+                    arTable = stTable s,
+                    arImports = stImports s
+                }
+        okay x s = Analysis {
+                    arResult = Just x,
+                    arErrors = stErrors s,
+                    arWarnings = stWarnings s,
+                    arTable = stTable s,
+                    arImports = stImports s
+                }
+
 
 getTable :: Analyzer SymbolTable
+{-# INLINE getTable #-}
 getTable = Analyzer $ \ !s okay _ -> okay (stTable s) s
 
 
 setTable :: SymbolTable -> Analyzer ()
+{-# INLINE setTable #-}
 setTable tbl = Analyzer $ \ !s okay _ ->
     okay () (s { stTable = tbl })
 
 
 modifyTable :: (SymbolTable -> SymbolTable) -> Analyzer ()
+{-# INLINE modifyTable #-}
 modifyTable f = Analyzer $ \ !s okay _ ->
     okay () (s { stTable = f (stTable s) })
 
 
 fromCmdLine :: (CmdLine -> a) -> Analyzer a
+{-# INLINE fromCmdLine #-}
 fromCmdLine f = Analyzer $ \ !s okay _ ->
     okay (f (stCmdLine s)) s
 
 
 enterDefinition :: Symbol -> Analyzer ()
+{-# INLINABLE enterDefinition #-}
 enterDefinition name = Analyzer $ \ !s okay _ ->
     let errInfo = (stErrInfo s) { eiDefName = Just name }
     in okay () (s { stErrInfo = errInfo })
 
 
 exitDefinition :: Analyzer ()
+{-# INLINABLE exitDefinition #-}
 exitDefinition = Analyzer $ \ !s okay _ ->
     let errInfo = (stErrInfo s) { eiDefName = Nothing }
     in okay () (s { stErrInfo = errInfo })
 
 
 getCurrDef :: Analyzer (Maybe Symbol)
+{-# INLINE getCurrDef #-}
 getCurrDef = Analyzer $ \ !s okay _ ->
     okay (eiDefName (stErrInfo s)) s
 
 
 pushFnCall :: Symbol -> Analyzer ()
+{-# INLINABLE pushFnCall #-}
 pushFnCall name = Analyzer $ \ !s okay _ ->
     let errInfo = (stErrInfo s)
             { eiCalls = (name:eiCalls errInfo) }
@@ -106,17 +146,20 @@ popScope = Analyzer $ \ !s okay _ ->
 
 
 pushExpType :: Type -> Analyzer ()
+{-# INLINE pushExpType #-}
 pushExpType typ = Analyzer $ \ !s okay _ ->
     okay () (s { stExpType = (typ:stExpType s) })
 
 
 popExpType :: Analyzer (Maybe Type)
+{-# INLINABLE popExpType #-}
 popExpType = Analyzer $ \ !s okay _ -> case stExpType s of
     [] -> okay Nothing s
     (typ:rest) -> okay (Just typ) (s { stExpType = rest })
 
 
 peekExpType :: Analyzer (Maybe Type)
+{-# INLINE peekExpType #-}
 peekExpType = Analyzer $ \ !s okay _ ->
     okay (listToMaybe (stExpType s)) s
 
@@ -130,11 +173,13 @@ withExpType t a = do
 
 
 addImport :: Visibility -> Variable -> Analyzer ()
+{-# INLINE addImport #-}
 addImport vis var = Analyzer $ \ !s okay _ ->
     okay () (s { stImports = (Module vis var:stImports s) }) 
 
 
 throw :: Error -> Analyzer a
+{-# INLINABLE throw #-}
 throw e = Analyzer $ \ !s _ err ->
     let ei = stErrInfo s
         es = stErrors s
@@ -142,6 +187,7 @@ throw e = Analyzer $ \ !s _ err ->
 
 
 warn :: Warning -> Analyzer ()
+{-# INLINABLE warn #-}
 warn w = Analyzer $ \ !s okay _ ->
     let ei = stErrInfo s
         ws = stWarnings s
@@ -149,6 +195,7 @@ warn w = Analyzer $ \ !s okay _ ->
 
 
 catch :: Analyzer a -> Analyzer (Maybe a)
+{-# INLINE catch #-}
 catch a = Analyzer $ \ !s okay _ ->
     runA a s (okay . Just) (okay Nothing)
 

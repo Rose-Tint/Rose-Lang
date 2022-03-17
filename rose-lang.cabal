@@ -72,13 +72,6 @@ executable Rose-Dev-Build
         -O0
 
 
-benchmark Rose-bm
-    import: general
-    type: exitcode-stdio-1.0
-    main-is: Benchmarks/Main.hs
-    ghc-options:
-        -O3
-
 benchmark Rose-Build-bm
     import: general
     type: exitcode-stdio-1.0

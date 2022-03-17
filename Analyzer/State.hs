@@ -17,3 +17,9 @@ data State
         stTable :: !SymbolTable,
         stImports :: ![Module]
     }
+
+
+newState :: CmdLine -> State
+newState cmd = State cmd []
+    (ErrorInfo Nothing [])
+    [] [] emptyTable []

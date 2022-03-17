@@ -67,11 +67,11 @@ instance Checker Expr where
     infer (ValueE val) = infer val
     infer (ModImport vis var) = do
         addImport vis var
-        fail "unhandled Expr (ModImport)"
+        throw $ OtherError "unhandled Expr (ModImport)"
     -- infer (FuncTypeDecl pur vis name cons typs) = do
     --     pushDefinition name
     --     dta <- searchGlobals name
-    infer _ = fail "`Checker Expr` not fully implemented"
+    infer _ = throw $ OtherError "`Checker Expr` not fully implemented"
 
 
 {-
@@ -154,6 +154,7 @@ checkAll (x:xs) = do
 
 
 expect :: (Checker a) => a -> Type -> Analyzer Bool
+{-# INLINABLE expect #-}
 expect a t = do
     typ <- infer a
     check typ t

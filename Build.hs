@@ -10,14 +10,15 @@ import System.IO ()
 import Text.Parsec (parse)
 
 import CmdLine (CmdLine(..))
+import Analyzer.Analyzer
 import Parser.Data (Expr)
 import Parser.Error (printParseErr)
 import Parser.Parser (roseParser)
-import SymbolTable
+import Typing.Checker
 import Output
 import Pretty
 import Threading
-import Utils (pathToModule, modPathToRelDir)
+import Utils
 
 
 type ModuleName = String
@@ -61,6 +62,8 @@ buildFile cmd relPath = do
     trace cmd (buildDir ++ "Abstract-Syntax-Tree.txt")
         (concat $ pretty <$!> parseRes)
 
+    _ <- analyzeFile cmd src modName parseRes
+
     symTbl <- analyzeFile cmd src modName parseRes
     trace cmd (buildDir ++ "Symbol-Table.txt")
         (show symTbl)
@@ -80,5 +83,6 @@ parseFile cmd src name = do
 
 
 analyzeFile :: CmdLine -> Text -> ModuleName -> [Expr]
-            -> IO SymbolTable
-analyzeFile _ _ _ _ = return emptyTable
+            -> IO (Analysis ())
+analyzeFile cmd _ _ es = return $!
+    analyze cmd $! foreachM_ es infer

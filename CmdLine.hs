@@ -79,6 +79,7 @@ options = [
 
 
 setFlags :: [Flag] -> CmdLine -> CmdLine
+{-# INLINABLE setFlags #-}
 setFlags [] cmd = cmd
 setFlags (flg:flgs) cmd = setFlags flgs $! case flg of
     Verbosity v -> cmd { cmdVerb = v }
