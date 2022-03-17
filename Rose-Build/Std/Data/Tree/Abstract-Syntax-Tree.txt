@@ -1,186 +1,236 @@
 Datatype Definition:
     Visibility   : Export
-    Name         : Tree
+    Name         : Tree<5:13>
     Type Vars    : 
-    |   Var {varName = "a", varLine = 5, varStart = 18, varEnd = 19}
+    |   a<5:18>
     Constructors : 
-    |   Export Empty
-    |   Export Node => a, Tree a, Tree a
+    |   Export Empty<6:8>
+    |   Export Node<7:8> => a<7:16>, Tree<7:19> a<7:24>, Tree<7:27> a<7:32>
 Function Type Declaration:
     Visibility  : Export
     Purity      : Pure
-    Name        : insert
+    Name        : insert<11:13>
     Constraints : 
-    |   (Var {varName = "Ord", varLine = 10, varStart = 25, varEnd = 28},Var {varName = "a", varLine = 10, varStart = 29, varEnd = 30})
-    Type        : a, Tree a, Tree a
+    |   { Ord<11:25> (a<11:29>) }
+    Type        : a<11:34>, Tree<11:37> a<11:42>, Tree<11:45> a<11:50>
 Function Definition:
-    Name       : insert
+    Name       : insert<12:1>
     Parameters : 
-    |   VarVal (Var {varName = "a", varLine = 11, varStart = 8, varEnd = 9})
+    |   Function Call:
+    |       Name :a<12:8>
+    |       Arguments :
     |   Data Ctor Call:
-    |       Name   : Node
+    |       Name   : Node<12:11>
     |       Params : 
-    |       |   VarVal (Var {varName = "v", varLine = 11, varStart = 16, varEnd = 17})
-    |       |   VarVal (Var {varName = "l", varLine = 11, varStart = 18, varEnd = 19})
-    |       |   VarVal (Var {varName = "r", varLine = 11, varStart = 20, varEnd = 21})
+    |       |   Function Call:
+    |       |       Name :v<12:16>
+    |       |       Arguments :
+    |       |   Function Call:
+    |       |       Name :l<12:18>
+    |       |       Arguments :
+    |       |   Function Call:
+    |       |       Name :r<12:20>
+    |       |       Arguments :
     Body       : 
     |   Return: ExprVal: Pattern Match:
-    |       Value : ExprVal: Function Call:
-    |       Name      : <=>
-    |       Arguments : 
-    |       |   ExprVal: Function Call:
-    |       |       Name      : a
-    |       |       Arguments : 
-    |       |   ExprVal: Function Call:
-    |       |       Name      : v
-    |       |       Arguments : 
+    |       Value : Function Call:
+    |       Name :<=><12:35>
+    |       Arguments :
+    |       |   Function Call:
+    |       |       Name :a<12:33>
+    |       |       Arguments :
+    |       |   Function Call:
+    |       |       Name :v<12:39>
+    |       |       Arguments :
     |   
     |       Cases : 
-    |       |   (CtorVal (Var {varName = "LT", varLine = 12, varStart = 10, varEnd = 12}) [],[Return (CtorVal (Var {varName = "Node", varLine = 12, varStart = 18, varEnd = 22}) [VarVal (Var {varName = "v", varLine = 12, varStart = 23, varEnd = 24}),ExprVal (FuncCall (Var {varName = "insert", varLine = 12, varStart = 26, varEnd = 32}) [VarVal (Var {varName = "a", varLine = 12, varStart = 33, varEnd = 34}),VarVal (Var {varName = "l", varLine = 12, varStart = 35, varEnd = 36})]),VarVal (Var {varName = "r", varLine = 12, varStart = 38, varEnd = 39})])])
-    |       |   (CtorVal (Var {varName = "GT", varLine = 13, varStart = 10, varEnd = 12}) [],[Return (CtorVal (Var {varName = "Node", varLine = 13, varStart = 18, varEnd = 22}) [VarVal (Var {varName = "v", varLine = 13, varStart = 23, varEnd = 24}),VarVal (Var {varName = "l", varLine = 13, varStart = 25, varEnd = 26}),ExprVal (FuncCall (Var {varName = "insert", varLine = 13, varStart = 28, varEnd = 34}) [VarVal (Var {varName = "a", varLine = 13, varStart = 35, varEnd = 36}),VarVal (Var {varName = "r", varLine = 13, varStart = 37, varEnd = 38})])])])
-    |       |   (CtorVal (Var {varName = "EQ", varLine = 14, varStart = 10, varEnd = 12}) [],[Return (CtorVal (Var {varName = "Node", varLine = 14, varStart = 18, varEnd = 22}) [VarVal (Var {varName = "v", varLine = 14, varStart = 23, varEnd = 24}),VarVal (Var {varName = "l", varLine = 14, varStart = 25, varEnd = 26}),VarVal (Var {varName = "r", varLine = 14, varStart = 27, varEnd = 28})])])
+    |       |   (CtorVal (Var {varName = "LT", varLine = 13, varStart = 10}) [],[Return (CtorVal (Var {varName = "Node", varLine = 13, varStart = 18}) [FuncCall (Var {varName = "v", varLine = 13, varStart = 23}) [],FuncCall (Var {varName = "insert", varLine = 13, varStart = 26}) [FuncCall (Var {varName = "a", varLine = 13, varStart = 33}) [],FuncCall (Var {varName = "l", varLine = 13, varStart = 35}) []],FuncCall (Var {varName = "r", varLine = 13, varStart = 38}) []])])
+    |       |   (CtorVal (Var {varName = "GT", varLine = 14, varStart = 10}) [],[Return (CtorVal (Var {varName = "Node", varLine = 14, varStart = 18}) [FuncCall (Var {varName = "v", varLine = 14, varStart = 23}) [],FuncCall (Var {varName = "l", varLine = 14, varStart = 25}) [],FuncCall (Var {varName = "insert", varLine = 14, varStart = 28}) [FuncCall (Var {varName = "a", varLine = 14, varStart = 35}) [],FuncCall (Var {varName = "r", varLine = 14, varStart = 37}) []]])])
+    |       |   (CtorVal (Var {varName = "EQ", varLine = 15, varStart = 10}) [],[Return (CtorVal (Var {varName = "Node", varLine = 15, varStart = 18}) [FuncCall (Var {varName = "v", varLine = 15, varStart = 23}) [],FuncCall (Var {varName = "l", varLine = 15, varStart = 25}) [],FuncCall (Var {varName = "r", varLine = 15, varStart = 27}) []])])
 Function Type Declaration:
     Visibility  : Export
     Purity      : Pure
-    Name        : search
+    Name        : search<19:13>
     Constraints : 
-    |   (Var {varName = "Ord", varLine = 18, varStart = 25, varEnd = 28},Var {varName = "a", varLine = 18, varStart = 29, varEnd = 30})
-    Type        : a, Tree a, Tree a
+    |   { Ord<19:25> (a<19:29>) }
+    Type        : a<19:34>, Tree<19:37> a<19:42>, Tree<19:45> a<19:50>
 Function Definition:
-    Name       : search
+    Name       : search<20:1>
     Parameters : 
-    |   VarVal (Var {varName = "a", varLine = 19, varStart = 8, varEnd = 9})
-    |   Nullary Ctor Call: Empty
+    |   Function Call:
+    |       Name :a<20:8>
+    |       Arguments :
+    |   Nullary Ctor Call: Empty<20:11>
     Body       : 
-    |   Return: Nullary Ctor Call: Empty
+    |   Return: Nullary Ctor Call: Empty<20:21>
 Function Definition:
-    Name       : search
+    Name       : search<21:1>
     Parameters : 
-    |   VarVal (Var {varName = "a", varLine = 20, varStart = 8, varEnd = 9})
+    |   Function Call:
+    |       Name :a<21:8>
+    |       Arguments :
     |   Data Ctor Call:
-    |       Name   : Node
+    |       Name   : Node<21:11>
     |       Params : 
-    |       |   VarVal (Var {varName = "v", varLine = 20, varStart = 16, varEnd = 17})
-    |       |   VarVal (Var {varName = "l", varLine = 20, varStart = 18, varEnd = 19})
-    |       |   VarVal (Var {varName = "r", varLine = 20, varStart = 20, varEnd = 21})
+    |       |   Function Call:
+    |       |       Name :v<21:16>
+    |       |       Arguments :
+    |       |   Function Call:
+    |       |       Name :l<21:18>
+    |       |       Arguments :
+    |       |   Function Call:
+    |       |       Name :r<21:20>
+    |       |       Arguments :
     Body       : 
     |   Return: ExprVal: Pattern Match:
-    |       Value : ExprVal: Function Call:
-    |       Name      : <=>
-    |       Arguments : 
-    |       |   ExprVal: Function Call:
-    |       |       Name      : a
-    |       |       Arguments : 
-    |       |   ExprVal: Function Call:
-    |       |       Name      : v
-    |       |       Arguments : 
+    |       Value : Function Call:
+    |       Name :<=><21:35>
+    |       Arguments :
+    |       |   Function Call:
+    |       |       Name :a<21:33>
+    |       |       Arguments :
+    |       |   Function Call:
+    |       |       Name :v<21:39>
+    |       |       Arguments :
     |   
     |       Cases : 
-    |       |   (CtorVal (Var {varName = "LT", varLine = 21, varStart = 10, varEnd = 12}) [],[Return (ExprVal (FuncCall (Var {varName = "search", varLine = 21, varStart = 18, varEnd = 24}) [VarVal (Var {varName = "a", varLine = 21, varStart = 25, varEnd = 26}),VarVal (Var {varName = "l", varLine = 21, varStart = 27, varEnd = 28})]))])
-    |       |   (CtorVal (Var {varName = "EQ", varLine = 22, varStart = 10, varEnd = 12}) [],[Return (CtorVal (Var {varName = "Node", varLine = 22, varStart = 18, varEnd = 22}) [VarVal (Var {varName = "v", varLine = 22, varStart = 23, varEnd = 24}),VarVal (Var {varName = "l", varLine = 22, varStart = 25, varEnd = 26}),VarVal (Var {varName = "r", varLine = 22, varStart = 27, varEnd = 28})])])
-    |       |   (CtorVal (Var {varName = "GT", varLine = 23, varStart = 10, varEnd = 12}) [],[Return (ExprVal (FuncCall (Var {varName = "search", varLine = 23, varStart = 18, varEnd = 24}) [VarVal (Var {varName = "a", varLine = 23, varStart = 25, varEnd = 26}),VarVal (Var {varName = "r", varLine = 23, varStart = 27, varEnd = 28})]))])
+    |       |   (CtorVal (Var {varName = "LT", varLine = 22, varStart = 10}) [],[Return (FuncCall (Var {varName = "search", varLine = 22, varStart = 18}) [FuncCall (Var {varName = "a", varLine = 22, varStart = 25}) [],FuncCall (Var {varName = "l", varLine = 22, varStart = 27}) []])])
+    |       |   (CtorVal (Var {varName = "EQ", varLine = 23, varStart = 10}) [],[Return (CtorVal (Var {varName = "Node", varLine = 23, varStart = 18}) [FuncCall (Var {varName = "v", varLine = 23, varStart = 23}) [],FuncCall (Var {varName = "l", varLine = 23, varStart = 25}) [],FuncCall (Var {varName = "r", varLine = 23, varStart = 27}) []])])
+    |       |   (CtorVal (Var {varName = "GT", varLine = 24, varStart = 10}) [],[Return (FuncCall (Var {varName = "search", varLine = 24, varStart = 18}) [FuncCall (Var {varName = "a", varLine = 24, varStart = 25}) [],FuncCall (Var {varName = "r", varLine = 24, varStart = 27}) []])])
 Function Type Declaration:
     Visibility  : Export
     Purity      : Pure
-    Name        : height
+    Name        : height<28:13>
     Constraints : 
-    Type        : Tree a, Int
+    Type        : Tree<28:23> a<28:28>, Int<28:31>
 Function Definition:
-    Name       : height
+    Name       : height<29:1>
     Parameters : 
-    |   Nullary Ctor Call: Empty
+    |   Nullary Ctor Call: Empty<29:9>
     Body       : 
     |   Return: IntLit 0
 Function Definition:
-    Name       : height
+    Name       : height<30:1>
     Parameters : 
     |   Data Ctor Call:
-    |       Name   : Node
+    |       Name   : Node<30:9>
     |       Params : 
-    |       |   VarVal (Var {varName = "v", varLine = 29, varStart = 14, varEnd = 15})
-    |       |   VarVal (Var {varName = "l", varLine = 29, varStart = 16, varEnd = 17})
-    |       |   VarVal (Var {varName = "r", varLine = 29, varStart = 18, varEnd = 19})
+    |       |   Function Call:
+    |       |       Name :v<30:14>
+    |       |       Arguments :
+    |       |   Function Call:
+    |       |       Name :l<30:16>
+    |       |       Arguments :
+    |       |   Function Call:
+    |       |       Name :r<30:18>
+    |       |       Arguments :
     Body       : 
-    |   Return: ExprVal: Function Call:
-    |       Name      : max
-    |       Arguments : 
-    |       |   ExprVal: Function Call:
-    |       |       Name      : height
-    |       |       Arguments : 
-    |       |       |   VarVal (Var {varName = "l", varLine = 29, varStart = 37, varEnd = 38})
-    |       |   ExprVal: Function Call:
-    |       |       Name      : height
-    |       |       Arguments : 
-    |       |       |   VarVal (Var {varName = "r", varLine = 29, varStart = 48, varEnd = 49})
+    |   Return: Function Call:
+    |       Name :max<30:24>
+    |       Arguments :
+    |       |   Function Call:
+    |       |       Name :height<30:29>
+    |       |       Arguments :
+    |       |       |   Function Call:
+    |       |       |       Name :l<30:36>
+    |       |       |       Arguments :
+    |       |   Function Call:
+    |       |       Name :height<30:40>
+    |       |       Arguments :
+    |       |       |   Function Call:
+    |       |       |       Name :r<30:47>
+    |       |       |       Arguments :
     |       |   IntLit 1
 Function Type Declaration:
     Visibility  : Export
     Purity      : Pure
-    Name        : size
+    Name        : size<33:13>
     Constraints : 
-    Type        : Tree a, Int
+    Type        : Tree<33:21> a<33:26>, Int<33:29>
 Function Definition:
-    Name       : size
+    Name       : size<34:1>
     Parameters : 
-    |   Nullary Ctor Call: Empty
+    |   Nullary Ctor Call: Empty<34:7>
     Body       : 
     |   Return: IntLit 0
 Function Definition:
-    Name       : size
+    Name       : size<35:1>
     Parameters : 
     |   Data Ctor Call:
-    |       Name   : Node
+    |       Name   : Node<35:7>
     |       Params : 
-    |       |   VarVal (Var {varName = "v", varLine = 34, varStart = 12, varEnd = 13})
-    |       |   VarVal (Var {varName = "l", varLine = 34, varStart = 14, varEnd = 15})
-    |       |   VarVal (Var {varName = "r", varLine = 34, varStart = 16, varEnd = 17})
+    |       |   Function Call:
+    |       |       Name :v<35:12>
+    |       |       Arguments :
+    |       |   Function Call:
+    |       |       Name :l<35:14>
+    |       |       Arguments :
+    |       |   Function Call:
+    |       |       Name :r<35:16>
+    |       |       Arguments :
     Body       : 
-    |   Return: ExprVal: Function Call:
-    |       Name      : +
-    |       Arguments : 
-    |       |   ExprVal: Function Call:
-    |       |       Name      : +
-    |       |       Arguments : 
-    |       |       |   ExprVal: Function Call:
-    |       |       |       Name      : size
-    |       |       |       Arguments : 
-    |       |       |       |   VarVal (Var {varName = "l", varLine = 34, varStart = 30, varEnd = 31})
-    |       |       |   ExprVal: Function Call:
-    |       |       |       Name      : size
-    |       |       |       Arguments : 
-    |       |       |       |   VarVal (Var {varName = "r", varLine = 34, varStart = 41, varEnd = 42})
+    |   Return: Function Call:
+    |       Name :+<35:40>
+    |       Arguments :
+    |       |   Function Call:
+    |       |       Name :+<35:30>
+    |       |       Arguments :
+    |       |       |   Function Call:
+    |       |       |       Name :size<35:23>
+    |       |       |       Arguments :
+    |       |       |       |   Function Call:
+    |       |       |       |       Name :l<35:28>
+    |       |       |       |       Arguments :
+    |       |       |   Function Call:
+    |       |       |       Name :size<35:32>
+    |       |       |       Arguments :
+    |       |       |       |   Function Call:
+    |       |       |       |       Name :r<35:37>
+    |       |       |       |       Arguments :
     |       |   IntLit 1
 Function Type Declaration:
     Visibility  : Export
     Purity      : Pure
-    Name        : invert
+    Name        : invert<38:13>
     Constraints : 
-    Type        : Tree a, Tree a
+    Type        : Tree<38:23> a<38:28>, Tree<38:31> a<38:36>
 Function Definition:
-    Name       : invert
+    Name       : invert<39:1>
     Parameters : 
-    |   Nullary Ctor Call: Empty
+    |   Nullary Ctor Call: Empty<39:9>
     Body       : 
-    |   Return: Nullary Ctor Call: Empty
+    |   Return: Nullary Ctor Call: Empty<39:19>
 Function Definition:
-    Name       : invert
+    Name       : invert<40:1>
     Parameters : 
     |   Data Ctor Call:
-    |       Name   : Node
+    |       Name   : Node<40:9>
     |       Params : 
-    |       |   VarVal (Var {varName = "v", varLine = 39, varStart = 14, varEnd = 15})
-    |       |   VarVal (Var {varName = "l", varLine = 39, varStart = 16, varEnd = 17})
-    |       |   VarVal (Var {varName = "r", varLine = 39, varStart = 18, varEnd = 19})
+    |       |   Function Call:
+    |       |       Name :v<40:14>
+    |       |       Arguments :
+    |       |   Function Call:
+    |       |       Name :l<40:16>
+    |       |       Arguments :
+    |       |   Function Call:
+    |       |       Name :r<40:18>
+    |       |       Arguments :
     Body       : 
     |   Return: Data Ctor Call:
-    |       Name   : Node
+    |       Name   : Node<40:24>
     |       Params : 
-    |       |   VarVal (Var {varName = "v", varLine = 39, varStart = 30, varEnd = 31})
-    |       |   ExprVal: Function Call:
-    |       |       Name      : invert
-    |       |       Arguments : 
-    |       |       |   VarVal (Var {varName = "r", varLine = 39, varStart = 40, varEnd = 41})
-    |       |   ExprVal: Function Call:
-    |       |       Name      : invert
-    |       |       Arguments : 
-    |       |       |   VarVal (Var {varName = "l", varLine = 39, varStart = 51, varEnd = 52})
+    |       |   Function Call:
+    |       |       Name :v<40:29>
+    |       |       Arguments :
+    |       |   Function Call:
+    |       |       Name :invert<40:32>
+    |       |       Arguments :
+    |       |       |   Function Call:
+    |       |       |       Name :r<40:39>
+    |       |       |       Arguments :
+    |       |   Function Call:
+    |       |       Name :invert<40:43>
+    |       |       Arguments :
+    |       |       |   Function Call:
+    |       |       |       Name :l<40:50>
+    |       |       |       Arguments :

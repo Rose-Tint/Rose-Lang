@@ -1,0 +1,14 @@
+module Std.Data.List where
+
+
+export data List a
+    := Single => a
+    |= List => a, List a
+
+
+
+export pure new => a, List a;
+new := Single;
+
+
+

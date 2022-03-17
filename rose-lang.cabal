@@ -14,39 +14,67 @@ extra-source-files: README.md
 build-type:         Simple
 
 
-executable Rose 
-    main-is:
-        Main.hs
+common general
     other-modules:
         Build,
         CmdLine,
         Color,
         Output,
+        Pretty,
+        Threading,
         Utils,
+        Analyzer.Analyzer,
+        Analyzer.Error,
+        Analyzer.Prims,
+        Analyzer.State,
+        Analyzer.SymbolTable,
         Parser.Data,
         Parser.Error,
         Parser.Keywords,
         Parser.LangDef,
         Parser.Parser,
-        Parser.Pretty,
-        Semantics.Analysis,
-        Semantics.Error,
-        Semantics.SymbolTable,
-        Semantics.Visitor
+        SymbolTable,
+        SymbolTable.SymbolData,
+        SymbolTable.SymbolMap,
+        Typing.Checker,
+        Typing.Types
     build-depends:
         base >= 4.7.0.0,
         text,
         parsec,
         containers,
         time,
-        directory,
-        -- unordered-containers
+        directory
     default-language:
         Haskell2010
+    other-extensions:
+        Rank2Types,
+        BangPatterns,
+        DefaultSignatures
     ghc-options:
-        -O0
+        -threaded
         -Wall
         -Werror
-        -Wextra
         -Wno-unused-do-bind
         -fhide-source-paths
+
+
+executable Rose
+    import: general
+    main-is: Main.hs
+    ghc-options:
+        -O3
+
+executable Rose-Dev-Build
+    import: general
+    main-is: Main.hs
+    ghc-options:
+        -O0
+
+
+benchmark Rose-Build-bm
+    import: general
+    type: exitcode-stdio-1.0
+    main-is: Benchmarks/Build.hs
+    ghc-options:
+        -O3

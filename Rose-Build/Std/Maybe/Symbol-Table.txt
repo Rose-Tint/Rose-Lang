@@ -1,14 +1,1 @@
-Types:
-    |           Boolean                        Boolean
-    |             Maybe                        Maybe a
-Globals:
-    |              Just                   (a, Maybe a)
-    |           Nothing                        Maybe a
-    |            exists             (Maybe a, Boolean)
-    |        maybeApply        (b, Maybe a, (a, b), b)
-    |           onMaybe     ((a, b), Maybe a, Maybe b)
-Scopeds:
-Undefined Types:
-Undefined Symbols:
-    |             False                        Boolean
-    |              True                        Boolean
+Analysis {arResult = Nothing, arErrors = [(ErrorInfo {eiDefName = Nothing, eiCalls = []},OtherError "`Checker Expr` not fully implemented")], arWarnings = [], arTable = SymbolTable {tblTypes = fromList [], tblTraits = fromList [], tblGlobals = fromList [], tblScopeds = []}, arImports = []}

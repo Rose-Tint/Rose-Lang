@@ -7,7 +7,9 @@ TODO:
 
 module Parser.Parser (roseParser) where
 
+import Control.Monad ((<$!>))
 import Data.Char (isLower)
+import Data.List.NonEmpty (NonEmpty((:|)), fromList)
 import Data.Maybe (catMaybes)
 import Text.Parsec
 
@@ -66,48 +68,56 @@ literal = choice [
 
 
 term :: Parser Value
+{-# INLINABLE term #-}
 term = choice [
         try literal, arrayLit,
-        VarVal <$> iden,
+        (\i -> FuncCall i []) <$!> iden,
         parens (ctorCall
-            <|> foCallVal
+            <|> foCall
             <|> term)
     ] <?> "term"
 
 
 term' :: Parser Value
+{-# INLINABLE term' #-}
 term' = choice [
         ctorCall,
-        foCallVal,
+        foCall,
         term
     ] <?> "term'"
 
 
 terminalType :: Parser Type
+{-# INLINABLE terminalType #-}
 terminalType = (do
-    ht <- iden
+    name <- iden
     tas <- many ttype
-    return $! if isLower (head $ varName ht) then
-        TerminalType (TypeParam ht) tas
+    return $! if isLower (head $ varName name) then
+        TerminalType name tas
     else
-        TerminalType (RealType ht) tas)
+        TerminalType name tas)
     <?> "terminal type"
 
 
 nonTermType :: Parser Type
-nonTermType = parens
-    (NonTermType <$> commaSep1 ttype)
+{-# INLINABLE nonTermType #-}
+nonTermType = (do
+    typs <- fromList <$!> (parens $ commaSep1 ttype)
+    case typs of
+        (typ :| []) -> return typ
+        (t1 :| (t2:ts)) -> return (NonTermType t1 (t2 :| ts)))
     <?> "non-terminal type"
 
 
 ttype :: Parser Type
-ttype = terminalType <|> nonTermType
+{-# INLINABLE ttype #-}
+ttype = terminalType <|> nonTermType <|> parens ttype
     <?> "type"
 
 
 param :: Parser Value
 param = choice [
-        VarVal <$> smallIden,
+        (\i -> FuncCall i []) <$!> smallIden,
         brackets (ctorCall <|> literal)
     ] <?> "param"
 
@@ -116,7 +126,7 @@ constraint :: Parser Constraint
 constraint = (do
     con <- bigIden
     typ <- smallIden
-    return $! (con, typ))
+    return $! Constraint con typ)
     <?> "constraint"
 
 
@@ -130,6 +140,7 @@ typeDecl = (do
 
 
 foName :: Parser Variable
+{-# INLINABLE foName #-}
 foName = smallIden <|> parens operator
 
 
@@ -176,7 +187,7 @@ returnE = (do
     <?> "return expression"
     where
         expr = resOper "::"
-            >> ExprVal <$> (try match <|> ifElse)
+            >> ExprVal <$!> (try match <|> ifElse)
 
 
 body :: Parser [Expr]
@@ -184,7 +195,7 @@ body = braces $ semiSepEnd statement
 
 
 body' :: Parser [Expr]
-body' = ((:[]) <$> statement)
+body' = ((:[]) <$!> statement)
     <|> braces (semiSepEnd statement)
 
 
@@ -192,9 +203,9 @@ bodyAssignment :: Parser [Expr]
 bodyAssignment = choice [
     body,
     (do resOper ":="
-        bdy <- Return <$> choice [
-                try (ExprVal <$> match),
-                try (ExprVal <$> ifElse),
+        bdy <- Return <$!> choice [
+                try (ExprVal <$!> match),
+                try (ExprVal <$!> ifElse),
                 term'
             ]
         semi
@@ -209,8 +220,8 @@ statement = choice [
         loop,
         match,
         newVar,
-        reassign,
-        funcCall
+        try reassign,
+        ValueE <$!> funcCall
     ]
 
 
@@ -235,7 +246,7 @@ newVar = (do
     <?> "new var"
 
 
-operCall :: Parser Expr
+operCall :: Parser Value
 operCall = (do
     lhs <- optionMaybe arg
     op <- operator
@@ -244,10 +255,10 @@ operCall = (do
     return $! FuncCall op args)
     <?> "operator call"
     where
-        arg = funcCallVal <|> term
+        arg = funcCall <|> term
 
 
-funcCall :: Parser Expr
+funcCall :: Parser Value
 funcCall = (do
     name <- smallIden
     args <- many term
@@ -256,15 +267,9 @@ funcCall = (do
 
 
 -- (f)unction or (o)perator (call)
-foCall :: Parser Expr
+foCall :: Parser Value
+{-# INLINABLE foCall #-}
 foCall = try operCall <|> funcCall
-
-
-funcCallVal, {- operCallVal, -}foCallVal
-    :: Parser Value
-funcCallVal = ExprVal <$> funcCall
--- operCallVal = ExprVal <$> operCall
-foCallVal = ExprVal <$> foCall
 
 
 ctorCall :: Parser Value
@@ -339,7 +344,7 @@ traitDecl = (do
         (braces (commaSep1 constraint) <* comma)
     name <- bigIden
     typ <- smallIden
-    let thisCon = (name, typ) :: Constraint
+    let thisCon = Constraint name typ
     fns <- braces $ semiSepEnd
         (try $ (methodDecl vis thisCon
             <?> "method declaration"))

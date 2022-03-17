@@ -1,105 +1,129 @@
 Datatype Definition:
     Visibility   : Export
-    Name         : Maybe
+    Name         : Maybe<5:13>
     Type Vars    : 
-    |   Var {varName = "a", varLine = 5, varStart = 19, varEnd = 20}
+    |   a<5:19>
     Constructors : 
-    |   Export Nothing
-    |   Export Just => a
+    |   Export Nothing<6:8>
+    |   Export Just<7:8> => a<7:16>
 Function Type Declaration:
     Visibility  : Export
     Purity      : Pure
-    Name        : onMaybe
+    Name        : onMaybe<11:13>
     Constraints : 
-    Type        : (a, b), Maybe a, Maybe b
+    Type        : (a<11:25>, b<11:28>), Maybe<11:32> a<11:38>, Maybe<11:41> b<11:47>
 Function Definition:
-    Name       : onMaybe
+    Name       : onMaybe<12:1>
     Parameters : 
-    |   VarVal (Var {varName = "f", varLine = 12, varStart = 9, varEnd = 10})
-    |   Nullary Ctor Call: Nothing
+    |   Function Call:
+    |       Name :f<12:9>
+    |       Arguments :
+    |   Nullary Ctor Call: Nothing<12:12>
     Body       : 
-    |   Return: Nullary Ctor Call: Nothing
+    |   Return: Nullary Ctor Call: Nothing<12:24>
 Function Definition:
-    Name       : onMaybe
+    Name       : onMaybe<13:1>
     Parameters : 
-    |   VarVal (Var {varName = "f", varLine = 13, varStart = 9, varEnd = 10})
+    |   Function Call:
+    |       Name :f<13:9>
+    |       Arguments :
     |   Data Ctor Call:
-    |       Name   : Just
+    |       Name   : Just<13:12>
     |       Params : 
-    |       |   VarVal (Var {varName = "a", varLine = 13, varStart = 17, varEnd = 18})
+    |       |   Function Call:
+    |       |       Name :a<13:17>
+    |       |       Arguments :
     Body       : 
     |   Return: Data Ctor Call:
-    |       Name   : Just
+    |       Name   : Just<13:23>
     |       Params : 
-    |       |   ExprVal: Function Call:
-    |       |       Name      : f
-    |       |       Arguments : 
-    |       |       |   VarVal (Var {varName = "a", varLine = 13, varStart = 31, varEnd = 32})
+    |       |   Function Call:
+    |       |       Name :f<13:29>
+    |       |       Arguments :
+    |       |       |   Function Call:
+    |       |       |       Name :a<13:31>
+    |       |       |       Arguments :
 Function Type Declaration:
     Visibility  : Export
     Purity      : Pure
-    Name        : maybeApply
+    Name        : maybeApply<16:13>
     Constraints : 
-    Type        : b, Maybe a, (a, b), b
+    Type        : b<16:27>, Maybe<16:30> a<16:36>, (a<16:40>, b<16:43>), b<16:47>
 Function Definition:
-    Name       : maybeApply
+    Name       : maybeApply<17:1>
     Parameters : 
-    |   VarVal (Var {varName = "b", varLine = 17, varStart = 12, varEnd = 13})
-    |   Nullary Ctor Call: Nothing
-    |   VarVal (Var {varName = "f", varLine = 17, varStart = 24, varEnd = 25})
+    |   Function Call:
+    |       Name :b<17:12>
+    |       Arguments :
+    |   Nullary Ctor Call: Nothing<17:15>
+    |   Function Call:
+    |       Name :f<17:24>
+    |       Arguments :
     Body       : 
-    |   Return: ExprVal: Function Call:
-    |       Name      : b
-    |       Arguments : 
+    |   Return: Function Call:
+    |       Name :b<17:29>
+    |       Arguments :
 Function Definition:
-    Name       : maybeApply
+    Name       : maybeApply<18:1>
     Parameters : 
-    |   VarVal (Var {varName = "b", varLine = 18, varStart = 12, varEnd = 13})
+    |   Function Call:
+    |       Name :b<18:12>
+    |       Arguments :
     |   Data Ctor Call:
-    |       Name   : Just
+    |       Name   : Just<18:15>
     |       Params : 
-    |       |   VarVal (Var {varName = "a", varLine = 18, varStart = 20, varEnd = 21})
-    |   VarVal (Var {varName = "f", varLine = 18, varStart = 23, varEnd = 24})
+    |       |   Function Call:
+    |       |       Name :a<18:20>
+    |       |       Arguments :
+    |   Function Call:
+    |       Name :f<18:23>
+    |       Arguments :
     Body       : 
-    |   Return: ExprVal: Function Call:
-    |       Name      : f
-    |       Arguments : 
-    |       |   VarVal (Var {varName = "a", varLine = 18, varStart = 30, varEnd = 31})
+    |   Return: Function Call:
+    |       Name :f<18:28>
+    |       Arguments :
+    |       |   Function Call:
+    |       |       Name :a<18:30>
+    |       |       Arguments :
 Function Type Declaration:
     Visibility  : Export
     Purity      : Pure
-    Name        : exists
+    Name        : exists<21:13>
     Constraints : 
-    Type        : Maybe a, Boolean
+    Type        : Maybe<21:23> a<21:29>, Boolean<21:32>
 Function Definition:
-    Name       : exists
+    Name       : exists<22:1>
     Parameters : 
-    |   Nullary Ctor Call: Nothing
+    |   Nullary Ctor Call: Nothing<22:9>
     Body       : 
-    |   Return: Nullary Ctor Call: False
+    |   Return: Nullary Ctor Call: False<22:21>
 Function Definition:
-    Name       : exists
+    Name       : exists<23:1>
     Parameters : 
-    |   VarVal (Var {varName = "m", varLine = 23, varStart = 8, varEnd = 9})
+    |   Function Call:
+    |       Name :m<23:8>
+    |       Arguments :
     Body       : 
-    |   Return: Nullary Ctor Call: True
+    |   Return: Nullary Ctor Call: True<23:13>
 Trait Implementation:
-    Name        : Logical
+    Name        : Logical<38:6>
     Constraints : 
-    Type Name   : (Maybe a)
+    Type Name   : Maybe<38:15> a<38:21>
     Method Defs : 
     |   Function Definition:
-    |       Name       : asBool
+    |       Name       : asBool<39:5>
     |       Parameters : 
-    |       |   Nullary Ctor Call: Nothing
+    |       |   Nullary Ctor Call: Nothing<39:13>
     |       Body       : 
-    |       |   Return: Nullary Ctor Call: False
+    |       |   Return: Nullary Ctor Call: False<39:25>
     |   Function Definition:
-    |       Name       : asBool
+    |       Name       : asBool<40:5>
     |       Parameters : 
     |       |   Data Ctor Call:
-    |       |       Name   : Just
+    |       |       Name   : Just<40:13>
     |       |       Params : 
-    |       |       |   VarVal (Var {varName = "a", varLine = 40, varStart = 18, varEnd = 19})
+    |       |       |   Function Call:
+    |       |       |       Name :a<40:18>
+    |       |       |       Arguments :
     |       Body       : 
-    |       |   Return: Nullary Ctor Call: True
+    |       |   Return: Nullary Ctor Call: True<40:24>

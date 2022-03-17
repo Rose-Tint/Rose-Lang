@@ -1,423 +1,493 @@
 Datatype Definition:
     Visibility   : Export
-    Name         : Ordering
+    Name         : Ordering<5:13>
     Type Vars    : 
     Constructors : 
-    |   Export LT
-    |   Export EQ
-    |   Export GT
+    |   Export LT<6:8>
+    |   Export EQ<7:8>
+    |   Export GT<8:8>
 Trait Declaration:
     Visibility  : Export
     Constraints : 
-    Name        : Eq
-    Type Var    : a
+    Name        : Eq<12:14>
+    Type Var    : a<12:17>
     Methods     : 
     |   Function Type Declaration:
     |       Visibility  : Export
     |       Purity      : Pure
-    |       Name        : ==
+    |       Name        : ==<13:11>
     |       Constraints : 
-    |       |   (Var {varName = "Eq", varLine = 12, varStart = 14, varEnd = 16},Var {varName = "a", varLine = 12, varStart = 17, varEnd = 18})
-    |       Type        : a, a, Boolean
+    |       |   { Eq<12:14> (a<12:17>) }
+    |       Type        : a<13:18>, a<13:21>, Boolean<13:24>
     |   Function Type Declaration:
     |       Visibility  : Export
     |       Purity      : Pure
-    |       Name        : ==
+    |       Name        : ==<14:11>
     |       Constraints : 
-    |       |   (Var {varName = "Eq", varLine = 12, varStart = 14, varEnd = 16},Var {varName = "a", varLine = 12, varStart = 17, varEnd = 18})
-    |       Type        : a, a, Boolean
+    |       |   { Eq<12:14> (a<12:17>) }
+    |       Type        : a<14:18>, a<14:21>, Boolean<14:24>
 Trait Declaration:
     Visibility  : Export
     Constraints : 
-    |   (Var {varName = "Eq", varLine = 18, varStart = 16, varEnd = 18},Var {varName = "a", varLine = 18, varStart = 19, varEnd = 20})
-    Name        : Ord
-    Type Var    : a
+    |   { Eq<18:16> (a<18:19>) }
+    Name        : Ord<18:24>
+    Type Var    : a<18:28>
     Methods     : 
     |   Function Type Declaration:
     |       Visibility  : Export
     |       Purity      : Pure
-    |       Name        : <
+    |       Name        : <<19:11>
     |       Constraints : 
-    |       |   (Var {varName = "Ord", varLine = 18, varStart = 24, varEnd = 27},Var {varName = "a", varLine = 18, varStart = 28, varEnd = 29})
-    |       Type        : a, a, Boolean
+    |       |   { Ord<18:24> (a<18:28>) }
+    |       Type        : a<19:19>, a<19:22>, Boolean<19:25>
     |   Function Type Declaration:
     |       Visibility  : Export
     |       Purity      : Pure
-    |       Name        : <=
+    |       Name        : <=<20:11>
     |       Constraints : 
-    |       |   (Var {varName = "Ord", varLine = 18, varStart = 24, varEnd = 27},Var {varName = "a", varLine = 18, varStart = 28, varEnd = 29})
-    |       Type        : a, a, Boolean
+    |       |   { Ord<18:24> (a<18:28>) }
+    |       Type        : a<20:19>, a<20:22>, Boolean<20:25>
     |   Function Type Declaration:
     |       Visibility  : Export
     |       Purity      : Pure
-    |       Name        : >
+    |       Name        : ><21:11>
     |       Constraints : 
-    |       |   (Var {varName = "Ord", varLine = 18, varStart = 24, varEnd = 27},Var {varName = "a", varLine = 18, varStart = 28, varEnd = 29})
-    |       Type        : a, a, Boolean
+    |       |   { Ord<18:24> (a<18:28>) }
+    |       Type        : a<21:19>, a<21:22>, Boolean<21:25>
     |   Function Type Declaration:
     |       Visibility  : Export
     |       Purity      : Pure
-    |       Name        : >=
+    |       Name        : >=<22:11>
     |       Constraints : 
-    |       |   (Var {varName = "Ord", varLine = 18, varStart = 24, varEnd = 27},Var {varName = "a", varLine = 18, varStart = 28, varEnd = 29})
-    |       Type        : a, a, Boolean
+    |       |   { Ord<18:24> (a<18:28>) }
+    |       Type        : a<22:19>, a<22:22>, Boolean<22:25>
     |   Function Type Declaration:
     |       Visibility  : Export
     |       Purity      : Pure
-    |       Name        : <=>
+    |       Name        : <=><23:11>
     |       Constraints : 
-    |       |   (Var {varName = "Ord", varLine = 18, varStart = 24, varEnd = 27},Var {varName = "a", varLine = 18, varStart = 28, varEnd = 29})
-    |       Type        : a, a, Ordering
+    |       |   { Ord<18:24> (a<18:28>) }
+    |       Type        : a<23:19>, a<23:22>, Ordering<23:25>
 Trait Declaration:
     Visibility  : Export
     Constraints : 
-    Name        : Logical
-    Type Var    : a
+    Name        : Logical<27:14>
+    Type Var    : a<27:22>
     Methods     : 
     |   Function Type Declaration:
     |       Visibility  : Export
     |       Purity      : Pure
-    |       Name        : asBool
+    |       Name        : asBool<28:10>
     |       Constraints : 
-    |       |   (Var {varName = "Logical", varLine = 27, varStart = 14, varEnd = 21},Var {varName = "a", varLine = 27, varStart = 22, varEnd = 23})
-    |       Type        : a, Boolean
+    |       |   { Logical<27:14> (a<27:22>) }
+    |       Type        : a<28:20>, Boolean<28:23>
     |   Function Type Declaration:
     |       Visibility  : Export
     |       Purity      : Pure
-    |       Name        : &&
+    |       Name        : &&<29:11>
     |       Constraints : 
-    |       |   (Var {varName = "Logical", varLine = 27, varStart = 14, varEnd = 21},Var {varName = "a", varLine = 27, varStart = 22, varEnd = 23})
-    |       Type        : a, a, Boolean
+    |       |   { Logical<27:14> (a<27:22>) }
+    |       Type        : a<29:18>, a<29:21>, Boolean<29:24>
     |   Function Type Declaration:
     |       Visibility  : Export
     |       Purity      : Pure
-    |       Name        : ||
+    |       Name        : ||<30:11>
     |       Constraints : 
-    |       |   (Var {varName = "Logical", varLine = 27, varStart = 14, varEnd = 21},Var {varName = "a", varLine = 27, varStart = 22, varEnd = 23})
-    |       Type        : a, a, Boolean
+    |       |   { Logical<27:14> (a<27:22>) }
+    |       Type        : a<30:18>, a<30:21>, Boolean<30:24>
     |   Function Type Declaration:
     |       Visibility  : Export
     |       Purity      : Pure
-    |       Name        : ^^
+    |       Name        : ^^<31:11>
     |       Constraints : 
-    |       |   (Var {varName = "Logical", varLine = 27, varStart = 14, varEnd = 21},Var {varName = "a", varLine = 27, varStart = 22, varEnd = 23})
-    |       Type        : a, a, Boolean
+    |       |   { Logical<27:14> (a<27:22>) }
+    |       Type        : a<31:18>, a<31:21>, Boolean<31:24>
     |   Function Type Declaration:
     |       Visibility  : Export
     |       Purity      : Pure
-    |       Name        : not
+    |       Name        : not<32:10>
     |       Constraints : 
-    |       |   (Var {varName = "Logical", varLine = 27, varStart = 14, varEnd = 21},Var {varName = "a", varLine = 27, varStart = 22, varEnd = 23})
-    |       Type        : a, Boolean
+    |       |   { Logical<27:14> (a<27:22>) }
+    |       Type        : a<32:17>, Boolean<32:20>
 Function Type Declaration:
     Visibility  : Export
     Purity      : Pure
-    Name        : min
+    Name        : min<37:13>
     Constraints : 
-    |   (Var {varName = "Ord", varLine = 37, varStart = 22, varEnd = 25},Var {varName = "a", varLine = 37, varStart = 26, varEnd = 27})
-    Type        : a, a, a
+    |   { Ord<37:22> (a<37:26>) }
+    Type        : a<37:31>, a<37:34>, a<37:37>
 Function Definition:
-    Name       : min
+    Name       : min<38:1>
     Parameters : 
-    |   VarVal (Var {varName = "a", varLine = 38, varStart = 5, varEnd = 6})
-    |   VarVal (Var {varName = "b", varLine = 38, varStart = 7, varEnd = 8})
+    |   Function Call:
+    |       Name :a<38:5>
+    |       Arguments :
+    |   Function Call:
+    |       Name :b<38:7>
+    |       Arguments :
     Body       : 
     |   Return: ExprVal: Pattern Match:
-    |       Value : ExprVal: Function Call:
-    |       Name      : <=>
-    |       Arguments : 
-    |       |   ExprVal: Function Call:
-    |       |       Name      : a
-    |       |       Arguments : 
-    |       |   ExprVal: Function Call:
-    |       |       Name      : b
-    |       |       Arguments : 
+    |       Value : Function Call:
+    |       Name :<=><38:21>
+    |       Arguments :
+    |       |   Function Call:
+    |       |       Name :a<38:19>
+    |       |       Arguments :
+    |       |   Function Call:
+    |       |       Name :b<38:25>
+    |       |       Arguments :
     |   
     |       Cases : 
-    |       |   (CtorVal (Var {varName = "LT", varLine = 39, varStart = 10, varEnd = 12}) [],[Return (ExprVal (FuncCall (Var {varName = "a", varLine = 39, varStart = 17, varEnd = 18}) []))])
-    |       |   (CtorVal (Var {varName = "EQ", varLine = 40, varStart = 10, varEnd = 12}) [],[Return (ExprVal (FuncCall (Var {varName = "a", varLine = 40, varStart = 17, varEnd = 18}) []))])
-    |       |   (CtorVal (Var {varName = "GT", varLine = 41, varStart = 10, varEnd = 12}) [],[Return (ExprVal (FuncCall (Var {varName = "b", varLine = 41, varStart = 17, varEnd = 18}) []))])
+    |       |   (CtorVal (Var {varName = "LT", varLine = 39, varStart = 10}) [],[Return (FuncCall (Var {varName = "a", varLine = 39, varStart = 17}) [])])
+    |       |   (CtorVal (Var {varName = "EQ", varLine = 40, varStart = 10}) [],[Return (FuncCall (Var {varName = "a", varLine = 40, varStart = 17}) [])])
+    |       |   (CtorVal (Var {varName = "GT", varLine = 41, varStart = 10}) [],[Return (FuncCall (Var {varName = "b", varLine = 41, varStart = 17}) [])])
 Function Type Declaration:
     Visibility  : Export
     Purity      : Pure
-    Name        : max
+    Name        : max<45:13>
     Constraints : 
-    |   (Var {varName = "Ord", varLine = 45, varStart = 22, varEnd = 25},Var {varName = "a", varLine = 45, varStart = 26, varEnd = 27})
-    Type        : a, a, a
+    |   { Ord<45:22> (a<45:26>) }
+    Type        : a<45:31>, a<45:34>, a<45:37>
 Function Definition:
-    Name       : max
+    Name       : max<46:1>
     Parameters : 
-    |   VarVal (Var {varName = "a", varLine = 46, varStart = 5, varEnd = 6})
-    |   VarVal (Var {varName = "b", varLine = 46, varStart = 7, varEnd = 8})
+    |   Function Call:
+    |       Name :a<46:5>
+    |       Arguments :
+    |   Function Call:
+    |       Name :b<46:7>
+    |       Arguments :
     Body       : 
     |   Return: ExprVal: Pattern Match:
-    |       Value : ExprVal: Function Call:
-    |       Name      : <=>
-    |       Arguments : 
-    |       |   ExprVal: Function Call:
-    |       |       Name      : a
-    |       |       Arguments : 
-    |       |   ExprVal: Function Call:
-    |       |       Name      : b
-    |       |       Arguments : 
+    |       Value : Function Call:
+    |       Name :<=><46:21>
+    |       Arguments :
+    |       |   Function Call:
+    |       |       Name :a<46:19>
+    |       |       Arguments :
+    |       |   Function Call:
+    |       |       Name :b<46:25>
+    |       |       Arguments :
     |   
     |       Cases : 
-    |       |   (CtorVal (Var {varName = "LT", varLine = 47, varStart = 10, varEnd = 12}) [],[Return (ExprVal (FuncCall (Var {varName = "b", varLine = 47, varStart = 17, varEnd = 18}) []))])
-    |       |   (CtorVal (Var {varName = "EQ", varLine = 48, varStart = 10, varEnd = 12}) [],[Return (ExprVal (FuncCall (Var {varName = "b", varLine = 48, varStart = 17, varEnd = 18}) []))])
-    |       |   (CtorVal (Var {varName = "GT", varLine = 49, varStart = 10, varEnd = 12}) [],[Return (ExprVal (FuncCall (Var {varName = "a", varLine = 49, varStart = 17, varEnd = 18}) []))])
+    |       |   (CtorVal (Var {varName = "LT", varLine = 47, varStart = 10}) [],[Return (FuncCall (Var {varName = "b", varLine = 47, varStart = 17}) [])])
+    |       |   (CtorVal (Var {varName = "EQ", varLine = 48, varStart = 10}) [],[Return (FuncCall (Var {varName = "b", varLine = 48, varStart = 17}) [])])
+    |       |   (CtorVal (Var {varName = "GT", varLine = 49, varStart = 10}) [],[Return (FuncCall (Var {varName = "a", varLine = 49, varStart = 17}) [])])
 Function Type Declaration:
     Visibility  : Export
     Purity      : Pure
-    Name        : clamp
+    Name        : clamp<53:13>
     Constraints : 
-    |   (Var {varName = "Ord", varLine = 53, varStart = 24, varEnd = 27},Var {varName = "a", varLine = 53, varStart = 28, varEnd = 29})
-    Type        : a, a, a, a
+    |   { Ord<53:24> (a<53:28>) }
+    Type        : a<53:33>, a<53:36>, a<53:39>, a<53:42>
 Function Definition:
-    Name       : clamp
+    Name       : clamp<54:1>
     Parameters : 
-    |   VarVal (Var {varName = "mn", varLine = 54, varStart = 7, varEnd = 9})
-    |   VarVal (Var {varName = "mx", varLine = 54, varStart = 10, varEnd = 12})
-    |   VarVal (Var {varName = "x", varLine = 54, varStart = 13, varEnd = 14})
+    |   Function Call:
+    |       Name :mn<54:7>
+    |       Arguments :
+    |   Function Call:
+    |       Name :mx<54:10>
+    |       Arguments :
+    |   Function Call:
+    |       Name :x<54:13>
+    |       Arguments :
     Body       : 
-    |   Return: ExprVal: Function Call:
-    |       Name      : min
-    |       Arguments : 
-    |       |   VarVal (Var {varName = "mn", varLine = 54, varStart = 22, varEnd = 24})
-    |       |   ExprVal: Function Call:
-    |       |       Name      : max
-    |       |       Arguments : 
-    |       |       |   VarVal (Var {varName = "mx", varLine = 54, varStart = 30, varEnd = 32})
-    |       |       |   VarVal (Var {varName = "x", varLine = 54, varStart = 33, varEnd = 34})
+    |   Return: Function Call:
+    |       Name :min<54:18>
+    |       Arguments :
+    |       |   Function Call:
+    |       |       Name :mn<54:22>
+    |       |       Arguments :
+    |       |   Function Call:
+    |       |       Name :max<54:26>
+    |       |       Arguments :
+    |       |       |   Function Call:
+    |       |       |       Name :mx<54:30>
+    |       |       |       Arguments :
+    |       |       |   Function Call:
+    |       |       |       Name :x<54:33>
+    |       |       |       Arguments :
 Trait Defaults:
-    Name        : Ord
+    Name        : Ord<58:6>
     Constraints : 
     Method Defs : 
     |   Function Definition:
-    |       Name       : <
+    |       Name       : <<59:6>
     |       Parameters : 
     |       Body       : 
-    |       |   Return: ExprVal: Function Call:
-    |       |       Name      : .
-    |       |       Arguments : 
-    |       |       |   ExprVal: Function Call:
-    |       |       |       Name      : not
-    |       |       |       Arguments : 
-    |       |       |   ExprVal: Function Call:
-    |       |       |       Name      : >=
-    |       |       |       Arguments : 
+    |       |   Return: Function Call:
+    |       |       Name :.<59:17>
+    |       |       Arguments :
+    |       |       |   Function Call:
+    |       |       |       Name :not<59:13>
+    |       |       |       Arguments :
+    |       |       |   Function Call:
+    |       |       |       Name :>=<59:20>
+    |       |       |       Arguments :
     |   Function Definition:
-    |       Name       : <=
+    |       Name       : <=<60:7>
     |       Parameters : 
-    |       |   VarVal (Var {varName = "a", varLine = 60, varStart = 5, varEnd = 6})
-    |       |   VarVal (Var {varName = "b", varLine = 60, varStart = 10, varEnd = 11})
+    |       |   Function Call:
+    |       |       Name :a<60:5>
+    |       |       Arguments :
+    |       |   Function Call:
+    |       |       Name :b<60:10>
+    |       |       Arguments :
     |       Body       : 
-    |       |   Return: ExprVal: Function Call:
-    |       |       Name      : ||
-    |       |       Arguments : 
-    |       |       |   ExprVal: Function Call:
-    |       |       |       Name      : <
-    |       |       |       Arguments : 
-    |       |       |       |   ExprVal: Function Call:
-    |       |       |       |       Name      : a
-    |       |       |       |       Arguments : 
-    |       |       |       |   ExprVal: Function Call:
-    |       |       |       |       Name      : b
-    |       |       |       |       Arguments : 
-    |       |       |   ExprVal: Function Call:
-    |       |       |       Name      : ==
-    |       |       |       Arguments : 
-    |       |       |       |   ExprVal: Function Call:
-    |       |       |       |       Name      : a
-    |       |       |       |       Arguments : 
-    |       |       |       |   ExprVal: Function Call:
-    |       |       |       |       Name      : b
-    |       |       |       |       Arguments : 
+    |       |   Return: Function Call:
+    |       |       Name :||<60:23>
+    |       |       Arguments :
+    |       |       |   Function Call:
+    |       |       |       Name :<<60:18>
+    |       |       |       Arguments :
+    |       |       |       |   Function Call:
+    |       |       |       |       Name :a<60:16>
+    |       |       |       |       Arguments :
+    |       |       |       |   Function Call:
+    |       |       |       |       Name :b<60:20>
+    |       |       |       |       Arguments :
+    |       |       |   Function Call:
+    |       |       |       Name :==<60:29>
+    |       |       |       Arguments :
+    |       |       |       |   Function Call:
+    |       |       |       |       Name :a<60:27>
+    |       |       |       |       Arguments :
+    |       |       |       |   Function Call:
+    |       |       |       |       Name :b<60:32>
+    |       |       |       |       Arguments :
     |   Function Definition:
-    |       Name       : >
+    |       Name       : ><61:6>
     |       Parameters : 
     |       Body       : 
-    |       |   Return: ExprVal: Function Call:
-    |       |       Name      : .
-    |       |       Arguments : 
-    |       |       |   ExprVal: Function Call:
-    |       |       |       Name      : not
-    |       |       |       Arguments : 
-    |       |       |   ExprVal: Function Call:
-    |       |       |       Name      : <=
-    |       |       |       Arguments : 
+    |       |   Return: Function Call:
+    |       |       Name :.<61:17>
+    |       |       Arguments :
+    |       |       |   Function Call:
+    |       |       |       Name :not<61:13>
+    |       |       |       Arguments :
+    |       |       |   Function Call:
+    |       |       |       Name :<=<61:20>
+    |       |       |       Arguments :
     |   Function Definition:
-    |       Name       : >=
+    |       Name       : >=<62:7>
     |       Parameters : 
-    |       |   VarVal (Var {varName = "a", varLine = 62, varStart = 5, varEnd = 6})
-    |       |   VarVal (Var {varName = "b", varLine = 62, varStart = 10, varEnd = 11})
+    |       |   Function Call:
+    |       |       Name :a<62:5>
+    |       |       Arguments :
+    |       |   Function Call:
+    |       |       Name :b<62:10>
+    |       |       Arguments :
     |       Body       : 
-    |       |   Return: ExprVal: Function Call:
-    |       |       Name      : ||
-    |       |       Arguments : 
-    |       |       |   ExprVal: Function Call:
-    |       |       |       Name      : >
-    |       |       |       Arguments : 
-    |       |       |       |   ExprVal: Function Call:
-    |       |       |       |       Name      : a
-    |       |       |       |       Arguments : 
-    |       |       |       |   ExprVal: Function Call:
-    |       |       |       |       Name      : b
-    |       |       |       |       Arguments : 
-    |       |       |   ExprVal: Function Call:
-    |       |       |       Name      : ==
-    |       |       |       Arguments : 
-    |       |       |       |   ExprVal: Function Call:
-    |       |       |       |       Name      : a
-    |       |       |       |       Arguments : 
-    |       |       |       |   ExprVal: Function Call:
-    |       |       |       |       Name      : b
-    |       |       |       |       Arguments : 
+    |       |   Return: Function Call:
+    |       |       Name :||<62:23>
+    |       |       Arguments :
+    |       |       |   Function Call:
+    |       |       |       Name :><62:18>
+    |       |       |       Arguments :
+    |       |       |       |   Function Call:
+    |       |       |       |       Name :a<62:16>
+    |       |       |       |       Arguments :
+    |       |       |       |   Function Call:
+    |       |       |       |       Name :b<62:20>
+    |       |       |       |       Arguments :
+    |       |       |   Function Call:
+    |       |       |       Name :==<62:29>
+    |       |       |       Arguments :
+    |       |       |       |   Function Call:
+    |       |       |       |       Name :a<62:27>
+    |       |       |       |       Arguments :
+    |       |       |       |   Function Call:
+    |       |       |       |       Name :b<62:32>
+    |       |       |       |       Arguments :
 Trait Defaults:
-    Name        : Logical
+    Name        : Logical<66:6>
     Constraints : 
     Method Defs : 
     |   Function Definition:
-    |       Name       : &&
+    |       Name       : &&<67:7>
     |       Parameters : 
-    |       |   VarVal (Var {varName = "a", varLine = 67, varStart = 5, varEnd = 6})
-    |       |   VarVal (Var {varName = "b", varLine = 67, varStart = 10, varEnd = 11})
+    |       |   Function Call:
+    |       |       Name :a<67:5>
+    |       |       Arguments :
+    |       |   Function Call:
+    |       |       Name :b<67:10>
+    |       |       Arguments :
     |       Body       : 
-    |       |   Return: ExprVal: Function Call:
-    |       |       Name      : &&
-    |       |       Arguments : 
-    |       |       |   ExprVal: Function Call:
-    |       |       |       Name      : asBool
-    |       |       |       Arguments : 
-    |       |       |       |   VarVal (Var {varName = "a", varLine = 67, varStart = 22, varEnd = 23})
-    |       |       |   ExprVal: Function Call:
-    |       |       |       Name      : asBool
-    |       |       |       Arguments : 
-    |       |       |       |   VarVal (Var {varName = "b", varLine = 67, varStart = 34, varEnd = 35})
+    |       |   Return: Function Call:
+    |       |       Name :&&<67:24>
+    |       |       Arguments :
+    |       |       |   Function Call:
+    |       |       |       Name :asBool<67:15>
+    |       |       |       Arguments :
+    |       |       |       |   Function Call:
+    |       |       |       |       Name :a<67:22>
+    |       |       |       |       Arguments :
+    |       |       |   Function Call:
+    |       |       |       Name :asBool<67:27>
+    |       |       |       Arguments :
+    |       |       |       |   Function Call:
+    |       |       |       |       Name :b<67:34>
+    |       |       |       |       Arguments :
     |   Function Definition:
-    |       Name       : ||
+    |       Name       : ||<68:7>
     |       Parameters : 
-    |       |   VarVal (Var {varName = "a", varLine = 68, varStart = 5, varEnd = 6})
-    |       |   VarVal (Var {varName = "b", varLine = 68, varStart = 10, varEnd = 11})
+    |       |   Function Call:
+    |       |       Name :a<68:5>
+    |       |       Arguments :
+    |       |   Function Call:
+    |       |       Name :b<68:10>
+    |       |       Arguments :
     |       Body       : 
-    |       |   Return: ExprVal: Function Call:
-    |       |       Name      : ||
-    |       |       Arguments : 
-    |       |       |   ExprVal: Function Call:
-    |       |       |       Name      : asBool
-    |       |       |       Arguments : 
-    |       |       |       |   VarVal (Var {varName = "a", varLine = 68, varStart = 22, varEnd = 23})
-    |       |       |   ExprVal: Function Call:
-    |       |       |       Name      : asBool
-    |       |       |       Arguments : 
-    |       |       |       |   VarVal (Var {varName = "b", varLine = 68, varStart = 34, varEnd = 35})
+    |       |   Return: Function Call:
+    |       |       Name :||<68:24>
+    |       |       Arguments :
+    |       |       |   Function Call:
+    |       |       |       Name :asBool<68:15>
+    |       |       |       Arguments :
+    |       |       |       |   Function Call:
+    |       |       |       |       Name :a<68:22>
+    |       |       |       |       Arguments :
+    |       |       |   Function Call:
+    |       |       |       Name :asBool<68:27>
+    |       |       |       Arguments :
+    |       |       |       |   Function Call:
+    |       |       |       |       Name :b<68:34>
+    |       |       |       |       Arguments :
     |   Function Definition:
-    |       Name       : ^^
+    |       Name       : ^^<69:7>
     |       Parameters : 
-    |       |   VarVal (Var {varName = "a", varLine = 69, varStart = 5, varEnd = 6})
-    |       |   VarVal (Var {varName = "b", varLine = 69, varStart = 10, varEnd = 11})
+    |       |   Function Call:
+    |       |       Name :a<69:5>
+    |       |       Arguments :
+    |       |   Function Call:
+    |       |       Name :b<69:10>
+    |       |       Arguments :
     |       Body       : 
-    |       |   Return: ExprVal: Function Call:
-    |       |       Name      : ^^
-    |       |       Arguments : 
-    |       |       |   ExprVal: Function Call:
-    |       |       |       Name      : asBool
-    |       |       |       Arguments : 
-    |       |       |       |   VarVal (Var {varName = "a", varLine = 69, varStart = 22, varEnd = 23})
-    |       |       |   ExprVal: Function Call:
-    |       |       |       Name      : asBool
-    |       |       |       Arguments : 
-    |       |       |       |   VarVal (Var {varName = "b", varLine = 69, varStart = 34, varEnd = 35})
+    |       |   Return: Function Call:
+    |       |       Name :^^<69:24>
+    |       |       Arguments :
+    |       |       |   Function Call:
+    |       |       |       Name :asBool<69:15>
+    |       |       |       Arguments :
+    |       |       |       |   Function Call:
+    |       |       |       |       Name :a<69:22>
+    |       |       |       |       Arguments :
+    |       |       |   Function Call:
+    |       |       |       Name :asBool<69:27>
+    |       |       |       Arguments :
+    |       |       |       |   Function Call:
+    |       |       |       |       Name :b<69:34>
+    |       |       |       |       Arguments :
     |   Function Definition:
-    |       Name       : not
+    |       Name       : not<70:5>
     |       Parameters : 
     |       Body       : 
-    |       |   Return: ExprVal: Function Call:
-    |       |       Name      : .
-    |       |       Arguments : 
-    |       |       |   ExprVal: Function Call:
-    |       |       |       Name      : not
-    |       |       |       Arguments : 
-    |       |       |   ExprVal: Function Call:
-    |       |       |       Name      : asBool
-    |       |       |       Arguments : 
+    |       |   Return: Function Call:
+    |       |       Name :.<70:16>
+    |       |       Arguments :
+    |       |       |   Function Call:
+    |       |       |       Name :not<70:12>
+    |       |       |       Arguments :
+    |       |       |   Function Call:
+    |       |       |       Name :asBool<70:18>
+    |       |       |       Arguments :
 Trait Implementation:
-    Name        : Logical
+    Name        : Logical<74:6>
     Constraints : 
-    Type Name   : Int
+    Type Name   : Int<74:14>
     Method Defs : 
     |   Function Definition:
-    |       Name       : asBool
+    |       Name       : asBool<75:5>
     |       Parameters : 
     |       |   IntLit 0
     |       Body       : 
-    |       |   Return: Nullary Ctor Call: False
+    |       |   Return: Nullary Ctor Call: False<75:19>
     |   Function Definition:
-    |       Name       : asBool
+    |       Name       : asBool<76:5>
     |       Parameters : 
-    |       |   VarVal (Var {varName = "n", varLine = 76, varStart = 12, varEnd = 13})
+    |       |   Function Call:
+    |       |       Name :n<76:12>
+    |       |       Arguments :
     |       Body       : 
-    |       |   Return: Nullary Ctor Call: True
+    |       |   Return: Nullary Ctor Call: True<76:17>
 Trait Implementation:
-    Name        : Logical
+    Name        : Logical<80:6>
     Constraints : 
-    Type Name   : Boolean
+    Type Name   : Boolean<80:14>
     Method Defs : 
     |   Function Definition:
-    |       Name       : asBool
+    |       Name       : asBool<81:5>
     |       Parameters : 
-    |       |   VarVal (Var {varName = "b", varLine = 81, varStart = 12, varEnd = 13})
+    |       |   Function Call:
+    |       |       Name :b<81:12>
+    |       |       Arguments :
     |       Body       : 
-    |       |   Return: ExprVal: Function Call:
-    |       |       Name      : b
-    |       |       Arguments : 
+    |       |   Return: Function Call:
+    |       |       Name :b<81:17>
+    |       |       Arguments :
     |   Function Definition:
-    |       Name       : &&
+    |       Name       : &&<82:12>
     |       Parameters : 
-    |       |   Nullary Ctor Call: True
-    |       |   VarVal (Var {varName = "b", varLine = 82, varStart = 15, varEnd = 16})
+    |       |   Nullary Ctor Call: True<82:6>
+    |       |   Function Call:
+    |       |       Name :b<82:15>
+    |       |       Arguments :
     |       Body       : 
-    |       |   Return: ExprVal: Function Call:
-    |       |       Name      : b
-    |       |       Arguments : 
+    |       |   Return: Function Call:
+    |       |       Name :b<82:20>
+    |       |       Arguments :
     |   Function Definition:
-    |       Name       : &&
+    |       Name       : &&<83:13>
     |       Parameters : 
-    |       |   Nullary Ctor Call: False
-    |       |   VarVal (Var {varName = "b", varLine = 83, varStart = 16, varEnd = 17})
+    |       |   Nullary Ctor Call: False<83:6>
+    |       |   Function Call:
+    |       |       Name :b<83:16>
+    |       |       Arguments :
     |       Body       : 
-    |       |   Return: Nullary Ctor Call: False
+    |       |   Return: Nullary Ctor Call: False<83:21>
     |   Function Definition:
-    |       Name       : ||
+    |       Name       : ||<84:12>
     |       Parameters : 
-    |       |   Nullary Ctor Call: True
-    |       |   VarVal (Var {varName = "b", varLine = 84, varStart = 15, varEnd = 16})
+    |       |   Nullary Ctor Call: True<84:6>
+    |       |   Function Call:
+    |       |       Name :b<84:15>
+    |       |       Arguments :
     |       Body       : 
-    |       |   Return: Nullary Ctor Call: True
+    |       |   Return: Nullary Ctor Call: True<84:20>
     |   Function Definition:
-    |       Name       : ||
+    |       Name       : ||<85:13>
     |       Parameters : 
-    |       |   Nullary Ctor Call: False
-    |       |   VarVal (Var {varName = "b", varLine = 85, varStart = 16, varEnd = 17})
+    |       |   Nullary Ctor Call: False<85:6>
+    |       |   Function Call:
+    |       |       Name :b<85:16>
+    |       |       Arguments :
     |       Body       : 
-    |       |   Return: ExprVal: Function Call:
-    |       |       Name      : b
-    |       |       Arguments : 
+    |       |   Return: Function Call:
+    |       |       Name :b<85:21>
+    |       |       Arguments :
     |   Function Definition:
-    |       Name       : ^^
+    |       Name       : ^^<86:12>
     |       Parameters : 
-    |       |   Nullary Ctor Call: True
-    |       |   VarVal (Var {varName = "b", varLine = 86, varStart = 15, varEnd = 16})
+    |       |   Nullary Ctor Call: True<86:6>
+    |       |   Function Call:
+    |       |       Name :b<86:15>
+    |       |       Arguments :
     |       Body       : 
-    |       |   Return: ExprVal: Function Call:
-    |       |       Name      : not
-    |       |       Arguments : 
-    |       |       |   VarVal (Var {varName = "b", varLine = 86, varStart = 24, varEnd = 25})
+    |       |   Return: Function Call:
+    |       |       Name :not<86:20>
+    |       |       Arguments :
+    |       |       |   Function Call:
+    |       |       |       Name :b<86:24>
+    |       |       |       Arguments :
     |   Function Definition:
-    |       Name       : ^^
+    |       Name       : ^^<87:13>
     |       Parameters : 
-    |       |   Nullary Ctor Call: False
-    |       |   VarVal (Var {varName = "b", varLine = 87, varStart = 16, varEnd = 17})
+    |       |   Nullary Ctor Call: False<87:6>
+    |       |   Function Call:
+    |       |       Name :b<87:16>
+    |       |       Arguments :
     |       Body       : 
-    |       |   Return: ExprVal: Function Call:
-    |       |       Name      : b
-    |       |       Arguments : 
+    |       |   Return: Function Call:
+    |       |       Name :b<87:21>
+    |       |       Arguments :

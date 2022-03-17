@@ -1,0 +1,126 @@
+Trait Declaration:
+    Visibility  : Export
+    Constraints : 
+    Name        : Hashable<4:14>
+    Type Var    : a<4:23>
+    Methods     : 
+    |   Function Type Declaration:
+    |       Visibility  : Export
+    |       Purity      : Pure
+    |       Name        : hash<5:10>
+    |       Constraints : 
+    |       |   { Hashable<4:14> (a<4:23>) }
+    |       Type        : a<5:18>, Int<5:21>
+    |   Function Type Declaration:
+    |       Visibility  : Export
+    |       Purity      : Pure
+    |       Name        : salted<6:10>
+    |       Constraints : 
+    |       |   { Hashable<4:14> (a<4:23>) }
+    |       Type        : Int<6:20>, a<6:25>, Int<6:28>
+Function Type Declaration:
+    Visibility  : Export
+    Purity      : Pure
+    Name        : combine<10:13>
+    Constraints : 
+    Type        : Int<10:24>, Int<10:29>, Int<10:34>
+Function Definition:
+    Name       : combine<11:1>
+    Parameters : 
+    |   Function Call:
+    |       Name :a<11:9>
+    |       Arguments :
+    |   Function Call:
+    |       Name :b<11:11>
+    |       Arguments :
+    Body       : 
+    |   New Variable Definition:
+    |       Mutability : Pure
+    |       Type       : Int<12:21>
+    |       Name       : result<12:13>
+    |       Value      : 
+    |       |   Function Call:
+    |       |       Name :b<12:29>
+    |       |       Arguments :
+    |   Variable Reassignment:
+    |       Name  : result<13:5>
+    |       Value : 
+    |       |   Function Call:
+    |       |       Name :+<13:21>
+    |       |       Arguments :
+    |       |       |   Function Call:
+    |       |       |       Name :result<13:14>
+    |       |       |       Arguments :
+    |       |       |   Function Call:
+    |       |       |       Name :<<<13:26>
+    |       |       |       Arguments :
+    |       |       |       |   Function Call:
+    |       |       |       |       Name :a<13:24>
+    |       |       |       |       Arguments :
+    |       |       |       |   IntLit 6
+    |   Variable Reassignment:
+    |       Name  : result<14:5>
+    |       Value : 
+    |       |   Function Call:
+    |       |       Name :+<14:21>
+    |       |       Arguments :
+    |       |       |   Function Call:
+    |       |       |       Name :result<14:14>
+    |       |       |       Arguments :
+    |       |       |   Function Call:
+    |       |       |       Name :>><14:26>
+    |       |       |       Arguments :
+    |       |       |       |   Function Call:
+    |       |       |       |       Name :a<14:24>
+    |       |       |       |       Arguments :
+    |       |       |       |   IntLit 2
+    |   Return: Function Call:
+    |       Name :^<15:14>
+    |       Arguments :
+    |       |   Function Call:
+    |       |       Name :a<15:12>
+    |       |       Arguments :
+    |       |   Function Call:
+    |       |       Name :result<15:16>
+    |       |       Arguments :
+Trait Defaults:
+    Name        : Hashable<19:6>
+    Constraints : 
+    Method Defs : 
+    |   Function Definition:
+    |       Name       : salted<20:5>
+    |       Parameters : 
+    |       |   Function Call:
+    |       |       Name :s<20:12>
+    |       |       Arguments :
+    |       |   Function Call:
+    |       |       Name :a<20:14>
+    |       |       Arguments :
+    |       Body       : 
+    |       |   Return: Function Call:
+    |       |       Name :combine<20:19>
+    |       |       Arguments :
+    |       |       |   Function Call:
+    |       |       |       Name :s<20:27>
+    |       |       |       Arguments :
+    |       |       |   Function Call:
+    |       |       |       Name :hash<20:30>
+    |       |       |       Arguments :
+    |       |       |       |   Function Call:
+    |       |       |       |       Name :a<20:35>
+    |       |       |       |       Arguments :
+Trait Implementation:
+    Name        : Hashable<24:6>
+    Constraints : 
+    Type Name   : Int<24:15>
+    Method Defs : 
+    |   Function Definition:
+    |       Name       : hash<25:5>
+    |       Parameters : 
+    |       |   Function Call:
+    |       |       Name :n<25:10>
+    |       |       Arguments :
+    |       Body       : 
+    |       |   Return: Function Call:
+    |       |       Name :n<25:15>
+    |       |       Arguments :

@@ -2,25 +2,23 @@ module Build where
 
 import Prelude hiding (readFile, lines)
 
-import Control.Monad (foldM_, unless)
-import Data.Text (Text, lines)
+import Control.Monad ((<$!>), when, foldM_)
+import Data.Text (Text)
 import Data.Text.IO (readFile)
--- import Data.Time (diffUTCTime, getCurrentTime)
 import System.Directory
 import System.IO ()
 import Text.Parsec (parse)
 
 import CmdLine (CmdLine(..))
+import Analyzer.Analyzer
 import Parser.Data (Expr)
 import Parser.Error (printParseErr)
 import Parser.Parser (roseParser)
-import Parser.Pretty (prettyExpr)
-import Semantics.Analysis
-import Semantics.Error (Error(UnknownError), prettyError)
-import Semantics.SymbolTable
-import Semantics.Visitor
+import Typing.Checker
 import Output
-import Utils (pathToModule)
+import Pretty
+import Threading
+import Utils
 
 
 type ModuleName = String
@@ -30,38 +28,53 @@ type BuildResult = ()
 
 
 
-modPathToRelDir :: FilePath -> FilePath
-modPathToRelDir [] = "/"
-modPathToRelDir ".th" = "/"
-modPathToRelDir (c:cs) = (c:modPathToRelDir cs)
+build :: CmdLine -> IO BuildResult
+build cmd = do
+    -- cache directory (also creates the build dir)
+    createDirectoryIfMissing True $!
+        cmdBuildDir cmd ++ "/Cache"
+    mgr <- newManager
+    foldM_ (\_ file -> do
+            fork mgr $! buildFile cmd file
+            return ()
+        ) () (cmdFiles cmd)
+    waitAll mgr
+    status (cmdVerb cmd)
+        "Finished Building All Modules\n" []
+    return ()
 
 
 buildFile :: CmdLine -> FilePath -> IO BuildResult
 buildFile cmd relPath = do
     let modName = pathToModule relPath
     let verb = cmdVerb cmd
-    let buildDir = (cmdBuildDir cmd) ++ "/" ++
+    let buildDir = cmdBuildDir cmd ++ "/" ++
             modPathToRelDir relPath
-    createDirectoryIfMissing True buildDir
+
+    when (cmdTrace cmd) $!
+        createDirectoryIfMissing True buildDir
     message verb "Building Module [%s]\n" [modName]
-    modPath <- makeAbsolute (relPath)
-    status verb "Reading File [%s]\n" [modName]
     debug verb "module build dir: %s\n" [buildDir]
-    src <- readFile modPath
-    status verb "Parsing Contents [%s]\n" [modName]
+
+    src <- makeAbsolute relPath >>= readFile
+
     parseRes <- parseFile cmd src modName
     trace cmd (buildDir ++ "Abstract-Syntax-Tree.txt")
-        (concat $ fmap prettyExpr parseRes)
-    status verb "Analyzing Expressions [%s]\n" [modName]
+        (concat $ pretty <$!> parseRes)
+
+    _ <- analyzeFile cmd src modName parseRes
+
     symTbl <- analyzeFile cmd src modName parseRes
     trace cmd (buildDir ++ "Symbol-Table.txt")
-        (prettySymbolTable symTbl)
-    status verb "Finished Building [%s]\n" [modName]
+        (show symTbl)
+
+    -- status verb "Finished Building [%s]\n" [modName]
 
 
 parseFile :: CmdLine -> Text -> ModuleName -> IO [Expr]
-parseFile cmd src modName =
-    case parse roseParser modName src of
+parseFile cmd src name = do
+    info (cmdVerb cmd) "Parsing [%s]\n" [name]
+    case parse roseParser name src of
         Left err -> do
             printParseErr (cmdVerb cmd) err src
             fatal (cmdVerb cmd)
@@ -70,22 +83,6 @@ parseFile cmd src modName =
 
 
 analyzeFile :: CmdLine -> Text -> ModuleName -> [Expr]
-            -> IO SymbolTable
-analyzeFile cmd src name exprs = case visit name visitor of
-    Okay _ st err -> do
-        unless (err == UnknownError)
-            (message v (prettyError srcLines name err) []
-            >> return ())
-        return st
-    Error _ err ->
-        fatal v (prettyError srcLines name err) []
-    where
-        v = cmdVerb cmd
-        srcLines = lines src
-        visitor = do
-            preprocess exprs
-            foldM_ (\_ expr ->
-                analyzeExpr expr
-                >> return ())
-                () exprs
-
+            -> IO (Analysis ())
+analyzeFile cmd _ _ es = return $!
+    analyze cmd $! foreachM_ es infer
