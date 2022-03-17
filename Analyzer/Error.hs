@@ -3,8 +3,8 @@ module Analyzer.Error where
 import Parser.Data (Variable)
 import SymbolTable.SymbolData
 import Typing.Types
-import Color
-import Pretty
+-- import Color
+-- import Pretty
 
 
 

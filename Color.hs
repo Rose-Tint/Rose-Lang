@@ -12,7 +12,6 @@ import Text.Printf (
     formatString
     )
 import qualified Text.Printf (printf)
-import Text.Regex
 
 
 data Color
@@ -59,12 +58,6 @@ reset str = show Reset ++ str
 
 printf :: (PrintfType a) => String -> a
 printf = Text.Printf.printf . color
-
-
-unColor :: String -> String
-unColor str = subRegex reg "\0" str
-    where
-        reg = mkRegex "\x1B\[(0|3[0-7])m"
 
 
 
