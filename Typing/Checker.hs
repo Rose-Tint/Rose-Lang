@@ -1,6 +1,6 @@
 module Typing.Checker where
 
-import Control.Monad ((<$!>), foldM)
+import Control.Monad ((<$!>), foldM, unless)
 import Data.Maybe (fromMaybe, fromJust)
 
 import Analyzer.Analyzer
@@ -10,6 +10,9 @@ import Analyzer.SymbolTable
 import Parser.Data hiding (Type)
 import SymbolTable
 import Typing.Types
+
+
+default (Int, Double)
 
 
 
@@ -25,106 +28,139 @@ class Checker a where
 instance Checker Type where
     infer t@(Delayed _) = fromMaybe t <$!> peekExpType
     infer t = return $! t
+    check t = return . (t ==)
 
 
 instance Checker Value where
-    infer (IntLit _) = return intLitType
-    infer (FltLit _) = return fltLitType
-    infer (ChrLit _) = return chrLitType
-    infer (StrLit _) = return strLitType
+    infer (IntLit _ p) = updatePos p >>
+        return intLitType
+    infer (FltLit _ p) = updatePos p >>
+        return fltLitType
+    infer (ChrLit _ p) = updatePos p >>
+        return chrLitType
+    infer (StrLit _ p) = updatePos p >>
+        return strLitType
     infer (FuncCall name args) = do
+        updatePos $! varPos name
         dta <- searchScopeds name
         withExpType (sdType dta) $!
             apply (sdType dta) args
     infer (CtorVal name args) = do
+        updatePos $! varPos name
         dta <- searchGlobals name
         withExpType (sdType dta) $!
             apply (sdType dta) args
     infer (ExprVal expr) = infer expr
-    infer (Array _ []) = throw (OtherError "empty array")
-    infer (Array _ (x:xs)) = do
+    infer (Array _ [] p) = updatePos p >>
+        throw (OtherError "empty array")
+    infer (Array _ (x:xs) p) = do
+        updatePos p
         xT <- infer x
         pushExpType xT
-        chk <- catch $! foldM
+        t <- foldM
             (\b a -> do
                 aT <- infer $! a
                 chk <- check aT xT
                 if chk then
                     return $! b
                 else
-                    throw $! TypeMismatch Nothing aT xT
+                    throw $! TypeMismatch aT xT
             ) xT xs
         popExpType
-        case chk of
-            Nothing -> throw $! TypeMismatch1 Nothing xT
-            Just t -> return $! arrayLitOf t
+        return t
 
 
 instance Checker Expr where
-    -- i do not know how to handle this (an expression
-    -- without a type) without adding an entire new
-    -- sub-function to Analyzer
     infer (ValueE val) = infer val
     infer (ModImport vis var) = do
         addImport vis var
-        throw $ OtherError "unhandled Expr (ModImport)"
-    -- infer (FuncTypeDecl pur vis name cons typs) = do
-    --     pushDefinition name
-    --     dta <- searchGlobals name
-    infer _ = throw $ OtherError "`Checker Expr` not fully implemented"
+        return NoType
+    infer (FuncTypeDecl pur vis name cons typs) = do
+        -- if this function-type-decl already exists, then
+        -- check that they are the same (allow dupe-decls
+        -- as long as they are the same)
+        -- else, create a new global
+        enterDefinition name
+        mDta <- findGlobal name
+        let typ' = addCons cons $! fromPDTypes typs
+        _ <- case mDta of
+            Nothing -> pushGlobal $ (undef name) {
+                        sdPurity = Just pur,
+                        sdVisib = Just vis,
+                        sdType = typ'
+                    }
+            Just dta -> expect typ' (sdType dta)
+        exitDefinition
+        return NoType
+    infer (FuncDef name pars _) = do
+        enterDefinition name
+        mDta <- findGlobal name
+        _ <- case mDta of
+            Nothing -> throwUndefined name
+            Just dta -> do
+                typ <- withExpType (sdType dta) $!
+                    apply (sdType dta) pars -- NOPE
+                return typ
+        exitDefinition
+        return NoType
+    -- infer (DataDef vis name tps ctrs) = do
+    infer (DataDef _ _ _ _) = do
+        return NoType
+    -- infer (IfElse cls tb fb) = do
+    -- infer (Pattern val cs) = do
+    -- infer (Loop init cond iter bdy) = do
+    -- infer (TraitDecl vis cons name tv fns) = do
+    --     return NoType
+    -- infer (TraitImpl name cons typ defs) = do
+    --     return NoType
+    infer (NewVar mut typ var val) = do
+        let typ' = fromPDType typ
+        pushExpType typ'
+        valT <- infer val
+        chk <- check valT typ'
+        popExpType
+        if chk then do
+            mdl <- getModuleName
+            pushScoped $ SymbolData
+                typ'
+                (Just Intern)
+                (Just $! mut)
+                var
+                mdl
+            return NoType
+        else
+            throw $ TypeMismatch valT typ'
+    infer (Reassign var val) = do
+        var' <- findScoped var
+        case var' of
+            Nothing -> throwUndefined var
+            Just dta -> do
+                let varT = sdType dta
+                pushExpType varT
+                valT <- infer val
+                chk <- check varT valT
+                popExpType
+                if chk then return NoType else throw $
+                    TypeMismatch varT valT
+    infer (Return val) = infer val
+    infer _ = return NoType
+    -- infer _ = throw $ OtherError
+    --     "`Checker Expr` not fully implemented"
 
 
 {-
 ModImport -- WIP
-    FuncTypeDecl
-        exprPurity :: Purity,
-        exprVisib :: Visibility,
-        exprName :: Variable,
-        exprCons :: [Constraint],
-        exprType :: [Type]
-    }
-    | FuncDef {
-        exprName :: Variable,
-        exprPars :: [Value],
-        exprBody :: Body
-    }
-    | DataDef {
-        exprVisib :: Visibility,
-        exprName :: Variable,
-        exprTypePars :: [Variable],
-        exprCtors :: [DataCtor]
-    }
-    | IfElse {
-        exprClause :: Value,
-        exprTrue :: Body,
-        exprFalse :: Body
-    }
-    | Pattern {
-        exprValue :: Value,
-        exprCases :: [(Value, Body)]
-    }
-    | Loop {
-        exprInit :: Maybe Expr,
-        exprCond :: Value,
-        exprIter :: Maybe Expr,
-        exprBody :: Body
-    }
-    | TraitDecl {
-        exprVisib :: Visibility,
-        exprCons :: [Constraint],
-        exprName :: Variable,
-        exprTypeVar :: Variable,
-        exprFuncs :: [Expr]
-    }
-    | TraitImpl {
-        exprName :: Variable,
-        exprCons :: [Constraint],
-        exprTraitType :: Maybe Type,
-        exprDefs :: [Expr]
-    }
-    | NewVar Mutability Type Variable Value
-    | Reassign Variable Value
-    | Return Value
+FuncTypeDecl -- WIP
+FuncDef -- WIP
+DataDef -- WIP
+IfElse -- WIP
+Pattern -- WIP
+Loop -- WIP
+TraitDecl -- WIP
+TraitImpl -- WIP
+NewVar Mutability Type Variable Value
+Reassign Variable Value
+Return Value
 -}
 
 
@@ -132,6 +168,7 @@ ModImport -- WIP
 apply :: Type -> [Value] -> Analyzer Type
 apply ft [] = return ft
 apply ft (val:vals) = do
+    updatePos $! valPos val
     valT <- infer val
     expT <- peekExpType
     areSame <- case expT of
@@ -139,10 +176,17 @@ apply ft (val:vals) = do
         Just t -> check valT t
     if areSame then
         apply ft vals
-    else
+    else case val of
         -- areSame will be True if expT is Nothing,
         -- so fromJust is safe here
-        throw (TypeMismatch Nothing valT (fromJust expT))
+        FuncCall _ _ -> throw $
+            TypeMismatch valT (fromJust expT)
+        _ -> throw $
+            TypeMismatch valT (fromJust expT)
+
+
+infer_ :: (Checker a) => a -> Analyzer ()
+infer_ = optional . infer
 
 
 checkAll :: (Checker a) => [a] -> Analyzer Bool
@@ -153,8 +197,10 @@ checkAll (x:xs) = do
         check a xT) True xs
 
 
-expect :: (Checker a) => a -> Type -> Analyzer Bool
+expect :: (Checker a) => a -> Type -> Analyzer ()
 {-# INLINABLE expect #-}
-expect a t = do
+expect a t = withExpType t $! do
     typ <- infer a
-    check typ t
+    chk <- check typ t
+    unless chk $! throw $
+        TypeMismatch typ t

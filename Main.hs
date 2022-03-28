@@ -9,17 +9,12 @@ import Build (build)
 import Threading
 
 
+default (Int, Double)
 
--- main thread is slow in concurrency because
--- it is an OS thread, not a haskell-runtime
--- thread
-main, main' :: IO ()
+
+
+main :: IO ()
 main = do
-    mgr <- newManager
-    thrID <- fork mgr main'
-    wait mgr thrID
-    return ()
-main' = do
     cmdLine <- getCmdLine
     let verb = cmdVerb cmdLine
         errs = cmdErrors cmdLine
@@ -30,7 +25,17 @@ main' = do
 
     timeStart <- getCurrentTime
 
-    build cmdLine
+    -- main thread is slow in concurrency because
+    -- it is an OS thread, not a haskell-runtime
+    -- thread
+    _ <- if cmdThreaded cmdLine then do
+        mgr <- newManager
+        tid <- fork mgr $ build cmdLine
+        wait mgr tid
+        return ()
+    else do
+        build cmdLine
+        return ()
 
     timeEnd <- getCurrentTime
     status verb "Finished in %s\n"

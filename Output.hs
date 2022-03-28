@@ -21,6 +21,9 @@ import Color
 import Threading
 
 
+default (Int, Double)
+
+
 success, warn, message, status, debug, info
     :: Int -> String -> [String] -> IO ()
 success = myPutStr Green 1 stdout

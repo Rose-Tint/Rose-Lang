@@ -1,8 +1,18 @@
+{-# LANGUAGE FlexibleInstances #-}
+{-# OPTIONS_GHC -Wno-orphans #-}
+
 module SymbolTable.SymbolMap where
 
+import Control.Monad ((<$!>))
 import qualified Data.Map.Strict as Map
 
+import Color
+import Pretty
 import SymbolTable.SymbolData
+
+
+default (Int, Double)
+
 
 
 type SymbolMap = Map.Map Symbol SymbolData
@@ -26,6 +36,16 @@ empty :: SymbolMap
 empty = Map.empty
 
 
-insert :: Symbol -> SymbolData -> SymbolMap -> SymbolMap
+insert :: SymbolData -> SymbolMap -> SymbolMap
 {-# INLINE insert #-}
-insert = Map.insertWith stitchSD
+insert dta = Map.insertWith stitchSD (sdVar dta) dta
+
+
+
+instance Pretty SymbolMap where
+    pretty sm = printf
+        "\
+\+-Symbol-----+-Type----------------+-Visibility-+-Purity-+\n\
+\%s\
+\+------------+---------------------+------------+--------+"
+        (unlines $! pretty <$!> Map.elems sm)

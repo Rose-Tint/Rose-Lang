@@ -2,14 +2,15 @@ module Color (
     Color(..),
     color,
     colored,
+    uncolor,
     reset,
     printf,
 ) where
 
 import Text.Printf (
-    PrintfType,
-    PrintfArg(..),
-    formatString
+        PrintfType,
+        PrintfArg(..),
+        formatString
     )
 import qualified Text.Printf (printf)
 
@@ -58,6 +59,13 @@ reset str = show Reset ++ str
 
 printf :: (PrintfType a) => String -> a
 printf = Text.Printf.printf . color
+
+
+uncolor :: String -> String
+uncolor [] = []
+uncolor ('\027':'[':'0':'m':str) = uncolor str
+uncolor ('\027':'[':'3':_:'m':str) = uncolor str
+uncolor (c:cs) = (c:uncolor cs)
 
 
 

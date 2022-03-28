@@ -50,7 +50,8 @@ common general
     other-extensions:
         Rank2Types,
         BangPatterns,
-        DefaultSignatures
+        DefaultSignatures,
+        TypeSynonymInstances
     ghc-options:
         -threaded
         -Wall

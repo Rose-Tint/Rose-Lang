@@ -1,10 +1,16 @@
 module SymbolTable.SymbolData where
 
 import Control.Applicative (Alternative((<|>)))
+-- import Control.Monad ((<$!>))
 import Data.Maybe
 
+import Color
 import Parser.Data hiding (Type)
+import Pretty
 import Typing.Types
+
+
+default (Int, Double)
 
 
 type Symbol = Variable
@@ -52,7 +58,7 @@ stitchSD sd1 sd2 = sd1 {
 undef :: Symbol -> SymbolData
 {-# INLINE undef #-}
 undef sym = SymbolData {
-    sdType = NoType,
+    sdType = Delayed [],
     sdVisib = Nothing,
     sdPurity = Nothing,
     sdVar = sym,
@@ -80,3 +86,25 @@ isUndefined dta = isNothing (sdVisib dta)
 ifDefined :: SymbolData -> Maybe SymbolData
 {-# INLINE ifDefined #-}
 ifDefined dta = if isWellDefined dta then Just dta else Nothing
+
+
+
+instance Pretty SymbolData where
+    pretty (SymbolData typ vis pur var _) = printf
+        "| %10s | %20s | %10s | %6s |"
+        (pretty var)
+        (pretty typ)
+        (maybe' vis)
+        (maybe' pur)
+        where
+            maybe' :: (Pretty a) => Maybe a -> String
+            maybe' a = maybe "" pretty a
+    detailed (SymbolData typ vis pur var _) = printf
+        "| %10s | %20s | %10s | %6s |"
+        (varName var)
+        (pretty typ)
+        (maybe' vis)
+        (maybe' pur)
+        where
+            maybe' :: (Pretty a) => Maybe a -> String
+            maybe' a = maybe "" pretty a

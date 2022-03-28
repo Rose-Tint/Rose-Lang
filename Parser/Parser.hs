@@ -18,6 +18,9 @@ import Parser.Keywords
 import Parser.LangDef
 
 
+default (Int, Double)
+
+
 
 roseParser :: Parser [Expr]
 roseParser = do
@@ -55,8 +58,15 @@ modImport = (do
 
 arrayLit :: Parser Value
 arrayLit = (do
+    pos <- getPosition
     arr <- brackets $ commaSep term
-    return $! (Array (length arr) arr))
+    end <- sourceColumn <$!> getPosition
+    let pos' = SourcePos
+            (sourceName pos)
+            (sourceLine pos)
+            (sourceColumn pos)
+            end
+    return $! Array (length arr) arr pos')
     <?> "array"
 
 

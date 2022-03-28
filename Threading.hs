@@ -22,6 +22,9 @@ import qualified Data.Map as Map
 import System.Exit (ExitCode(..))
 
 
+default (Int, Double)
+
+
 data Status
     = Running
     | Finished

@@ -2,13 +2,17 @@
 
 module Parser.LangDef where
 
+import Control.Monad ((<$!>))
 import Data.Text (Text)
 import Text.Parsec
 import Text.Parsec.Language
 import qualified Text.Parsec.Token as T
 import Data.Functor.Identity (Identity)
 
-import Parser.Data (Value(..), Variable(..))
+import Parser.Data (Value(..), Variable(..), Position(..))
+
+
+default (Int, Double)
 
 
 type Parser a = ParsecT Text () Identity a
@@ -51,19 +55,27 @@ thornTok = T.makeTokenParser roseDef
 
 moduleName = (do
     pos <- getPosition
-    let (line, start) = (sourceLine pos, sourceColumn pos)
     top <- ident
     rest <- many (try (dot >> pure ('.':) <*> ident))
     let fullIdent = top ++ concat rest
-    return $! Var fullIdent line start)
+    let pos' = SourcePos
+            (sourceName pos)
+            (sourceLine pos)
+            (sourceColumn pos)
+            (sourceColumn pos + length fullIdent)
+    return $! Var fullIdent pos')
     <?> "module name"
     where
         ident = lookAhead upper >> T.identifier thornTok
 iden = (do
     pos <- getPosition
-    let (line, start) = (sourceLine pos, sourceColumn pos)
     name <- T.identifier thornTok
-    return $! Var name line start)
+    let pos' = SourcePos
+            (sourceName pos)
+            (sourceLine pos)
+            (sourceColumn pos)
+            (sourceColumn pos + length name)
+    return $! Var name pos')
     <?> "identifier"
 {-# INLINABLE bigIden #-}
 bigIden = lookAhead upper >> iden
@@ -75,23 +87,61 @@ smallIden = lookAhead lower >> iden
 keyword = T.reserved thornTok
 operator = (do
     pos <- getPosition
-    let (line, start) = (sourceLine pos, sourceColumn pos)
     op <- T.operator thornTok
-    return $! Var op line start)
+    let pos' = SourcePos
+            (sourceName pos)
+            (sourceLine pos)
+            (sourceColumn pos)
+            (sourceColumn pos + length op)
+    return $ Var op pos')
     <?> "operator"
 {-# INLINABLE resOper #-}
 resOper = T.reservedOp thornTok
 {-# INLINABLE chrLit #-}
-chrLit = ChrLit <$> T.charLiteral thornTok
+chrLit = (do
+    pos <- getPosition
+    chr <- T.charLiteral thornTok
+    let pos' = SourcePos
+            (sourceName pos)
+            (sourceLine pos)
+            (sourceColumn pos)
+            (sourceColumn pos + 2)
+    return $ ChrLit chr pos')
     <?> "char literal"
 {-# INLINABLE strLit #-}
-strLit = StrLit <$> T.stringLiteral thornTok
+strLit = (do
+    pos <- getPosition
+    str <- T.stringLiteral thornTok
+    let pos' = SourcePos
+            (sourceName pos)
+            (sourceLine pos)
+            (sourceColumn pos)
+            (sourceColumn pos + length str + 2)
+    return $ StrLit str pos')
     <?> "string literal"
 {-# INLINABLE intLit #-}
-intLit = IntLit <$> T.integer thornTok
+intLit = (do
+    pos <- getPosition
+    int <- T.integer thornTok
+    end <- sourceColumn <$!> getPosition
+    let pos' = SourcePos
+            (sourceName pos)
+            (sourceLine pos)
+            (sourceColumn pos)
+            end
+    return $ IntLit int pos')
     <?> "integer literal"
 {-# INLINABLE fltLit #-}
-fltLit = FltLit <$> T.float thornTok
+fltLit = (do
+    pos <- getPosition
+    flt <- T.float thornTok
+    end <- sourceColumn <$!> getPosition
+    let pos' = SourcePos
+            (sourceName pos)
+            (sourceLine pos)
+            (sourceColumn pos)
+            end
+    return $ FltLit flt pos')
     <?> "floating literal"
 {-# INLINABLE symbol #-}
 symbol = T.symbol thornTok

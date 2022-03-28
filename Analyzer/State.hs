@@ -1,7 +1,13 @@
-module Analyzer.State where
+module Analyzer.State (
+    Position(..),
+    State(..),
+    newModuleState,
+    newState,
+) where
 
 import Analyzer.Error
 import CmdLine (CmdLine)
+import Parser.Data (Position(..), newPosition)
 import SymbolTable
 import Typing.Types
 
@@ -9,17 +15,27 @@ import Typing.Types
 
 data State
     = State {
+        stModule :: Module,
         stCmdLine :: !CmdLine,
         stExpType :: [Type],
-        stErrInfo :: !ErrorInfo,
-        stErrors :: ![(ErrorInfo, Error)],
-        stWarnings :: ![(ErrorInfo, Warning)],
+        stRetType :: Maybe Type,
+        stErrors :: [ErrorMessage],
         stTable :: !SymbolTable,
-        stImports :: ![Module]
+        stImports :: [Module],
+        stDefName :: Maybe Symbol,
+        stCalls :: [Symbol],
+        stPosition :: Position
     }
 
 
+
+newModuleState :: CmdLine -> String -> State
+{-# INLINE newModuleState #-}
+newModuleState cmd modName = State ModUnknown cmd [] Nothing []
+    emptyTable [] Nothing [] (newPosition modName)
+
+
 newState :: CmdLine -> State
-newState cmd = State cmd []
-    (ErrorInfo Nothing [])
-    [] [] emptyTable []
+{-# INLINE newState #-}
+newState cmd = State ModUnknown cmd [] Nothing []
+    emptyTable [] Nothing [] (newPosition "")

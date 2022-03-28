@@ -10,6 +10,9 @@ import Color
 import Output
 
 
+default (Int, Double)
+
+
 
 printSrcLine :: Int -> Int -> Text -> IO ()
 printSrcLine v ln line = message v
@@ -37,8 +40,8 @@ printParseErrMsg' v msgs = message v msgs' []
     where
         msgs' = showErrorMessages "or"
             "unknown parse error"
-            "but expected:"
-            "found:"
+            "Expected:"
+            "Found:"
             "end of input"
             msgs
 

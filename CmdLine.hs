@@ -12,7 +12,11 @@ import System.IO (FilePath)
 import Threading
 
 
+default (Int, Double)
 
+
+
+-- everything is strict for concurrency safety
 data CmdLine
     = CmdLine {
         cmdFiles :: ![String],
@@ -21,7 +25,9 @@ data CmdLine
         cmdCurrDir :: !FilePath,
         cmdTrace :: !Bool,
         cmdErrors :: ![String],
-        cmdShadowing :: !Bool
+        cmdShadowing :: !Bool,
+        cmdThreaded :: !Bool,
+        cmdTermWidth :: !Int
     }
 
 
@@ -29,6 +35,7 @@ data Flag
     = Verbosity Int
     | BuildDir FilePath
     | Trace
+    | Threaded
     | Wall
     | Werror
     -- | NoOp
@@ -74,7 +81,9 @@ options = [
         Option ""  ["Werror"]            (NoArg (return Werror))
             "Turns warnings into errors",
         Option ""  ["Wall"]              (NoArg (return Wall))
-            "Turns on all warnings"
+            "Turns on all warnings",
+        Option ""  ["threaded"]          (NoArg (return Threaded))
+            "Turns on multi-threaded building. Recommended"
     ]
 
 
@@ -85,6 +94,7 @@ setFlags (flg:flgs) cmd = setFlags flgs $! case flg of
     Verbosity v -> cmd { cmdVerb = v }
     BuildDir dir -> cmd { cmdBuildDir = dir ++ "/" }
     Trace -> cmd { cmdTrace = True }
+    Threaded -> cmd { cmdThreaded = True }
     _ -> cmd
 
 
@@ -100,7 +110,9 @@ mkCmdLine flgs fnames errs = do
             cmdTrace = False,
             cmdBuildDir = defBuildDir,
             cmdCurrDir = currDir,
-            cmdShadowing = True
+            cmdShadowing = True,
+            cmdThreaded = False,
+            cmdTermWidth = 50 :: Int
         }
     return $! setFlags flgs' cmd
 
