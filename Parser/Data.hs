@@ -13,9 +13,14 @@ default (Int, Double)
 
 data Position
     = UnknownPos
-    | SourcePos String Line Column Column
+    | SourcePos Module Line Column Column
     deriving (Show, Eq, Ord)
 
+
+data Module
+    = Module Visibility !Variable
+    | UnknownMod
+    deriving (Show, Eq, Ord)
 
 
 data Variable
@@ -156,9 +161,9 @@ valPos (Array _ _ p) = p
 valPos (ExprVal _) = UnknownPos
 
 
-posModule :: Position -> String
+posModule :: Position -> Module
 {-# INLINE posModule #-}
-posModule UnknownPos = "UNKNOWN"
+posModule UnknownPos = UnknownMod
 posModule (SourcePos nm _ _ _) = nm
 
 posLine :: Position -> Int
@@ -178,7 +183,8 @@ posEnd (SourcePos _ _ _ end) = end
 
 
 newPosition :: String -> Position
-newPosition modName = SourcePos modName 0 0 0
+newPosition modName = SourcePos
+    (Module Export (Prim modName)) 0 0 0
 
 
 
@@ -365,7 +371,18 @@ instance Pretty Position where
         -- name ln st end
     exhaustive (SourcePos name ln st _) = printf
         "in %s: line %d, col %d"
-        name ln st
+        (exhaustive name) ln st
+
+
+instance Pretty Module where
+    pretty UnknownMod = "Unknown"
+    pretty (Module _ name) = pretty name
+    detailed UnknownMod = "Unknown"
+    detailed (Module Export name) = pretty name ++ "[E]"
+    detailed (Module Intern name) = pretty name ++ "[I]"
+    exhaustive UnknownMod = "Unknown"
+    exhaustive (Module Export name) = pretty name ++ "[export]"
+    exhaustive (Module Intern name) = pretty name ++ "[intern]"
 
 
 instance Pretty Variable where

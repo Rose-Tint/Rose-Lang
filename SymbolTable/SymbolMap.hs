@@ -36,16 +36,22 @@ empty :: SymbolMap
 empty = Map.empty
 
 
-insert :: SymbolData -> SymbolMap -> SymbolMap
+insert :: Symbol -> SymbolData -> SymbolMap -> SymbolMap
 {-# INLINE insert #-}
-insert dta = Map.insertWith stitchSD (sdVar dta) dta
+insert sym dta = Map.insertWith stitchSD sym dta
 
 
 
 instance Pretty SymbolMap where
     pretty sm = printf
         "\
-\+-Symbol-----+-Type----------------+-Visibility-+-Purity-+\n\
+\+-Symbol--------+-Type---------------------------+-Visib.-+-Purity-+\n\
 \%s\
-\+------------+---------------------+------------+--------+"
-        (unlines $! pretty <$!> Map.elems sm)
+\+---------------+--------------------------------+--------+--------+"
+        (unlines $! pretty <$!> Map.assocs sm)
+    detailed sm = printf
+        "\
+\+-Symbol-------------+-Type--------------------------------+-Visib.-+-Purity-+\n\
+\%s\
+\+--------------------+-------------------------------------+--------+--------+"
+        (unlines $! detailed <$!> Map.assocs sm)

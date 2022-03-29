@@ -1,3 +1,5 @@
+{-# LANGUAGE FlexibleInstances #-}
+
 module SymbolTable.SymbolData where
 
 import Control.Applicative (Alternative((<|>)))
@@ -16,19 +18,12 @@ default (Int, Double)
 type Symbol = Variable
 
 
-data Module
-    = Module Visibility !Variable
-    | ModUnknown
-    deriving (Show, Eq, Ord)
-
-
 data SymbolData
     = SymbolData {
         sdType :: !Type,
         sdVisib :: Maybe Visibility,
         sdPurity :: Maybe Purity,
-        sdVar :: !Variable,
-        sdModule :: !Module
+        sdPos :: Maybe Position
     }
     deriving (Show, Eq)
 
@@ -54,15 +49,19 @@ stitchSD sd1 sd2 = sd1 {
     }
 
 
+mkSymbolData :: Symbol -> Type -> Maybe Visibility
+          -> Maybe Purity -> SymbolData
+mkSymbolData sym typ vis pur = SymbolData
+    typ vis pur (Just $ varPos sym)
 
-undef :: Symbol -> SymbolData
+
+undef :: SymbolData
 {-# INLINE undef #-}
-undef sym = SymbolData {
+undef = SymbolData {
     sdType = Delayed [],
     sdVisib = Nothing,
     sdPurity = Nothing,
-    sdVar = sym,
-    sdModule = ModUnknown
+    sdPos = Nothing
 }
 
 
@@ -72,7 +71,9 @@ isWellDefined :: SymbolData-> Bool
 isWellDefined dta = isJust (sdVisib dta)
              && isJust (sdPurity dta)
              && isComplete (sdType dta)
-             && sdModule dta /= ModUnknown
+             && (isJust (sdPos dta)
+                && posModule (fromJust $! sdPos dta)
+                     /= UnknownMod)
 
 
 isUndefined :: SymbolData-> Bool
@@ -80,7 +81,9 @@ isUndefined :: SymbolData-> Bool
 isUndefined dta = isNothing (sdVisib dta)
                && isNothing (sdPurity dta)
                && sdType dta == NoType
-               && sdModule dta == ModUnknown
+               && (isNothing (sdPos dta)
+                || posModule (fromJust $! sdPos dta)
+                     == UnknownMod)
 
 
 ifDefined :: SymbolData -> Maybe SymbolData
@@ -89,22 +92,22 @@ ifDefined dta = if isWellDefined dta then Just dta else Nothing
 
 
 
-instance Pretty SymbolData where
-    pretty (SymbolData typ vis pur var _) = printf
-        "| %10s | %20s | %10s | %6s |"
-        (pretty var)
+instance Pretty (Symbol, SymbolData) where
+    pretty (sym, SymbolData typ vis pur _) = printf
+        "| %13s | %30s | %6s | %6s |"
+        (pretty sym)
         (pretty typ)
         (maybe' vis)
         (maybe' pur)
         where
             maybe' :: (Pretty a) => Maybe a -> String
             maybe' a = maybe "" pretty a
-    detailed (SymbolData typ vis pur var _) = printf
-        "| %10s | %20s | %10s | %6s |"
-        (varName var)
-        (pretty typ)
+    detailed (sym, SymbolData typ vis pur _) = printf
+        "| %18s | %40s | %6s | %6s |"
+        (detailed sym)
+        (detailed typ)
         (maybe' vis)
         (maybe' pur)
         where
             maybe' :: (Pretty a) => Maybe a -> String
-            maybe' a = maybe "" pretty a
+            maybe' a = maybe "" detailed a

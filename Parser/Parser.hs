@@ -62,7 +62,7 @@ arrayLit = (do
     arr <- brackets $ commaSep term
     end <- sourceColumn <$!> getPosition
     let pos' = SourcePos
-            (sourceName pos)
+            (Module Export (Prim $! sourceName pos))
             (sourceLine pos)
             (sourceColumn pos)
             end

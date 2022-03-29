@@ -7,7 +7,7 @@ module Analyzer.State (
 
 import Analyzer.Error
 import CmdLine (CmdLine)
-import Parser.Data (Position(..), newPosition)
+import Parser.Data (Module(..), Position(..), newPosition)
 import SymbolTable
 import Typing.Types
 
@@ -31,11 +31,11 @@ data State
 
 newModuleState :: CmdLine -> String -> State
 {-# INLINE newModuleState #-}
-newModuleState cmd modName = State ModUnknown cmd [] Nothing []
+newModuleState cmd modName = State UnknownMod cmd [] Nothing []
     emptyTable [] Nothing [] (newPosition modName)
 
 
 newState :: CmdLine -> State
 {-# INLINE newState #-}
-newState cmd = State ModUnknown cmd [] Nothing []
+newState cmd = State UnknownMod cmd [] Nothing []
     emptyTable [] Nothing [] (newPosition "")

@@ -72,7 +72,7 @@ instance Pretty ErrorMessage where
         -- "%s\n    Position: %s\n    Location: %s\n"
         -- err pos def
         "%s: %s\n    Position: Line %d, Column %d (to %d?)"
-            (posModule pos) err (posLine pos)
+            (pretty $! posModule pos) err (posLine pos)
             (posStart pos) (posEnd pos)
         where
             pos = emPosition em

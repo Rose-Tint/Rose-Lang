@@ -72,7 +72,7 @@ buildFile cmd relPath = do
 
     analysisRes <- analyzeFile cmd src modName parseRes
     trace cmd (buildDir ++ "Symbol-Table.txt")
-        (pretty $! arTable analysisRes)
+        (detailed $! arTable analysisRes)
 
     -- status verb "Finished Building [%s]\n" [modName]
 
@@ -101,6 +101,6 @@ analyzeFile cmd src name es = do
         mapM (putStrLn . prettyError cmd lns) (arErrors res)
         putStrLn ""
         return res
-        -- fatal (cmdVerb cmd)
-        --     "Failed while analyzing module (%s)\n"
-        --     [name]
+        fatal (cmdVerb cmd)
+            "Failed while analyzing module (%s)\n"
+            [name]

@@ -21,12 +21,11 @@ module Analyzer.Analyzer (
 
 import Control.Monad ((<$!>))
 import Control.Monad.Fail
-import Data.Maybe (listToMaybe)
 
 import Analyzer.Error
 import Analyzer.State
 import CmdLine (CmdLine)
-import Parser.Data (Visibility, Variable(..))
+import Parser.Data (Module(..), Visibility, Variable(..))
 import SymbolTable
 import Typing.Types
 import Utils ((.!))
@@ -160,25 +159,27 @@ pushExpType typ = Analyzer $ \ !s okay _ ->
     okay () (s { stExpType = (typ:stExpType s) })
 
 
-popExpType :: Analyzer (Maybe Type)
+popExpType :: Analyzer Type
 {-# INLINABLE popExpType #-}
 popExpType = Analyzer $ \ !s okay _ -> case stExpType s of
-    [] -> okay Nothing s
-    (typ:rest) -> okay (Just typ) (s { stExpType = rest })
+    [] -> okay NoType s
+    (typ:rest) -> okay typ (s { stExpType = rest })
 
 
-peekExpType :: Analyzer (Maybe Type)
+peekExpType :: Analyzer Type
 {-# INLINE peekExpType #-}
 peekExpType = Analyzer $ \ !s okay _ ->
-    okay (listToMaybe (stExpType s)) s
+    let typ = case stExpType s of
+            [] -> NoType
+            (typ':_) -> typ'
+    in okay typ s
 
 
 withExpType :: Type -> Analyzer a -> Analyzer a
 withExpType t a = do
     pushExpType t
     x <- a
-    popExpType
-    return $! x
+    popExpType >> return x
 
 
 updatePos :: Position -> Analyzer ()
