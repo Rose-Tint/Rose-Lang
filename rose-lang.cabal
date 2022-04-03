@@ -36,6 +36,7 @@ common general
         SymbolTable,
         SymbolTable.SymbolData,
         SymbolTable.SymbolMap,
+        SymbolTable.Trie,
         Typing.Checker,
         Typing.Types
     build-depends:
@@ -44,6 +45,7 @@ common general
         parsec,
         containers,
         time,
+        array,
         directory
     default-language:
         Haskell2010
@@ -54,17 +56,20 @@ common general
         TypeSynonymInstances
     ghc-options:
         -threaded
-        -Wall
-        -Werror
-        -Wno-unused-do-bind
         -fhide-source-paths
+        -fshow-warning-groups
+        -Wall
+        -Wcompat
+        -Wno-unused-do-bind
+        -Werror
+        -Wwarn=unused-imports
 
 
 executable Rose
     import: general
     main-is: Main.hs
     ghc-options:
-        -O3
+        -O2
 
 executable Rose-Dev-Build
     import: general
@@ -78,4 +83,4 @@ benchmark Rose-Build-bm
     type: exitcode-stdio-1.0
     main-is: Benchmarks/Build.hs
     ghc-options:
-        -O3
+        -O2

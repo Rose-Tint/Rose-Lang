@@ -18,6 +18,7 @@ default (Int, Double)
 data Error
     = TypeMismatch Type Type
     | Undefined Symbol [Symbol]
+    | Redefinition Symbol Symbol
     | OtherError String
     | FalseError
     deriving (Show, Eq)
@@ -92,6 +93,10 @@ instance Pretty ErrorMessage where
                     "$rError:$y Undefined reference to `$R%s$y`\n\
                     \    Possible replacements:\n%s"
                     (pretty sym) (indentAllUsing pretty syms)
+                Right (Redefinition new orig) -> printf
+                    "$rError:$y Redefinition of symbol `%s`\n\
+                    \    Originally defined here: %s"
+                    (pretty new) (pretty (varPos orig))
                 Right (OtherError msg) -> printf
                     "$rError:$y Other error?\n    $R%s\n" msg
                 _ -> "_"

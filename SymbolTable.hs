@@ -10,14 +10,13 @@ module SymbolTable (
     getSimilarSymbols
 ) where
 
-import Control.Monad ((<$!>))
-import qualified Data.Map.Strict as Map (keys)
-
 import Color
+import Data.Maybe (mapMaybe, maybe)
 import Parser.Data (Variable(..))
 import Pretty
 import SymbolTable.SymbolData
 import SymbolTable.SymbolMap
+import SymbolTable.Trie (assocs)
 import Utils
 
 
@@ -83,9 +82,16 @@ insertScoped sym dta tbl = let insert' = insert sym dta in
 
 
 getSimilarSymbols :: Symbol -> SymbolTable -> [Symbol]
+{-# INLINABLE getSimilarSymbols #-}
 getSimilarSymbols sym (SymbolTable typs trts glbs scps) =
-    let filt = filter (areSimilar (varName sym) . varName) . Map.keys
-    in filt typs ++ filt trts ++ filt glbs ++ (concat $! filt <$!> scps)
+    let var = varName sym
+        filt = mapMaybe (\(key, dta) ->
+            if areSimilar var key then
+                Just $! maybe (Prim key) (Var key) (sdPos dta)
+            else
+                Nothing) . assocs
+        scpKeys = concatMap filt scps
+    in concatMap filt [typs, trts, glbs] ++ scpKeys
 
 
 

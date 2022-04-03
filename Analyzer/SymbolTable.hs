@@ -1,5 +1,7 @@
 module Analyzer.SymbolTable where
 
+import Prelude hiding (lookup)
+
 import Control.Monad ((<$!>), unless)
 
 import Analyzer.Analyzer
@@ -8,7 +10,6 @@ import CmdLine (CmdLine(..))
 import Parser.Data (Variable(..))
 import SymbolTable
 import Typing.Types (Type(..))
-import Utils
 
 
 
@@ -24,7 +25,7 @@ import Utils
 searchTypes :: Symbol -> Analyzer SymbolData
 searchTypes sym = do
     typs <- tblTypes <$!> getTable
-    case search sym typs of
+    case lookup sym typs of
         Nothing -> do
             let dta = undefined sym
             modifyTable (insertType sym dta)
@@ -35,7 +36,7 @@ searchTypes sym = do
 searchTraits :: Symbol -> Analyzer SymbolData
 searchTraits sym = do
     trts <- tblTraits <$!> getTable
-    case search sym trts of
+    case lookup sym trts of
         Nothing -> do
             let dta = undefined sym
             modifyTable (insertTrait sym dta)
@@ -46,7 +47,7 @@ searchTraits sym = do
 searchGlobals :: Symbol -> Analyzer SymbolData
 searchGlobals sym = do
     glbs <- tblGlobals <$!> getTable
-    case search sym glbs of
+    case lookup sym glbs of
         Nothing -> do
             eT <- peekExpType
             let dta = mkSymbolData sym eT Nothing Nothing
@@ -70,7 +71,7 @@ searchScopeds sym = tblScopeds <$!> getTable >>= go >>= \res ->
         Just dta -> return $! dta
     where
         go [] = Just <$!> searchGlobals sym
-        go (scp:scps) = case search sym scp of
+        go (scp:scps) = case lookup sym scp of
             Just dta -> do
                 allowShadowing <- fromCmdLine cmdShadowing
                 unless allowShadowing $! do
@@ -89,21 +90,21 @@ findType :: Symbol -> Analyzer (Maybe SymbolData)
 {-# INLINABLE findType #-}
 findType sym = do
     typs <- tblTypes <$!> getTable
-    return $! search sym typs
+    return $! lookup sym typs
 
 
 findTrait :: Symbol -> Analyzer (Maybe SymbolData)
 {-# INLINABLE findTrait #-}
 findTrait sym = do
     trts <- tblTraits <$!> getTable
-    return $! search sym trts
+    return $! lookup sym trts
 
 
 findGlobal :: Symbol -> Analyzer (Maybe SymbolData)
 {-# INLINABLE findGlobal #-}
 findGlobal sym = do
     glbs <- tblGlobals <$!> getTable
-    return $! search sym glbs
+    return $! lookup sym glbs
 
 
 findScoped :: Symbol -> Analyzer (Maybe SymbolData)
@@ -114,7 +115,7 @@ findScoped sym = do
     where
         go :: [SymbolMap] -> Analyzer (Maybe SymbolData)
         go [] = findGlobal sym
-        go (scp:scps) = case search sym scp of
+        go (scp:scps) = case lookup sym scp of
             Nothing -> go scps
             Just dta -> return $! Just dta
 
@@ -153,19 +154,19 @@ modifyScoped sym f = do
 
 pushType :: Symbol -> SymbolData -> Analyzer ()
 {-# INLINABLE pushType #-}
-pushType sym = modifyTable .! insertType sym
+pushType sym = modifyTable . insertType sym
 
 
 pushTrait :: Symbol -> SymbolData -> Analyzer ()
 {-# INLINABLE pushTrait #-}
-pushTrait sym = modifyTable .! insertTrait sym
+pushTrait sym = modifyTable . insertTrait sym
 
 
 pushGlobal :: Symbol -> SymbolData -> Analyzer ()
 {-# INLINABLE pushGlobal #-}
-pushGlobal sym = modifyTable .! insertGlobal sym
+pushGlobal sym = modifyTable . insertGlobal sym
 
 
 pushScoped :: Symbol -> SymbolData -> Analyzer ()
 {-# INLINABLE pushScoped #-}
-pushScoped sym = modifyTable .! insertScoped sym
+pushScoped sym = modifyTable . insertScoped sym

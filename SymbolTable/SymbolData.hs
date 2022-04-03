@@ -2,8 +2,7 @@
 
 module SymbolTable.SymbolData where
 
-import Control.Applicative (Alternative((<|>)))
--- import Control.Monad ((<$!>))
+-- import Control.Applicative (Alternative((<|>)))
 import Data.Maybe
 
 import Color
@@ -30,29 +29,15 @@ data SymbolData
 
 
 stitchSD :: SymbolData -> SymbolData -> SymbolData
-stitchSD sd1 sd2 = sd1 {
-        sdType = sdType sd1 <~> sdType sd2,
-        sdVisib =
-            let sv1 = sdVisib sd1
-                sv2 = sdVisib sd2
-            in if isJust sv1 && isJust sv2 then
-                if sv1 == (Just Intern) then sv1 else sv2
-            else
-                sv1 <|> sv2,
-        sdPurity =
-            let sv1 = sdPurity sd1
-                sv2 = sdPurity sd2
-            in if isJust sv1 && isJust sv2 then
-                if sv1 /= (Just Pure) then sv1 else sv2
-            else
-                sv1 <|> sv2
-    }
+{-# INLINE stitchSD #-}
+stitchSD sd1 sd2 = sd1 { sdType = sdType sd1 <~> sdType sd2 }
 
 
 mkSymbolData :: Symbol -> Type -> Maybe Visibility
           -> Maybe Purity -> SymbolData
+{-# INLINE mkSymbolData #-}
 mkSymbolData sym typ vis pur = SymbolData
-    typ vis pur (Just $ varPos sym)
+    typ vis pur (Just (varPos sym))
 
 
 undef :: SymbolData
@@ -92,7 +77,7 @@ ifDefined dta = if isWellDefined dta then Just dta else Nothing
 
 
 
-instance Pretty (Symbol, SymbolData) where
+instance Pretty (String, SymbolData) where
     pretty (sym, SymbolData typ vis pur _) = printf
         "| %13s | %30s | %6s | %6s |"
         (pretty sym)

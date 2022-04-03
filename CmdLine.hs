@@ -61,7 +61,7 @@ help = do
 buildDir :: FilePath -> IO Flag
 buildDir path = do
     dir <- makeAbsolute path
-    return (BuildDir dir)
+    return $! BuildDir (dir ++ "/")
 
 
 options :: [OptDescr (IO Flag)]
@@ -69,13 +69,13 @@ options = [
         Option "h" ["help"]              (NoArg help)
             "Displays help information",
         Option "v" ["verbosity"]         (OptArg verbosity "LEVEL")
-            "Controls the amount and detail of messages to stderr",
+            "Controls the amount and detail of messages",
         Option "s" ["silent"]            (NoArg silent)
             "No output (same as -v0)",
         Option ""  ["trace"]             (NoArg (return Trace))
             "Lowest-level debug info. Not neeeded for end users",
         Option ""  ["debug-info"]        (NoArg debug_info)
-            "Enables lower-level debug info.",
+            "Enables lower-level debug info",
         Option "B" ["build-dir"]         (ReqArg buildDir "DIRECTORY")
             "Directory to put build files",
         Option ""  ["Werror"]            (NoArg (return Werror))
@@ -83,7 +83,7 @@ options = [
         Option ""  ["Wall"]              (NoArg (return Wall))
             "Turns on all warnings",
         Option ""  ["threaded"]          (NoArg (return Threaded))
-            "Turns on multi-threaded building. Recommended"
+            "Turns on multi-threaded building"
     ]
 
 
@@ -102,13 +102,12 @@ mkCmdLine :: IO [Flag] -> [String] -> [String] -> IO CmdLine
 mkCmdLine flgs fnames errs = do
     flgs' <- flgs
     currDir <- getCurrentDirectory
-    defBuildDir <- makeAbsolute "./Rose-Build"
     let cmd = CmdLine {
             cmdFiles = fnames,
             cmdVerb = 1,
             cmdErrors = errs,
             cmdTrace = False,
-            cmdBuildDir = defBuildDir,
+            cmdBuildDir = "Rose-Build/",
             cmdCurrDir = currDir,
             cmdShadowing = True,
             cmdThreaded = False,

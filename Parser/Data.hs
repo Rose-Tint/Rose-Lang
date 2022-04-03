@@ -1,5 +1,6 @@
 module Parser.Data where
 
+import Data.Array (Array)
 import Data.List.NonEmpty (NonEmpty, toList)
 import Text.Parsec.Pos
 
@@ -13,7 +14,10 @@ default (Int, Double)
 
 data Position
     = UnknownPos
-    | SourcePos Module Line Column Column
+    | SourcePos Module
+        {-# UNPACK #-} !Line
+        {-# UNPACK #-} !Column
+        {-# UNPACK #-} !Column
     deriving (Show, Eq, Ord)
 
 
@@ -55,13 +59,15 @@ data Type
 
 
 data Value
-    = IntLit Integer Position
-    | FltLit Double Position
-    | ChrLit Char Position
+    -- strictness is because it would not be evaluated
+    -- for a long time
+    = IntLit !Integer Position
+    | FltLit !Double Position
+    | ChrLit !Char Position
     | StrLit String Position
     | FuncCall Variable [Value]
     | CtorVal Variable [Value]
-    | Array Int [Value] Position
+    | Array {-# UNPACK #-} !(Array Int Value) Position
     | ExprVal Expr
     deriving (Show, Eq, Ord)
 
@@ -146,18 +152,19 @@ data Expr
 
 
 boolType :: Type
-{-# INLINABLE boolType #-}
+{-# INLINE boolType #-}
 boolType = TerminalType (Prim "Boolean") []
 
 
 valPos :: Value -> Position
+{-# INLINE valPos #-}
 valPos (IntLit _ p) = p
 valPos (FltLit _ p) = p
 valPos (ChrLit _ p) = p
 valPos (StrLit _ p) = p
 valPos (FuncCall var _) = varPos var
 valPos (CtorVal var _) = varPos var
-valPos (Array _ _ p) = p
+valPos (Array _ p) = p
 valPos (ExprVal _) = UnknownPos
 
 
@@ -183,6 +190,7 @@ posEnd (SourcePos _ _ _ end) = end
 
 
 newPosition :: String -> Position
+{-# INLINE newPosition #-}
 newPosition modName = SourcePos
     (Module Export (Prim modName)) 0 0 0
 

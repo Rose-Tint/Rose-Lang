@@ -2,7 +2,7 @@ module Build where
 
 import Prelude hiding (readFile, lines)
 
-import Control.Monad ((<$!>), when, mapM, forM_, foldM_)
+import Control.Monad (when, mapM, forM_, foldM_)
 import Data.Text (Text)
 import qualified Data.Text as T (lines)
 import Data.Text.IO (readFile)
@@ -16,6 +16,8 @@ import Analyzer.Error (prettyError)
 import Parser.Data (Expr)
 import Parser.Error (printParseErr)
 import Parser.Parser (roseParser)
+import SymbolTable
+import SymbolTable.Trie (prettyTrie)
 import Typing.Checker
 import Output
 import Pretty
@@ -35,10 +37,6 @@ type BuildResult = ()
 
 build :: CmdLine -> IO BuildResult
 build cmd = do
-    -- cache directory (also creates the build dir)
-    createDirectoryIfMissing True $!
-        cmdBuildDir cmd ++ "/Cache"
-
     if cmdThreaded cmd then do
         mgr <- newManager
         forM_ (cmdFiles cmd) $
@@ -46,7 +44,6 @@ build cmd = do
         waitAll mgr
     else
         forM_ (cmdFiles cmd) $ buildFile cmd
-        
     status (cmdVerb cmd)
         "Finished Building All Modules\n" []
     return ()
@@ -55,9 +52,9 @@ build cmd = do
 buildFile :: CmdLine -> FilePath -> IO BuildResult
 buildFile cmd relPath = do
     let modName = pathToModule relPath
-    let verb = cmdVerb cmd
-    let buildDir = cmdBuildDir cmd ++ "/" ++
-            modPathToRelDir relPath
+        verb = cmdVerb cmd
+        buildDir = cmdBuildDir cmd ++
+            pathToDir relPath
 
     when (cmdTrace cmd) $!
         createDirectoryIfMissing True buildDir
@@ -67,12 +64,9 @@ buildFile cmd relPath = do
     src <- makeAbsolute relPath >>= readFile
 
     parseRes <- parseFile cmd src modName
-    trace cmd (buildDir ++ "Abstract-Syntax-Tree.txt")
-        (concat $ pretty <$!> parseRes)
+    analyzeFile cmd src modName parseRes
 
-    analysisRes <- analyzeFile cmd src modName parseRes
-    trace cmd (buildDir ++ "Symbol-Table.txt")
-        (detailed $! arTable analysisRes)
+    return ()
 
     -- status verb "Finished Building [%s]\n" [modName]
 
@@ -80,27 +74,33 @@ buildFile cmd relPath = do
 parseFile :: CmdLine -> Text -> ModuleName -> IO [Expr]
 parseFile cmd src name = do
     info (cmdVerb cmd) "Parsing   [%s]\n" [name]
+    let buildDir = cmdBuildDir cmd ++ modToDir name
     case parse roseParser name src of
         Left err -> do
             printParseErr (cmdVerb cmd) err src
             fatal (cmdVerb cmd)
                 "Failed while parsing module (%s)\n"
                 [name]
-        Right exprs -> return exprs
+        Right exprs -> do
+            trace cmd (buildDir ++ "Abstract-Syntax-Tree.txt")
+                (concatMap pretty exprs)
+            return exprs
 
 
-analyzeFile :: CmdLine -> Text -> ModuleName -> [Expr]
-            -> IO (Analysis ())
+analyzeFile :: CmdLine -> Text -> ModuleName -> [Expr] -> IO (Analysis ())
 analyzeFile cmd src name es = do
-    let res = analyze cmd $!
-            foldM_ (\_ -> infer_) () es
     info (cmdVerb cmd) "Analyzing [%s]\n" [name]
+    let buildDir = cmdBuildDir cmd ++ modToDir name
+        res = analyze cmd $! foldM_ (\_->infer_) () es
+    trace cmd (buildDir ++ "Symbol-Table.txt") $!
+        detailed (arTable res) ++
+        "\n\n\n\n" ++ prettyTrie (tblGlobals $ arTable res)
     if null $! arErrors res then
         return res
     else let lns = T.lines src in do
         mapM (putStrLn . prettyError cmd lns) (arErrors res)
         putStrLn ""
         return res
-        fatal (cmdVerb cmd)
-            "Failed while analyzing module (%s)\n"
-            [name]
+        -- fatal (cmdVerb cmd)
+        --     "Failed while analyzing module (%s)\n"
+        --     [name]
