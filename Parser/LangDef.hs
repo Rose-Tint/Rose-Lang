@@ -81,17 +81,17 @@ iden = (do
     <?> "identifier"
 
 
-{-# INLINABLE bigIden #-}
+{-# INLINE bigIden #-}
 bigIden = lookAhead upper >> iden
     <?> "big identifier"
 
 
-{-# INLINABLE smallIden #-}
+{-# INLINE smallIden #-}
 smallIden = lookAhead lower >> iden
     <?> "small identifier"
 
 
-{-# INLINABLE keyword #-}
+{-# INLINE keyword #-}
 keyword = T.reserved thornTok
 
 
@@ -107,11 +107,11 @@ operator = (do
     <?> "operator"
 
 
-{-# INLINABLE resOper #-}
+{-# INLINE resOper #-}
 resOper = T.reservedOp thornTok
 
 
-{-# INLINABLE chrLit #-}
+{-# INLINE chrLit #-}
 chrLit = (do
     pos <- getPosition
     chr <- T.charLiteral thornTok
@@ -165,47 +165,47 @@ fltLit = (do
     <?> "floating literal"
 
 
-{-# INLINABLE symbol #-}
+{-# INLINE symbol #-}
 symbol = T.symbol thornTok
 
-{-# INLINABLE lexeme #-}
+{-# INLINE lexeme #-}
 lexeme = T.lexeme thornTok
 
-{-# INLINABLE wspace #-}
+{-# INLINE wspace #-}
 wspace = T.whiteSpace thornTok
 
-{-# INLINABLE parens #-}
+{-# INLINE parens #-}
 parens = T.parens thornTok
 
-{-# INLINABLE braces #-}
+{-# INLINE braces #-}
 braces = T.braces thornTok
 
-{-# INLINABLE angles #-}
+{-# INLINE angles #-}
 angles = T.angles thornTok
 
-{-# INLINABLE brackets #-}
+{-# INLINE brackets #-}
 brackets = T.brackets thornTok
 
-{-# INLINABLE semi #-}
+{-# INLINE semi #-}
 semi = T.semi thornTok
 
-{-# INLINABLE comma #-}
+{-# INLINE comma #-}
 comma = T.comma thornTok
 
-{-# INLINABLE dot #-}
+{-# INLINE dot #-}
 dot = T.dot thornTok
 
-{-# INLINABLE semiSep #-}
+{-# INLINE semiSep #-}
 semiSep = T.semiSep thornTok
 
-{-# INLINABLE semiSepEnd #-}
+{-# INLINE semiSepEnd #-}
 semiSepEnd p = many $ p <* semi
 
-{-# INLINABLE semiSep1 #-}
+{-# INLINE semiSep1 #-}
 semiSep1 = T.semiSep1 thornTok
 
-{-# INLINABLE commaSep #-}
+{-# INLINE commaSep #-}
 commaSep = T.commaSep thornTok
 
-{-# INLINABLE commaSep1 #-}
+{-# INLINE commaSep1 #-}
 commaSep1 = T.commaSep1 thornTok

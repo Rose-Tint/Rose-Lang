@@ -1,6 +1,12 @@
 module Typing.Checker where
 
-import Control.Monad ((<$!>), foldM, unless, when, forM_)
+import Control.Monad (
+    (<$!>),
+    foldM,
+    unless, when,
+    forM_
+    )
+import Data.Array ((!), bounds)
 
 import Analyzer.Analyzer
 import Analyzer.Error
@@ -52,23 +58,14 @@ instance Checker Value where
         withExpType (sdType dta) $!
             apply (sdType dta) args
     infer (ExprVal expr) = infer expr
-    infer (Array _ [] p) = updatePos p >>
-        throw (OtherError "empty array")
-    infer (Array _ (x:xs) p) = do
+    infer (Array arr p) = do
         updatePos p
-        xT <- infer x
-        pushExpType xT
-        t <- foldM
-            (\b a -> do
-                aT <- infer $! a
-                chk <- check aT xT
-                if chk then
-                    return $! b
-                else
-                    throw $! TypeMismatch aT xT
-            ) xT xs
-        popExpType
-        return t
+        if snd (bounds arr) <= (0 :: Int) then
+            throw $ OtherError "Empty array literal"
+        else do
+            typ <- infer (arr ! (0 :: Int))
+            forM_ arr $ \t -> expect t typ
+            return typ
 
 
 instance Checker Expr where
@@ -253,10 +250,12 @@ apply ft (val:vals) = do
 
 
 infer_ :: (Checker a) => a -> Analyzer ()
+{-# INLINE infer_ #-}
 infer_ = optional . infer
 
 
 checkAll :: (Checker a) => [a] -> Analyzer Bool
+{-# INLINE checkAll #-}
 checkAll [] = return True
 checkAll (x:xs) = do
     xT <- infer x
@@ -265,7 +264,7 @@ checkAll (x:xs) = do
 
 
 expect :: (Checker a) => a -> Type -> Analyzer ()
-{-# INLINABLE expect #-}
+{-# INLINE expect #-}
 expect a t = withExpType t $! do
     typ <- infer a
     chk <- check typ t
