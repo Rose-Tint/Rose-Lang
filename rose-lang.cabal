@@ -36,6 +36,7 @@ common general
         SymbolTable,
         SymbolTable.SymbolData,
         SymbolTable.SymbolMap,
+        SymbolTable.Trie,
         Typing.Checker,
         Typing.Types
     build-depends:
@@ -44,6 +45,7 @@ common general
         parsec,
         containers,
         time,
+        array,
         directory
     default-language:
         Haskell2010

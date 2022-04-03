@@ -92,7 +92,7 @@ ifDefined dta = if isWellDefined dta then Just dta else Nothing
 
 
 
-instance Pretty (Symbol, SymbolData) where
+instance Pretty (String, SymbolData) where
     pretty (sym, SymbolData typ vis pur _) = printf
         "| %13s | %30s | %6s | %6s |"
         (pretty sym)

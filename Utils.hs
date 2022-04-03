@@ -7,7 +7,6 @@ default (Int, Double)
 
 
 pathToModule :: String -> String
-{-# INLINABLE pathToModule #-}
 pathToModule [] = []
 pathToModule ".th" = []
 -- for unix
@@ -17,10 +16,25 @@ pathToModule ('\\':rest) = ('.':pathToModule rest)
 pathToModule (ch:chs) = (ch:pathToModule chs)
 
 
-moduleToPath :: String -> String
-moduleToPath [] = ".th"
-moduleToPath ('.':rest) = ('/':moduleToPath rest)
-moduleToPath (ch:rest) = (ch:moduleToPath rest)
+-- |Turns a filepath (to a module) or a module
+-- name into a filepath as a directory by
+-- replacing ".th" with '/'
+pathToDir :: FilePath -> FilePath
+pathToDir [] = "/"
+pathToDir ".th" = "/"
+pathToDir (c:cs) = (c:pathToDir cs)
+
+
+modToPath :: String -> FilePath
+modToPath [] = ".th"
+modToPath ('.':rest) = ('/':modToPath rest)
+modToPath (ch:rest) = (ch:modToPath rest)
+
+
+modToDir :: FilePath -> String
+modToDir [] = "/"
+modToDir ('.':rest) = ('/':modToDir rest)
+modToDir (ch:rest) = (ch:modToDir rest)
 
 
 indentAllUsing :: (a -> String) -> [a] -> String
@@ -53,7 +67,7 @@ clamp a mn mx
 
 
 similarity :: String -> String -> Int
--- {-# INLINE similarity #-}
+{-# INLINABLE similarity #-}
 similarity [] s = length s
 similarity s [] = length s
 similarity (lc:lcs) (rc:rcs) =
@@ -61,15 +75,9 @@ similarity (lc:lcs) (rc:rcs) =
 
 
 areSimilar :: String -> String -> Bool
-{-# INLINABLE areSimilar #-}
+{-# INLINE areSimilar #-}
 areSimilar s1 s2 = similarity s1 s2 <=
     min 3 (max (length s1) (length s2))
-
-
-modPathToRelDir :: FilePath -> FilePath
-modPathToRelDir [] = "/"
-modPathToRelDir ".th" = "/"
-modPathToRelDir (c:cs) = (c:modPathToRelDir cs)
 
 
 -- strict function composition

@@ -17,7 +17,7 @@ default (Int, Double)
 
 data Error
     = TypeMismatch Type Type
-    | Undefined Symbol [Symbol]
+    | Undefined Symbol [String]
     | OtherError String
     | FalseError
     deriving (Show, Eq)

@@ -81,6 +81,7 @@ instance Checker Expr where
         -- check that they are the same (allow dupe-decls
         -- as long as they are the same)
         -- else, create a new global
+        updatePos $! varPos name
         enterDefinition name
         mDta <- findGlobal name
         let typ' = addCons cons $! fromPDTypes typs
@@ -91,9 +92,10 @@ instance Checker Expr where
         exitDefinition
         return NoType
     infer (FuncDef name pars _) = do
+        updatePos $! varPos name
         enterDefinition name
         mDta <- findGlobal name
-        _ <- case mDta of
+        case mDta of
             Nothing -> throwUndefined name
             Just dta -> do
                 typ <- withExpType (sdType dta) $!
@@ -103,6 +105,7 @@ instance Checker Expr where
         return NoType
     -- infer (DataDef vis name tps ctrs) = do
     infer (DataDef vis name tps ctrs) = do
+        updatePos $! varPos name
         let dta = mkSymbolData name
                 (Type name (fmap
                     (\tp -> Param tp [] []) tps) [])
@@ -125,6 +128,7 @@ instance Checker Expr where
     -- infer (TraitImpl name cons typ defs) = do
     --     return NoType
     infer (NewVar mut typ var val) = do
+        updatePos $! varPos var
         let typ' = fromPDType typ
         pushExpType typ'
         valT <- infer val
@@ -186,7 +190,7 @@ pushParams typ@(Applied tps cs) (param:params) = do
     let (eT:tps') = tps
     _ <- case param of
         FuncCall var [] -> do
-            -- updatePos $! varPos var
+            updatePos $! varPos var
             let dta = mkSymbolData var eT Nothing Nothing
             pushScoped var dta
             return ()

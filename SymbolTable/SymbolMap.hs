@@ -1,44 +1,75 @@
 {-# LANGUAGE FlexibleInstances #-}
 {-# OPTIONS_GHC -Wno-orphans #-}
 
-module SymbolTable.SymbolMap where
+module SymbolTable.SymbolMap (SymbolMap,
+    -- Construction
+    T.empty, singleton,
+    -- Insertion
+    insert,
+    -- Query
+    require, lookup, findWithDefault,
+    -- Deletion/Updating
+    delete, adjust,
+    -- Combination
+    T.union,
+    -- Other
+    T.keys, T.isEmpty, T.size, isMemberOf,
+) where
+
+import Prelude hiding (lookup)
 
 import Control.Monad ((<$!>))
-import qualified Data.Map.Strict as Map
 
-import Color
+import Color (printf)
+import Parser.Data (Variable(..))
 import Pretty
+import qualified SymbolTable.Trie as T
 import SymbolTable.SymbolData
 
 
-default (Int, Double)
+type SymbolMap = T.Trie SymbolData
 
 
 
-type SymbolMap = Map.Map Symbol SymbolData
+singleton :: Symbol -> SymbolData -> SymbolMap
+singleton = T.singleton . varName
 
+
+insert :: Symbol -> SymbolData -> SymbolMap -> SymbolMap
+{-# INLINE insert #-}
+insert sym dta = T.insertWith stitchSD
+    (varName sym) (dta { sdPos = Just (varPos sym) })
 
 
 -- lookup a symbol and require it to be fully
 -- defined
 require :: Symbol -> SymbolMap -> Maybe SymbolData
-{-# INLINABLE require #-}
-require s m = search s m >>= ifDefined
+{-# INLINE require #-}
+require s m = lookup s m >>= ifDefined
 
 
-search :: Symbol -> SymbolMap -> Maybe SymbolData
-{-# INLINABLE search #-}
-search = Map.lookup
+lookup :: Symbol -> SymbolMap -> Maybe SymbolData
+{-# INLINE lookup #-}
+lookup = T.lookup . varName
 
 
-empty :: SymbolMap
-{-# INLINE empty #-}
-empty = Map.empty
+findWithDefault :: SymbolData -> Symbol -> SymbolMap -> SymbolData
+{-# INLINE findWithDefault #-}
+findWithDefault def = T.findWithDefault def . varName
 
 
-insert :: Symbol -> SymbolData -> SymbolMap -> SymbolMap
-{-# INLINE insert #-}
-insert sym dta = Map.insertWith stitchSD sym dta
+delete :: Symbol -> SymbolMap -> SymbolMap
+{-# INLINE delete #-}
+delete = T.delete . varName
+
+
+adjust :: (SymbolData -> SymbolData) -> Symbol -> SymbolMap -> SymbolMap
+{-# INLINE adjust #-}
+adjust f = T.adjust f . varName
+
+
+isMemberOf :: Symbol -> SymbolMap -> Bool
+isMemberOf = T.isMemberOf . varName
 
 
 
@@ -48,10 +79,10 @@ instance Pretty SymbolMap where
 \+-Symbol--------+-Type---------------------------+-Visib.-+-Purity-+\n\
 \%s\
 \+---------------+--------------------------------+--------+--------+"
-        (unlines $! pretty <$!> Map.assocs sm)
+        (unlines $! pretty <$!> T.assocs sm)
     detailed sm = printf
         "\
 \+-Symbol-------------+-Type--------------------------------+-Visib.-+-Purity-+\n\
 \%s\
 \+--------------------+-------------------------------------+--------+--------+"
-        (unlines $! detailed <$!> Map.assocs sm)
+        (unlines $! detailed <$!> T.assocs sm)

@@ -57,7 +57,7 @@ buildFile cmd relPath = do
     let modName = pathToModule relPath
     let verb = cmdVerb cmd
     let buildDir = cmdBuildDir cmd ++ "/" ++
-            modPathToRelDir relPath
+            pathToDir relPath
 
     when (cmdTrace cmd) $!
         createDirectoryIfMissing True buildDir
