@@ -2,7 +2,7 @@
 
 module SymbolTable.Trie (Trie,
     -- Construction
-    empty, singleton, fromList, fromFold,
+    empty, singleton, fromList,
     -- Insertion
     push, insert, insertWith,
     -- Query
@@ -15,8 +15,7 @@ module SymbolTable.Trie (Trie,
     union, -- difference, intersect,
     -- Other
     assocs, keys, elems,
-    isEmpty, size, genSize, isMemberOf,
-    compress,
+    isEmpty, size, isMemberOf,
     -- Pretty
     prettyTrie, printTrie,
 ) where
@@ -29,8 +28,11 @@ import Data.Array hiding (
     )
 import qualified Data.Array as A
 import Data.Maybe (isNothing, fromMaybe)
+import Data.List (foldl')
 import Data.List.NonEmpty (NonEmpty((:|)))
 import Data.Semigroup
+
+-- import Debug.Trace (trace)
 
 default (Int)
 
@@ -44,14 +46,14 @@ data Trie a
     | Link {
         -- array with indices that represent the
         -- character following `trieCommon`
-        trieChildren :: !(Children a),
+        trieChildren :: {-# UNPACK #-} !(Children a),
         -- represents characters that are common
         -- amongst the children
         trieCommon :: String
     }
     | Node {
-        trieChildren :: !(Children a),
-        trieValue :: a
+        trieChildren :: {-# UNPACK #-} !(Children a),
+        trieValue :: !a
     }
     deriving (Show, Eq)
 
@@ -67,18 +69,10 @@ empty = Empty
 
 -- |Creates a trie from a list of key-value pairs
 fromList :: [(String, a)] -> Trie a
-{-# INLINE fromList #-}
+{-# INLINABLE fromList #-}
 fromList [] = empty
 fromList [(!str, !a)] = singleton str a
 fromList ((!str, !a):rest) = insert str a $! fromList rest
-
-
--- |Generalization of @`fromList`@ to all @`Foldable`@
--- instances
-fromFold :: (Foldable t) => t (String, a) -> Trie a
-{-# INLINE fromFold #-}
-fromFold = foldr (\(!str, !a) !build ->
-    insert str a build) Empty
 
 
 -- |Creates a single-element trie
@@ -103,55 +97,41 @@ insert :: String -> a -> Trie a -> Trie a
 {-# INLINE insert #-}
 insert = insertWith const
 
+------------- trace ("~~~~~~~ HERE: " ++ ) $! 
 
 -- |@`insertWith` f key val trie@ inserts @val@ at
 -- @key@. If a value @old@ at that key already exists,
 -- it is replaced with @f old val@.
 insertWith :: (a -> a -> a) -> String -> a -> Trie a
            -> Trie a
-insertWith _ [] _ !trie = trie
-insertWith _ !str !a Empty = singleton str a
--- `a1` is not strict here because it does not need to
--- be strict in collision
-insertWith f [c] a1 !trie = setChildAt c newChild trie
-    where
-        newChild = case getChildAt c trie of
-            Empty -> a1 `seq` node a1
-            Link chn [] -> a1 `seq` Node chn a1
-            Link chn (c':cs) -> a1 `seq`
-                Node (oneChild c' (Link chn cs)) a1
-            Node chn a2 -> let !a = f a1 a2 in
-                Node chn a
-insertWith f str !a trie@(Link chn com) =
-    case keyDiff str com of
-        Equal -> let (cs, c) = (init str, last str) in
-            Link (oneChild c (Node chn a)) cs
-        NoPrefix -> let (sc:scs) = str; (cc:ccs) = com in
-            Link (newChildren // [
-                (sc, singleton scs a),
-                (cc, Link chn ccs)
-            ]) []
-        RightEm _ (sc:|scs) ->
-            updateChildAt sc (insertWith f scs a) trie
-        -- i dont think this is correct, nor possible
-        Diff (p:|ps) (sc:scs) (cc:ccs) -> Link (newChildren // [
-                (sc, singleton scs a),
-                (cc, Link chn ccs)
-            ]) (p:ps)
-        Diff _ [] (c:cs) ->
-            updateChildAt c (insertWith f cs a) trie
-        Diff _ (c:cs) [] ->
-            updateChildAt c (insertWith f cs a) trie
-        -- shouldn't be possible
-        LeftEm _ _ -> trie
-        Diff _ [] [] -> error "keyDiff: left and right empty"
-insertWith f (c:cs) a trie = updateChildAt c
-    (insertWith f cs a) trie
+insertWith _ [] !a (Link chn com) = Node (link chn com) a
+insertWith f [] a1 (Node chn a2) =
+    let !a = f `seq` f a2 a1 in Node chn a
+insertWith _ str a Empty = singleton str a
+insertWith _ [c1] a (Link chn com) =
+    Link (linkAnd chn com [(c1, node a)]) []
+insertWith f [c] a trie = updateChildAt c (insertWith f [] a) trie
+insertWith f str a trie@(Link chn com) = case keyDiff str com of
+    Equal -> let (cs, c) = (init str, last str) in
+        a `seq` Link (oneChild c (Node chn a)) cs
+    NoPrefix -> let (sc:scs) = str in
+        Link (linkAnd chn com [(sc, singleton scs a)]) []
+    RightEm _ (sc:|scs) ->
+        updateChildAt sc (insertWith f scs a) trie
+    -- i dont think this is correct, nor possible
+    Diff (p:|ps) (sc:scs) com' ->
+        Link (linkAnd chn com' [(sc, singleton scs a)]) (p:ps)
+    Diff _ _ (c:cs) ->
+        updateChildAt c (insertWith f cs a) trie
+    LeftEm _ _ -> trie
+    -- shouldn't be possible
+    Diff _ [] [] -> error "keyDiff: left and right empty"
+insertWith f (c:cs) a trie = updateChildAt c (insertWith f cs a) trie
 
 
 {- %%%%%%%%%% Query %%%%%%%%%% -}
 
--- |Deprecated for users
+
 search :: String -> Trie a -> Trie a
 {-# INLINABLE search #-}
 search [] trie = trie
@@ -172,7 +152,7 @@ search str@(c:cs) trie = case trie of
 lookup :: String -> Trie a -> Maybe a
 {-# INLINE lookup #-}
 lookup str trie = case search str trie of
-    Node _ !a -> Just a
+    Node _ a -> Just a
     _ -> Nothing
 
 
@@ -223,7 +203,7 @@ update :: (a -> Maybe a) -> String -> Trie a -> Trie a
 {-# INLINABLE update #-}
 update _ _ Empty = Empty
 update _ [] trie = trie
-update f [_] (Node chn a) = let !a' = f a in case a' of
+update f [_] (Node chn a) = let a' = f a in case a' of
     Nothing -> Link chn [] -- effectively delete
     Just a'' -> Node chn a''
 -- update [_] _ trie = trie
@@ -237,15 +217,11 @@ update f (c:cs) trie = updateChildAt c (update f cs) trie
 union :: Trie a -> Trie a -> Trie a
 union Empty trie = trie
 union trie Empty = trie
-union (Node chn a) trie =
-    let !chn' = zipChn union chn (trieChildren trie)
-    in Node chn' a
-union trie (Node chn a) =
-    let !chn' = zipChn union (trieChildren trie) chn
-    in Node chn' a
+union (Node chn a) trie = Node (zipChn union chn (trieChildren trie)) a
+union trie (Node chn a) = Node (zipChn union (trieChildren trie) chn) a
 union l1@(Link chn1 com1) l2@(Link chn2 com2)
-    | all isEmpty chn1 = compress l2
-    | all isEmpty chn2 = compress l1
+    | all isEmpty chn1 = l2
+    | all isEmpty chn2 = l1
     | otherwise = case keyDiff com1 com2 of
         Equal -> Link chn com1
         NoPrefix -> case (com1, com2) of
@@ -304,16 +280,17 @@ union l1@(Link chn1 com1) l2@(Link chn2 com2)
 
 -- |Returns a list of the key-value pairs
 assocs :: Trie a -> [(String, a)]
+{-# INLINABLE assocs #-}
 assocs trie = case trie of
     Empty -> []
-    Link !chn com -> map' com chn
-    Node !chn !a -> (([], a):map' [] chn)
+    Link chn com -> map' com chn
+    Node chn a -> (([], a):map' [] chn)
     where
-        map' !done = concatMap (go done) . A.assocs
+        map' done = concatMap (go done) . A.assocs
         go !done (c, trie') = case trie' of
             Empty -> []
-            Link !chn com -> map' (done ++ (c:com)) chn
-            Node !chn !a -> let key = done ++ [c] in
+            Link chn com -> map' (done ++ (c:com)) chn
+            Node chn a -> let key = done ++ [c] in
                 ((key, a):map' key chn)
 
 
@@ -321,7 +298,12 @@ assocs trie = case trie of
 keys :: Trie a -> [String]
 {-# INLINE keys #-}
 keys Empty = []
-keys trie = foldr ((++) . keys) [] (trieChildren trie)
+keys (Link chn com) = concatMap (\(c, trie) ->
+    fmap (\key -> com ++ (c:key)) (keys trie))
+    (A.assocs chn)
+keys (Node chn _) = concatMap (\(c, trie) ->
+    fmap (c:) (keys trie))
+    (A.assocs chn)
 
 
 -- |Returns a list of all values in the trie
@@ -337,10 +319,10 @@ elems (Node chn a) = foldr ((++) . elems) [a] chn
 assocsWithPrefix :: String -> Trie a -> [(String, a)]
 {-# INLINABLE assocsWithPrefix #-}
 assocsWithPrefix _ Empty = []
-assocsWithPrefix pref (Link !chn com) = concatMap (
+assocsWithPrefix pref (Link chn com) = concatMap (
     \(c,trie) -> assocsWithPrefix
         (pref ++ com ++ [c]) trie) (A.assocs chn)
-assocsWithPrefix pref (Node !chn !a) = (pref, a) :
+assocsWithPrefix pref (Node chn a) = (pref, a) :
     concatMap (\(c,trie) -> assocsWithPrefix
         (pref ++ [c]) trie) (A.assocs chn)
 
@@ -349,8 +331,8 @@ assocsWithPrefix pref (Node !chn !a) = (pref, a) :
 -- string
 keysWithPrefix :: String -> Trie a -> [String]
 {-# INLINE keysWithPrefix #-}
-keysWithPrefix pref trie = let !trie' = search pref trie
-    in fmap (pref ++) $! keys trie'
+keysWithPrefix pref =
+    fmap (pref ++) . keys . search pref
 
 
 -- |Returns a list of all values whose key starts with
@@ -364,20 +346,10 @@ elemsWithPrefix pref = elems . search pref
 size :: Trie a -> Int
 {-# INLINE size #-}
 size Empty = 0 :: Int
-size (Link chn _) = foldr (\a !b ->
+size (Link chn _) = foldl' (\b a ->
     b + size a) (0 :: Int) chn
-size (Node chn _) = foldr (\a !b ->
+size (Node chn _) = foldl' (\b a ->
     b + size a) (1 :: Int) chn
-
-
--- |@`size`@ generalized to any @`Num`@ instance
-genSize :: (Num n) => Trie a -> n
-{-# INLINE genSize #-}
-genSize Empty = fromInteger 0
-genSize (Link chn _) = foldr (\a !b ->
-    b + genSize a) (fromInteger 0) chn
-genSize (Node chn _) = foldr (\a !b ->
-    b + genSize a) (fromInteger 1) chn
 
 
 -- |Returns whether or not the trie is empty
@@ -403,18 +375,11 @@ isMemberOf str = isNothing . lookup str
 --     cs `isMemberOf` chn!c
 
 
--- |Removes excess trie nodes. Typically not needed.
-compress :: Trie a -> Trie a
-{-# INLINE compress #-}
-compress Empty = Empty
-compress trie = trie { trieChildren =
-    compressChildren $! trieChildren trie }
-
-
 {- %%%%%%%%%% Pretty %%%%%%%%%% -}
 
 prettyTrie :: (Show a) => Trie a -> String
-prettyTrie = go (0 :: Int) . compress
+{-# NOINLINE prettyTrie #-}
+prettyTrie = go (0 :: Int)
     where
         idt i = replicate (i * 4 :: Int) ' '
         go i Empty = idt i ++ "Empty"
@@ -431,6 +396,7 @@ prettyTrie = go (0 :: Int) . compress
 
 
 printTrie :: (Show a) => Trie a -> IO ()
+{-# NOINLINE printTrie #-}
 printTrie = putStrLn . prettyTrie
 
 
@@ -441,16 +407,6 @@ printTrie = putStrLn . prettyTrie
 node :: a -> Trie a
 {-# INLINE node #-}
 node = Node newChildren
-
-
-compressChildren :: Children a -> Children a
-{-# INLINABLE compressChildren #-}
-compressChildren = fmap $ \a -> case a of
-    Empty -> Empty
-    Link chn _ -> let !chn' = compressChildren chn in
-        if all isEmpty chn' then Empty else a
-    Node chn _ -> a
-        { trieChildren = compressChildren chn }
 
 
 keyBounds :: (Char, Char)
@@ -470,28 +426,41 @@ newChildren = mkChildren [(k, Empty) | k <- range keyBounds]
 
 oneChild :: Char -> Trie a -> Children a
 {-# INLINE oneChild #-}
-oneChild !k trie = newChildren // [(k, trie)]
+oneChild k trie = newChildren // [(k, trie)]
 
 
 zipChn :: (Trie a -> Trie a -> Trie a)
             -> Children a -> Children a -> Children a
 {-# INLINE zipChn #-}
-zipChn f chn1 chn2 = mkChildren [(k, f c1 c2) |
+zipChn !f !chn1 !chn2 = mkChildren [(k, f c1 c2) |
     k <- indices chn1,
     c1 <- A.elems chn1,
     c2 <- A.elems chn2]
 
 
+link :: Children a -> String -> Children a
+{-# INLINE link #-}
+link !chn [] = chn
+link !chn (c:cs) = oneChild c $ Link chn cs
+
+
+linkAnd :: Children a -> String -> [(Char, Trie a)] -> Children a
+{-# INLINE linkAnd #-}
+linkAnd !chn [] [] = chn
+linkAnd !chn [] !as = chn // as
+linkAnd !chn (c:cs) !as = newChildren // ((c, Link chn cs):as)
+
+
 getChildAt :: Char -> Trie a -> Trie a
 {-# INLINE getChildAt #-}
 getChildAt _ Empty = Empty
-getChildAt k trie = trieChildren trie ! k
+getChildAt !k !trie = trieChildren trie ! k
 
 
 setChildAt :: Char -> Trie a -> Trie a -> Trie a
 {-# INLINE setChildAt #-}
 setChildAt _ _ Empty = Empty
-setChildAt k child trie = trie {
+setChildAt !k !child !trie = trie {
         trieChildren = trieChildren trie // [(k, child)]
     }
 
@@ -499,7 +468,7 @@ setChildAt k child trie = trie {
 updateChildAt :: Char -> (Trie a -> Trie a) -> Trie a
               -> Trie a
 {-# INLINE updateChildAt #-}
-updateChildAt k f trie = let !child = getChildAt k trie
+updateChildAt !k !f !trie = let !child = getChildAt k trie
     in setChildAt k (f child) trie
 
 
@@ -528,26 +497,21 @@ keyDiff (c1:cs1) (c2:cs2)
 
 instance Functor Trie where
     fmap _ Empty = Empty
-    fmap f (Link !chn com) = let !chn' = fmap f <$> chn in
-        Link chn' com
-    fmap f (Node !chn !a) = Node chn' a'
-        where
-            !chn' = fmap f <$> chn
-            !a' = f a
+    fmap f (Link chn com) = Link (fmap f <$> chn) com
+    fmap f (Node chn a) = let !a' = f a in Node (fmap f <$> chn) a'
+    _ <$ Empty = Empty
+    a <$ Link chn com = Link (fmap (a <$) chn) com
+    a <$ Node chn _ = Node (fmap (a <$) chn) a
+
 
 instance Foldable Trie where
     foldr _ b Empty = b
-    foldr f b (Link chn _) = foldr (\child !b' ->
-        case child of
-            Empty -> b'
-            Link chn' _ -> foldr (\child' !b'' ->
-                foldr f b'' child') b' chn'
-            Node chn' a -> f a $!
-                foldr (\child' !b'' ->
-                    foldr f b'' child') b' chn'
+    foldr f b (Link chn _) = foldr (\child b' -> case child of
+        Empty -> b'
+        Link chn' _ -> foldr (flip (foldr f)) b' chn'
+        Node chn' a -> f a $! foldr (flip (foldr f)) b' chn'
         ) b chn
-    foldr f b (Node chn a) = f a $! foldr
-        (\child !b' -> foldr f b' child) b chn
+    foldr f b (Node chn a) = f a $! foldr (flip (foldr f)) b chn
     null = isEmpty
 
 

@@ -10,7 +10,6 @@ import CmdLine (CmdLine(..))
 import Parser.Data (Variable(..))
 import SymbolTable
 import Typing.Types (Type(..))
-import Utils
 
 
 
@@ -155,19 +154,19 @@ modifyScoped sym f = do
 
 pushType :: Symbol -> SymbolData -> Analyzer ()
 {-# INLINABLE pushType #-}
-pushType sym = modifyTable .! insertType sym
+pushType sym = modifyTable . insertType sym
 
 
 pushTrait :: Symbol -> SymbolData -> Analyzer ()
 {-# INLINABLE pushTrait #-}
-pushTrait sym = modifyTable .! insertTrait sym
+pushTrait sym = modifyTable . insertTrait sym
 
 
 pushGlobal :: Symbol -> SymbolData -> Analyzer ()
 {-# INLINABLE pushGlobal #-}
-pushGlobal sym = modifyTable .! insertGlobal sym
+pushGlobal sym = modifyTable . insertGlobal sym
 
 
 pushScoped :: Symbol -> SymbolData -> Analyzer ()
 {-# INLINABLE pushScoped #-}
-pushScoped sym = modifyTable .! insertScoped sym
+pushScoped sym = modifyTable . insertScoped sym

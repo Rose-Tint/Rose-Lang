@@ -1,0 +1,15 @@
+module Std.Math.Complex where
+
+
+
+export data Complex n := Complex => n n
+
+
+export pure real => Complex n, n;
+real [Complex r i] := r;
+
+export pure imag => Complex n, n;
+imag [Complex r i] := i;
+
+export pure conjugate => Complex n, Complex n;
+conjugate [Complex r i] := Comlex i r;

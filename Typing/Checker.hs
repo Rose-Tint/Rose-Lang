@@ -85,7 +85,7 @@ instance Checker Expr where
         enterDefinition name
         mDta <- findGlobal name
         let typ' = addCons cons $! fromPDTypes typs
-        _ <- case mDta of
+        case mDta of
             Nothing -> pushGlobal name $! mkSymbolData
                 name typ' (Just vis) (Just pur)
             Just dta -> expect typ' (sdType dta)
@@ -106,6 +106,7 @@ instance Checker Expr where
     -- infer (DataDef vis name tps ctrs) = do
     infer (DataDef vis name tps ctrs) = do
         updatePos $! varPos name
+        enterDefinition name
         let dta = mkSymbolData name
                 (Type name (fmap
                     (\tp -> Param tp [] []) tps) [])
@@ -116,15 +117,29 @@ instance Checker Expr where
                     ((fromPDType <$!> ts) ++ [sdType dta]) []
             pushGlobal name' $! mkSymbolData
                 name' typ (Just vis') (Just Pure)
-        -- foldM (\_ a -> pushType
-        --     (undef a) { sdType = Param a [] [] })
-        --     () tps
+        exitDefinition
         return NoType
     -- infer (IfElse cls tb fb) = do
     -- infer (Pattern val cs) = do
     -- infer (Loop init cond iter bdy) = do
-    -- infer (TraitDecl vis cons name tv fns) = do
-    --     return NoType
+    infer (TraitDecl vis _cons name _tv fns) = do
+        updatePos $! varPos name
+        enterDefinition name
+        mDta <- findTrait name
+        case mDta of
+            Nothing -> pushTrait name $! mkSymbolData
+                name NoType (Just vis) Nothing
+            (Just dta) ->
+                let nm = varName name
+                    orig = maybe (Prim nm) (Var nm) (sdPos dta)
+                in throw $! Redefinition name orig
+        forM_ fns $! \fn -> case fn of
+            FuncTypeDecl _ _ _ _ _ -> infer fn
+            _ -> throw $! OtherError
+                "non-function-type-declaration \
+                \as trait-method declaration"
+        exitDefinition
+        return NoType
     -- infer (TraitImpl name cons typ defs) = do
     --     return NoType
     infer (NewVar mut typ var val) = do

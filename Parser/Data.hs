@@ -13,7 +13,10 @@ default (Int, Double)
 
 data Position
     = UnknownPos
-    | SourcePos Module Line Column Column
+    | SourcePos Module
+        {-# UNPACK #-} !Line
+        {-# UNPACK #-} !Column
+        {-# UNPACK #-} !Column
     deriving (Show, Eq, Ord)
 
 
@@ -61,7 +64,7 @@ data Value
     | StrLit String Position
     | FuncCall Variable [Value]
     | CtorVal Variable [Value]
-    | Array Int [Value] Position
+    | Array {-# UNPACK #-} !Int [Value] Position
     | ExprVal Expr
     deriving (Show, Eq, Ord)
 

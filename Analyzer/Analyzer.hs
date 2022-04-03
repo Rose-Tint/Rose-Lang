@@ -249,6 +249,7 @@ catch a = Analyzer $ \ !s aok _ ->
 
 
 throwUndefined :: Symbol -> Analyzer a
+{-# INLINE throwUndefined #-}
 throwUndefined sym = do
     syms <- getSimilarSymbols sym <$!> getTable
     throw $ Undefined sym syms

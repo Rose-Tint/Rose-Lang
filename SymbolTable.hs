@@ -11,10 +11,12 @@ module SymbolTable (
 ) where
 
 import Color
+import Data.Maybe (mapMaybe, maybe)
 import Parser.Data (Variable(..))
 import Pretty
 import SymbolTable.SymbolData
 import SymbolTable.SymbolMap
+import SymbolTable.Trie (assocs)
 import Utils
 
 
@@ -79,9 +81,15 @@ insertScoped sym dta tbl = let insert' = insert sym dta in
 -- insertUndefGlobal = insertGlobal .! undef
 
 
-getSimilarSymbols :: Symbol -> SymbolTable -> [String]
+getSimilarSymbols :: Symbol -> SymbolTable -> [Symbol]
+{-# INLINABLE getSimilarSymbols #-}
 getSimilarSymbols sym (SymbolTable typs trts glbs scps) =
-    let filt = filter (areSimilar (varName sym)) . keys
+    let var = varName sym
+        filt = mapMaybe (\(key, dta) ->
+            if areSimilar var key then
+                Just $! maybe (Prim key) (Var key) (sdPos dta)
+            else
+                Nothing) . assocs
         scpKeys = concatMap filt scps
     in concatMap filt [typs, trts, glbs] ++ scpKeys
 
