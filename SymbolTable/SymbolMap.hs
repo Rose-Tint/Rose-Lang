@@ -69,6 +69,7 @@ adjust f = T.adjust f . varName
 
 
 isMemberOf :: Symbol -> SymbolMap -> Bool
+{-# INLINE isMemberOf #-}
 isMemberOf = T.isMemberOf . varName
 
 
