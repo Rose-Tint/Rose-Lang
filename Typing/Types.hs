@@ -57,9 +57,9 @@ t1 <~> t2 = if t2 == NoType then t1 else case t1 of
 
 
 
--- |Creates a `@Type@` from a `Parser.Data.@Type@` 
+-- |Creates a `@Type@` from a `Parser.Data.@Type@`
 fromPDType :: PD.Type -> Type
-fromPDType (TerminalType nm ps) = 
+fromPDType (TerminalType nm ps) =
     let ps' = fromPDType <$!> ps
     in if isUpper (head $! varName nm) then
         Type nm ps' []

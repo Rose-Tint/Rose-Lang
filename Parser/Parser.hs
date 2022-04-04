@@ -174,7 +174,7 @@ funcTypeDecl = (do
     return $! FuncTypeDecl
         pur vis name cons typs)
     <?> "func-type-decl"
- 
+
 
 funcDef :: Parser Expr
 funcDef = (do

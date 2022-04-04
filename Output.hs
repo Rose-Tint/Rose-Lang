@@ -52,8 +52,7 @@ myPutStr ::
     Color -> Int -> Handle -> Int -> String -> [String] -> IO ()
 myPutStr clr thresh hdl vrb fStr args =
     if vrb >= thresh then
-        -- i tried using stderr, but it printed weird
-        -- characters and really slow
+        -- i tried using stderr, but it was slow and raw
         hPutStr hdl $ foldl' printf fStr args `colored` clr
     else
         return ()

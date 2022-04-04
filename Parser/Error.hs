@@ -15,16 +15,12 @@ default (Int, Double)
 
 
 printSrcLine :: Int -> Int -> Text -> IO ()
-printSrcLine v ln line = message v
-    -- I know that you think the printf here is redundant.
-    -- I do too. But I assure you: it is needed.
-    (printf "%4d | %s\n" ln (unpack line)) []
+printSrcLine v ln line = message v (show ln ++ " | " ++ unpack line ++ "\n")
 
 
 printParseErrHeader :: Int -> SourcePos -> IO ()
 printParseErrHeader v pos = fatal v
-        "Error while parsing %s:\n"
-        [show pos]
+        "Error while parsing %s:\n" [show pos]
 
 
 printParseErrMsg :: Int -> Int -> [Message] -> IO ()
