@@ -1,5 +1,8 @@
 {-# OPTIONS_GHC -Wno-missing-signatures #-}
 
+module Output where
+
+{-
 module Output (
     success,
     warn,
@@ -25,7 +28,7 @@ default (Int, Double)
 
 
 success, warn, message, status, debug, info
-    :: Int -> String -> [String] -> IO ()
+    :: CmdLine -> String -> [String] -> IO ()
 success = myPutStr Green 1 stdout
 warn = myPutStr Yellow 2 stdout -- stderr
 message = myPutStr Reset 1 stdout
@@ -48,11 +51,11 @@ trace cmd path str = forkIO (if cmdTrace cmd then do
         return ()) >> return ()
 
 
-myPutStr ::
-    Color -> Int -> Handle -> Int -> String -> [String] -> IO ()
-myPutStr clr thresh hdl vrb fStr args =
-    if vrb >= thresh then
+myPutStr :: Color -> Int -> Handle -> CmdLine -> String -> [String] -> IO ()
+myPutStr clr thresh hdl cmd fStr args =
+    if cmdVerb cmd >= thresh then
         -- i tried using stderr, but it was slow and raw
         hPutStr hdl $ foldl' printf fStr args `colored` clr
     else
         return ()
+-}

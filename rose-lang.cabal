@@ -29,6 +29,9 @@ common general
         Analyzer.State,
         Analyzer.SymbolTable,
         Builder.Builder,
+        Builder.CmdLine,
+        Builder.Output,
+        Builder.State,
         Parser.Data,
         Parser.Error,
         Parser.Keywords,
@@ -60,10 +63,12 @@ common general
         -fhide-source-paths
         -fshow-warning-groups
         -Wall
+        -Wextra
         -Wcompat
         -Wno-unused-do-bind
         -Werror
         -Wwarn=unused-imports
+        -Wwarn=unused-top-binds
 
 
 executable Rose
