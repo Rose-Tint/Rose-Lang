@@ -199,7 +199,7 @@ pushParams typ@(Applied tps cs) (param:params) = do
     when (null tps) $! do
         eT <- peekExpType
         throw $ TypeMismatch typ eT
-    let (eT:tps') = tps
+    let (eT, tps') = ((head tps), (tail tps))
     _ <- case param of
         FuncCall var [] -> do
             updatePos $! varPos var

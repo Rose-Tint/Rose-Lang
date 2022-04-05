@@ -2,7 +2,7 @@ module Build where
 
 import Prelude hiding (readFile, lines)
 
-import Control.Monad (when, mapM, forM_, foldM_)
+import Control.Monad (when, forM_, foldM_)
 import Data.Text (Text)
 import qualified Data.Text as T (lines)
 import Data.Text.IO (readFile)
@@ -56,19 +56,15 @@ buildFile cmd relPath = do
         buildDir = cmdBuildDir cmd ++
             pathToDir relPath
 
-    when (cmdTrace cmd) $!
+    when (cmdTrace cmd) $
         createDirectoryIfMissing True buildDir
     message verb "Building Module [%s]\n" [modName]
-    debug verb "module build dir: %s\n" [buildDir]
 
     src <- makeAbsolute relPath >>= readFile
 
     parseRes <- parseFile cmd src modName
     analyzeFile cmd src modName parseRes
-
     return ()
-
-    -- status verb "Finished Building [%s]\n" [modName]
 
 
 parseFile :: CmdLine -> Text -> ModuleName -> IO [Expr]
@@ -79,11 +75,10 @@ parseFile cmd src name = do
         Left err -> do
             printParseErr (cmdVerb cmd) err src
             fatal (cmdVerb cmd)
-                "Failed while parsing module (%s)\n"
-                [name]
+                "Failed while parsing module (%s)\n" [name]
         Right exprs -> do
-            trace cmd (buildDir ++ "Abstract-Syntax-Tree.txt")
-                (concatMap pretty exprs)
+            trace cmd (buildDir ++ "Parse-Tree.txt") $
+                concatMap pretty exprs
             return exprs
 
 

@@ -11,7 +11,7 @@ module SymbolTable (
 ) where
 
 import Color
-import Data.Maybe (mapMaybe, maybe)
+import Data.Maybe (mapMaybe)
 import Parser.Data (Variable(..))
 import Pretty
 import SymbolTable.SymbolData
