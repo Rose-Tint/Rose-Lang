@@ -137,13 +137,12 @@ search :: String -> Trie a -> Trie a
 search [] trie = trie
 search _ Empty = Empty
 search str@(c:cs) trie = case trie of
-    Empty -> Empty
     Link chn com -> case keyDiff str com of
         -- only care about the left (`str`) after
         -- any prefix is removed
         RightEm _ (c':|cs') -> search cs' $! chn!c'
         Diff _ (c':cs') _ -> search cs' $! chn!c'
-        _ -> Empty 
+        _ -> Empty
     _ -> search cs $! getChildAt c trie
 
 

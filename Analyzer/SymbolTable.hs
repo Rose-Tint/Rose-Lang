@@ -75,13 +75,11 @@ searchScopeds sym = tblScopeds <$!> getTable >>= go >>= \res ->
             Just dta -> do
                 allowShadowing <- fromCmdLine cmdShadowing
                 unless allowShadowing $! do
-                    rest <- go scps
-                    case rest of
+                    shadows <- go scps
+                    case shadows >>= sdPos of
                         Nothing -> return ()
-                        Just oth -> case sdPos oth of
-                            Nothing -> return ()
-                            Just pos -> warn $! ShadowsName sym
-                                (sym { varPos = pos })
+                        Just pos -> warn $ ShadowsName sym
+                            (Var (varName sym) pos)
                 return (Just dta)
             Nothing -> go scps
 

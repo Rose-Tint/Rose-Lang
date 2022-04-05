@@ -15,7 +15,8 @@ default (Int, Double)
 
 
 printSrcLine :: Int -> Int -> Text -> IO ()
-printSrcLine v ln line = message v (show ln ++ " | " ++ unpack line ++ "\n")
+printSrcLine v ln line = message v
+    (show ln ++ " | " ++ unpack line ++ "\n") []
 
 
 printParseErrHeader :: Int -> SourcePos -> IO ()

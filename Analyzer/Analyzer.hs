@@ -20,7 +20,6 @@ module Analyzer.Analyzer (
 ) where
 
 import Control.Monad ((<$!>))
-import Control.Monad.Fail
 
 import Analyzer.Error
 import Analyzer.State

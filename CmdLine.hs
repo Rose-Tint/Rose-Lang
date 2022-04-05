@@ -6,7 +6,6 @@ module CmdLine (
 import System.Console.GetOpt
 import System.Directory (makeAbsolute, getCurrentDirectory)
 import System.Environment (getArgs)
-import System.IO (FilePath)
 
 import Threading
 

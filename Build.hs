@@ -2,7 +2,7 @@ module Build where
 
 import Prelude hiding (readFile, lines)
 
-import Control.Monad (when, mapM, forM_, foldM_)
+import Control.Monad (when, forM_, foldM_)
 import Data.Text (Text)
 import qualified Data.Text as T (lines)
 import Data.Text.IO (readFile)
@@ -64,6 +64,7 @@ buildFile cmd relPath = do
 
     parseRes <- parseFile cmd src modName
     analyzeFile cmd src modName parseRes
+    return ()
 
 
 parseFile :: CmdLine -> Text -> ModuleName -> IO [Expr]
