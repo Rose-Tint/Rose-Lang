@@ -28,6 +28,7 @@ common general
         Analyzer.Prims,
         Analyzer.State,
         Analyzer.SymbolTable,
+        Builder.Builder,
         Parser.Data,
         Parser.Error,
         Parser.Keywords,
