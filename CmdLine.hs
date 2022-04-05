@@ -4,10 +4,8 @@ module CmdLine (
 ) where
 
 import System.Console.GetOpt
-import System.Directory
-    (makeAbsolute, getCurrentDirectory)
+import System.Directory (makeAbsolute, getCurrentDirectory)
 import System.Environment (getArgs)
-import System.IO (FilePath)
 
 import Threading
 
@@ -38,7 +36,6 @@ data Flag
     | Threaded
     | Wall
     | Werror
-    -- | NoOp
 
 
 

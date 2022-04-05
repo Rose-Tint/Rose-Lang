@@ -281,7 +281,7 @@ instance Pretty Expr where
         \    Name        : %s\n\
         \    Constraints : \n%s\
         \    Method Defs : \n%s"
-        (pretty name) 
+        (pretty name)
         (indentAllUsing pretty{- -} cons)
         (indentAllUsing pretty ms)
     pretty (TraitImpl name cons (Just t) ms) = printf
@@ -290,7 +290,7 @@ instance Pretty Expr where
         \    Constraints : \n%s\
         \    Type Name   : %s\n\
         \    Method Defs : \n%s"
-        (pretty name) 
+        (pretty name)
         (indentAllUsing pretty{- -} cons)
         (pretty t)
         (indentAllUsing pretty ms)
@@ -374,9 +374,6 @@ instance Pretty Position where
     detailed (SourcePos _ ln st end) = printf
         "[%d,%d:%d]" ln st end
     exhaustive UnknownPos = "[?]"
-    -- exhaustive (SourcePos name ln st end) = printf
-        -- "in module `%s`, line %d, col %d (ending at col %d?)"
-        -- name ln st end
     exhaustive (SourcePos name ln st _) = printf
         "in %s: line %d, col %d"
         (exhaustive name) ln st

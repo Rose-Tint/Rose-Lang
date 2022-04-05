@@ -23,7 +23,6 @@ class Pretty a where
     -- to detailed
     exhaustive :: a -> String
     exhaustive = detailed
-    {-# INLINABLE pretty #-}
     default pretty :: (Show a) => a -> String
     pretty = show
 
@@ -44,10 +43,8 @@ hPrettyPrint :: (Pretty a) => Handle -> a -> IO ()
 hPrettyPrint hdl = hPutStrLn hdl . pretty
 
 
-
 instance Pretty Char where
-    pretty c = [c]
-
+    pretty = show
 
 instance (IsChar c) => Pretty [c] where
-    pretty cs = fmap toChar cs
+    pretty = fmap toChar
