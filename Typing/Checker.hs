@@ -12,7 +12,7 @@ import Analyzer.Analyzer
 import Analyzer.Error
 import Analyzer.Prims
 import Analyzer.SymbolTable
-import Parser.Data hiding (Type)
+import Parser.Data hiding (Type, boolType)
 import SymbolTable
 import Typing.Types
 
@@ -73,72 +73,72 @@ instance Checker Expr where
     infer (ModImport vis var) = do
         addImport vis var
         return NoType
-    infer (FuncTypeDecl pur vis name cons typs) = do
-        -- if this function-type-decl already exists, then
-        -- check that they are the same (allow dupe-decls
-        -- as long as they are the same)
-        -- else, create a new global
-        updatePos $! varPos name
-        enterDefinition name
-        mDta <- findGlobal name
-        let typ' = addCons cons $! fromPDTypes typs
-        case mDta of
-            Nothing -> pushGlobal name $! mkSymbolData
-                name typ' (Just vis) (Just pur)
-            Just dta -> expect typ' (sdType dta)
-        exitDefinition
-        return NoType
-    infer (FuncDef name pars _) = do
-        updatePos $! varPos name
-        enterDefinition name
+    infer (FuncTypeDecl pur vis name cons typs) =
+        define name $! do
+            -- if this function-type-decl already exists, then
+            -- check that they are the same (allow dupe-decls
+            -- as long as they are the same)
+            -- else, create a new global
+            mDta <- findGlobal name
+            let typ' = addCons cons $! fromPDTypes typs
+            case mDta of
+                Nothing -> pushGlobal name $! mkSymbolData
+                    name typ' (Just vis) (Just pur)
+                Just dta -> expect typ' (sdType dta)
+    infer (FuncDef name pars _) = define name $! do
         mDta <- findGlobal name
         case mDta of
             Nothing -> throwUndefined name
-            Just dta -> do
-                typ <- withExpType (sdType dta) $!
-                    pushParams (sdType dta) pars
-                return typ
-        exitDefinition
-        return NoType
+            Just dta -> withExpType (sdType dta) $!
+                pushParams (sdType dta) pars
     -- infer (DataDef vis name tps ctrs) = do
-    infer (DataDef vis name tps ctrs) = do
-        updatePos $! varPos name
-        enterDefinition name
+    infer (DataDef vis name tps ctrs) = define name $! do
         let dta = mkSymbolData name
                 (Type name (fmap
                     (\tp -> Param tp [] []) tps) [])
                 (Just vis) (Just Pure)
         pushType name dta
-        forM_ ctrs $ \(DataCtor vis' name' ts) -> do
-            let typ = Applied
-                    ((fromPDType <$!> ts) ++ [sdType dta]) []
-            pushGlobal name' $! mkSymbolData
+        forM_ ctrs $ \(DataCtor vis' name' ts) ->
+            let tps' = (fromPDType <$!> ts) ++ [sdType dta]
+                typ = Applied tps' []
+            in pushGlobal name' $! mkSymbolData
                 name' typ (Just vis') (Just Pure)
-        exitDefinition
+    infer (IfElse cls tb fb) = do
+        expect cls boolType
+        mapM_ infer tb
+        mapM_ infer fb
         return NoType
-    -- infer (IfElse cls tb fb) = do
-    -- infer (Pattern val cs) = do
-    -- infer (Loop init cond iter bdy) = do
-    infer (TraitDecl vis _cons name _tv fns) = do
-        updatePos $! varPos name
-        enterDefinition name
-        mDta <- findTrait name
-        case mDta of
-            Nothing -> pushTrait name $! mkSymbolData
-                name NoType (Just vis) Nothing
-            (Just dta) ->
-                let nm = varName name
-                    orig = maybe (Prim nm) (Var nm) (sdPos dta)
-                in throw $! Redefinition name orig
-        forM_ fns $! \fn -> case fn of
-            FuncTypeDecl _ _ _ _ _ -> infer fn
-            _ -> throw $! OtherError
-                "non-function-type-declaration \
-                \as trait-method declaration"
-        exitDefinition
+    infer (Pattern val cases) = do
+        valT <- infer val
+        forM_ cases $! \(case', bdy) -> do
+            expect case' valT
+            mapM_ infer_ bdy
         return NoType
-    -- infer (TraitImpl name cons typ defs) = do
-    --     return NoType
+    infer (Loop init' cond iter bdy) = do
+        maybe (return ()) infer_ init'
+        expect cond boolType
+        maybe (return ()) infer_ iter
+        mapM_ infer bdy
+        return NoType
+    -- TraitDecl vis cons tv fns
+    infer (TraitDecl vis _ name _ fns) = define name $! do
+            mDta <- findTrait name
+            case mDta of
+                Nothing -> pushTrait name $! mkSymbolData
+                    name NoType (Just vis) Nothing
+                (Just dta) ->
+                    let nm = varName name
+                        orig = maybe (Prim nm) (Var nm)
+                            (sdPos dta)
+                    in throw $ Redefinition name orig
+            forM_ fns $! \fn -> case fn of
+                FuncTypeDecl _ _ _ _ _ -> infer fn
+                _ -> throw $! OtherError
+                    "non-function-type-declaration \
+                    \as trait-method declaration"
+    -- TraitImpl name cons typ defs
+    infer (TraitImpl name _ _ defs) = define name $! do
+            mapM_ infer_ defs
     infer (NewVar mut typ var val) = do
         updatePos $! varPos var
         let typ' = fromPDType typ
@@ -157,17 +157,11 @@ instance Checker Expr where
         case var' of
             Nothing -> throwUndefined var
             Just dta -> do
-                let varT = sdType dta
-                pushExpType varT
-                valT <- infer val
-                chk <- check varT valT
-                popExpType
-                if chk then return NoType else throw $
-                    TypeMismatch varT valT
+                expect val (sdType dta)
+                return NoType
     infer (Return val) = infer val
-    infer _ = return NoType
-    -- infer _ = throw $ OtherError
-    --     "`Checker Expr` not fully implemented"
+    -- infer _ = return NoType
+    -- infer _ = fail "'Checker Expr' not fully implemented"
 
 
 {-
@@ -189,9 +183,9 @@ instance Checker SymbolData where
     infer = return . sdType
 
 
--- | the @typ@ in @`pushParams` typ ps@ represents the current
--- 'working' type (the type left). Remember to push the overall
--- function type using @pushExpType@
+-- | the @typ@ in @`pushParams` typ ps@ represents the
+-- current 'working' type (the type left). Remember to
+-- push the overall function type using @pushExpType@
 pushParams :: Type -> [Value] -> Analyzer Type
 pushParams typ [] = return typ
 pushParams typ@(Applied tps cs) (param:params) = do
@@ -207,7 +201,8 @@ pushParams typ@(Applied tps cs) (param:params) = do
             pushScoped var dta
             return ()
         FuncCall _ _ -> fail
-            "pattern-match variable case cannot have arguments"
+            "pattern-match variable \
+            \case cannot have arguments"
         CtorVal name _ -> do
             modifyGlobal name $! \dta ->
                 case sdType dta of
@@ -226,7 +221,8 @@ pushParams (Param _ _ _) _ = fail "`Param` in pushParams"
 pushParams typ@(Delayed _) ps = do
     typ' <- infer typ
     case typ' of
-        Delayed _ -> fail "unavoidable `Delayed` in pushParams"
+        Delayed _ -> fail
+            "unavoidable `Delayed` in pushParams"
         _ -> pushParams typ' ps
 pushParams NoType _ = fail "`NoType` in pushParams"
 

@@ -7,13 +7,11 @@ module Analyzer.Analyzer (
     analyze,
     getTable, setTable, modifyTable,
     getModuleName,
-    enterDefinition, exitDefinition, getCurrDef,
-    pushFnCall, popFnCall,
     pushScope, popScope,
     pushExpType, popExpType, peekExpType, withExpType,
-    fromCmdLine,
+    define,
     addImport,
-    updatePos, getPos,
+    updatePos,
     option, optional,
     throw, warn, catch,
     throwUndefined
@@ -24,7 +22,6 @@ import Control.Monad.Fail
 
 import Analyzer.Error
 import Analyzer.State
-import CmdLine (CmdLine)
 import Parser.Data (Module(..), Visibility, Variable(..))
 import SymbolTable
 import Typing.Types
@@ -56,8 +53,8 @@ data Analysis a
 
 
 
-analyze :: CmdLine -> Analyzer a -> Analysis a
-analyze cmd a = runA a (newState cmd) okay err
+analyze :: Analyzer a -> Analysis a
+analyze a = runA a newState okay err
     where
         err _ s = Analysis {
                     arResult = Nothing,
@@ -96,14 +93,9 @@ modifyTable f = Analyzer $ \ !s okay _ ->
 
 
 getModuleName :: Analyzer Module
+{-# INLINE getModuleName #-}
 getModuleName = Analyzer $ \ !s okay _ ->
     okay (stModule s) s
-
-
-fromCmdLine :: (CmdLine -> a) -> Analyzer a
-{-# INLINE fromCmdLine #-}
-fromCmdLine f = Analyzer $ \ !s okay _ ->
-    okay (f (stCmdLine s)) s
 
 
 enterDefinition :: Symbol -> Analyzer ()
@@ -116,25 +108,6 @@ exitDefinition :: Analyzer ()
 {-# INLINABLE exitDefinition #-}
 exitDefinition = Analyzer $ \ !s okay _ ->
     okay () (s { stDefName = Nothing })
-
-
-getCurrDef :: Analyzer (Maybe Symbol)
-{-# INLINE getCurrDef #-}
-getCurrDef = Analyzer $ \ !s okay _ ->
-    okay (stDefName s) s
-
-
-pushFnCall :: Symbol -> Analyzer ()
-{-# INLINABLE pushFnCall #-}
-pushFnCall name = Analyzer $ \ !s okay _ ->
-    okay () (s { stCalls = (name:stCalls s) })
-
-
-popFnCall :: Analyzer ()
-popFnCall = Analyzer $ \ !s okay _ ->
-    case stCalls s of
-        [] -> okay () s
-        (_:calls) -> okay () (s { stCalls = calls })
 
 
 pushScope, popScope :: Analyzer ()
@@ -175,23 +148,29 @@ peekExpType = Analyzer $ \ !s okay _ ->
     in okay typ s
 
 
+define :: Symbol -> Analyzer a -> Analyzer Type
+{-# INLINABLE define #-}
+define name analyzer = do
+    updatePos $! varPos name
+    enterDefinition name
+    analyzer
+    exitDefinition
+    return NoType
+
+
 withExpType :: Type -> Analyzer a -> Analyzer a
+{-# INLINE withExpType #-}
 withExpType t a = do
     pushExpType t
     x <- a
-    popExpType >> return x
+    popExpType
+    return x
 
 
 updatePos :: Position -> Analyzer ()
 {-# INLINE updatePos #-}
 updatePos p = Analyzer $ \ !s okay _ ->
     okay () (s { stPosition = p })
-
-
-getPos :: Analyzer Position
-{-# INLINE getPos #-}
-getPos = Analyzer $ \ !s okay _ ->
-    okay (stPosition s) s
 
 
 addImport :: Visibility -> Variable -> Analyzer ()
@@ -208,7 +187,7 @@ option def a = catch a >>= \x -> return $ case x of
 
 
 optional :: Analyzer a -> Analyzer ()
-{-# INLINABLE optional #-}
+{-# INLINE optional #-}
 optional a = do
     catch a
     return ()
@@ -257,13 +236,16 @@ throwUndefined sym = do
 
 
 instance Functor Analyzer where
+    {-# INLINE fmap #-}
     fmap f a = Analyzer $ \ !s aok err ->
         let okay x s' = aok (f x) s' in
         runA a s okay err
 
 
 instance Applicative Analyzer where
+    {-# INLINE pure #-}
     pure a = Analyzer $ \ !s okay _ -> okay a s
+    {-# INLINE (<*>) #-}
     fa <*> xa = do
         f <- fa
         x <- xa
@@ -271,11 +253,12 @@ instance Applicative Analyzer where
 
 
 instance Monad Analyzer where
-    return = pure
+    {-# INLINE (>>=) #-}
     a >>= f = Analyzer $ \ !s aok err  ->
         let okay x s' = runA (f x) s' aok err
         in runA a s okay err
 
 
 instance MonadFail Analyzer where
+    {-# INLINE fail #-}
     fail = throw .! OtherError

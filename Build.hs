@@ -1,3 +1,5 @@
+{-# LANGUAGE BangPatterns #-}
+
 module Build where
 
 import Prelude hiding (readFile, lines)
@@ -70,10 +72,9 @@ parseFile src = do
 
 analyzeFile :: Text -> [Expr] -> BuilderIO (Analysis ())
 analyzeFile src es = do
-    cmd <- getCmdLine
     name <- getModule
     debug "Analyzing [%s]\n" [name]
-    let res = analyze cmd (mapM_ infer_ es)
+    let !res = analyze $! mapM_ infer_ es
     trace "Symbol-Table.txt" $
         detailed (arTable res)
     if null $ arErrors res then
