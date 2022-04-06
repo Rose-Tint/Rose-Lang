@@ -20,6 +20,7 @@ type Parser a = ParsecT Text () Identity a
 
 
 roseDef :: T.GenLanguageDef Text () Identity
+{-# INLINE roseDef #-}
 roseDef = emptyDef {
         T.commentStart = "{-",
         T.commentEnd = "-}",
@@ -50,34 +51,36 @@ roseDef = emptyDef {
 
 
 thornTok :: T.GenTokenParser Text () Identity
+{-# INLINE thornTok #-}
 thornTok = T.makeTokenParser roseDef
 
 
+{-# INLINABLE moduleName #-}
 moduleName = (do
     pos <- getPosition
     top <- ident
     rest <- many (try (dot >> pure ('.':) <*> ident))
     let fullIdent = top ++ concat rest
     let pos' = SourcePos
-            (Module Export (Prim $ sourceName pos))
+            (Module Export (Prim $! sourceName pos))
             (sourceLine pos)
             (sourceColumn pos)
             (sourceColumn pos + length fullIdent)
-    return $! Var fullIdent pos')
+    return $ Var fullIdent pos')
     <?> "module name"
     where
         ident = lookAhead upper >> T.identifier thornTok
 
-
+{-# INLINABLE iden #-}
 iden = (do
     pos <- getPosition
     name <- T.identifier thornTok
     let pos' = SourcePos
-            (Module Export (Prim $ sourceName pos))
+            (Module Export (Prim $! sourceName pos))
             (sourceLine pos)
             (sourceColumn pos)
             (sourceColumn pos + length name)
-    return $! Var name pos')
+    return $ Var name pos')
     <?> "identifier"
 
 
@@ -95,6 +98,7 @@ smallIden = lookAhead lower >> iden
 keyword = T.reserved thornTok
 
 
+{-# INLINABLE operator #-}
 operator = (do
     pos <- getPosition
     op <- T.operator thornTok

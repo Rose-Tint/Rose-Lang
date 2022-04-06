@@ -45,6 +45,9 @@ common general
         Typing.Types
     build-depends:
         base >= 4.7.0.0,
+        -- i tried bytestring, but observed 0
+        -- performance improvement, so text is
+        -- better because of unicode support
         text,
         parsec,
         containers,

@@ -39,17 +39,15 @@ fatal str as = do
 
 trace :: FilePath -> String -> BuilderIO ()
 trace path str = do
-    cmd <- getCmdLine
+    doTrace <- cmdTrace <$!> getCmdLine
     dir <- getBuildDir
-    when (cmdTrace cmd) <#>
+    when doTrace <#>
         writeFile (dir ++ path) (uncolor str)
 
 
 myPutStr :: Int -> String -> [String] -> BuilderIO ()
 myPutStr thresh str args = do
     verb <- getVerbosity
-    if verb >= thresh then
+    when (verb >= thresh)
         putStr <#> foldl' printf str args
-    else
-        return ()
 

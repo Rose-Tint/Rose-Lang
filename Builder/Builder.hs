@@ -18,6 +18,9 @@ import CmdLine (CmdLine)
 import Utils (pathToModule)
 
 
+-- TODO: Decide if this should also be in the
+-- IO Monad (m (IO b) for the addition of a
+-- thread manager
 newtype BuilderT m a = Builder {
         unB :: forall b. State
             -> (a -> State -> m b)
@@ -30,11 +33,11 @@ type BuilderM = BuilderT Maybe
 
 
 instance Functor (BuilderT m) where
-    fmap f b = Builder $ \s go ->
+    fmap f b = Builder $ \ !s go ->
         unB b s (go . f)
 
 instance Applicative (BuilderT m) where
-    pure a = Builder $ \s go -> go a s
+    pure a = Builder $ \ !s go -> go a s
     fb <*> ab = do
         f <- fb
         a <- ab
@@ -42,8 +45,8 @@ instance Applicative (BuilderT m) where
 
 instance Monad (BuilderT m) where
     -- :: Builder m a -> (a -> Builder m b) -> Builder m b
-    b >>= m = Builder $ \s go ->
-        let go' !x s' = unB (m x) s' go
+    b >>= m = Builder $ \ !s go ->
+        let go' !x s' = let !x' = m x in unB x' s' go
         in unB b s go'
 
 
@@ -61,7 +64,7 @@ buildM_ (Builder b) !cmd = b (mkState cmd) go
 
 liftBuild :: Monad m => m a -> BuilderT m a
 {-# INLINE liftBuild #-}
-liftBuild m = Builder $ \s go -> m >>= (`go` s)
+liftBuild m = Builder $ \ !s go -> m >>= (`go` s)
 
 (<#>) :: Monad m => (a -> m b) -> a -> BuilderT m b
 {-# INLINE (<#>) #-}
@@ -69,11 +72,11 @@ liftBuild m = Builder $ \s go -> m >>= (`go` s)
 
 getState :: BuilderT m State
 {-# INLINE getState #-}
-getState = Builder $ \s go -> go s s
+getState = Builder $ \ !s go -> go s s
 
 modifyState :: (State -> State) -> BuilderT m ()
 {-# INLINE modifyState #-}
-modifyState f = Builder $ \s go -> go () (f s)
+modifyState f = Builder $ \ !s go -> go () (f s)
 
 getCmdLine :: BuilderT m CmdLine
 {-# INLINE getCmdLine #-}
@@ -93,3 +96,11 @@ setFilePath p = modifyState (\s -> s {
         stFile = p,
         stModule = pathToModule p
     })
+
+setSource :: Stream -> BuilderT m ()
+{-# INLINE setSource #-}
+setSource t = modifyState (\s -> s { stSource = t })
+
+getSource :: BuilderT m Stream
+{-# INLINE getSource #-}
+getSource = stSource <$!> getState
