@@ -31,7 +31,7 @@ type SymbolMap = T.Trie SymbolData
 
 
 singleton :: Symbol -> SymbolData -> SymbolMap
-{-# INLINE singleton}
+{-# INLINE singleton #-}
 singleton = T.singleton . varName
 
 insert :: Symbol -> SymbolData -> SymbolMap -> SymbolMap

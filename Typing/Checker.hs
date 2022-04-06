@@ -138,7 +138,10 @@ instance Checker Expr where
                     \as trait-method declaration"
     -- TraitImpl name cons typ defs
     infer (TraitImpl name _ _ defs) = define name $! do
-            mapM_ infer_ defs
+            mDta <- findTrait name
+            case mDta of
+                Nothing -> throwUndefined name
+                Just _ -> mapM_ infer_ defs
     infer (NewVar mut typ var val) = do
         updatePos $! varPos var
         let typ' = fromPDType typ
@@ -160,8 +163,6 @@ instance Checker Expr where
                 expect val (sdType dta)
                 return NoType
     infer (Return val) = infer val
-    -- infer _ = return NoType
-    -- infer _ = fail "'Checker Expr' not fully implemented"
 
 
 {-
