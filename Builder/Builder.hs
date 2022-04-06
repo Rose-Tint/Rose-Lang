@@ -35,15 +35,19 @@ type BuilderM = BuilderT Maybe
 
 
 instance Functor (BuilderT m) where
+    {-# INLINE fmap #-}
     fmap f b = Builder $ \ !s go ->
         unB b s (go . f)
 
 instance Applicative (BuilderT m) where
+    {-# INLINE pure #-}
     pure a = Builder $ \ !s go -> go a s
+    {-# INLINE (<*>) #-}
     fb <*> ab = fb >>= (<$!> ab)
 
 instance Monad (BuilderT m) where
     -- :: Builder m a -> (a -> Builder m b) -> Builder m b
+    {-# INLINE (>>=) #-}
     b >>= m = Builder $ \ !s go ->
         let go' !x s' = let !x' = m x in unB x' s' go
         in unB b s go'
@@ -97,12 +101,14 @@ setFilePath p = modifyState (\s -> s {
     })
 
 setBuildDir :: FilePath -> BuilderT m ()
+{-# INLINE setBuildDir #-}
 setBuildDir path = do
     cmd <- getCmdLine
     let base = cmdBuildDir cmd
     modifyState (\s -> s { stBuildDir = base ++ path })
 
 getBuildDir :: BuilderT m FilePath
+{-# INLINE getBuildDir #-}
 getBuildDir = stBuildDir <$!> getState
 
 setSource :: Stream -> BuilderT m ()
