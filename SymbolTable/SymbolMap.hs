@@ -1,7 +1,7 @@
 {-# LANGUAGE FlexibleInstances #-}
 {-# OPTIONS_GHC -Wno-orphans #-}
 
-module SymbolTable.SymbolMap a (SymbolMap a,
+module SymbolTable.SymbolMap (SymbolMap,
     -- Construction
     T.empty, singleton,
     -- Insertion
@@ -27,55 +27,46 @@ import qualified SymbolTable.Trie as T
 import SymbolTable.SymbolData
 
 
-type SymbolMap = T.Trie
+type SymbolMap = T.Trie SymbolData
 
 
-
-singleton :: Symbol -> SymbolData -> SymbolMap a
-{-# INLINE singleton #-}
+singleton :: Symbol -> SymbolData -> SymbolMap
+{-# INLINE singleton}
 singleton = T.singleton . varName
 
-
-insert :: Symbol -> SymbolData -> SymbolMap a -> SymbolMap a
+insert :: Symbol -> SymbolData -> SymbolMap -> SymbolMap
 {-# INLINE insert #-}
 insert sym dta = T.insertWith stitchSD
     (varName sym) (dta { sdPos = Just (varPos sym) })
 
-
 -- lookup a symbol and require it to be fully
 -- defined
-require :: Symbol -> SymbolMap a -> Maybe SymbolData
+require :: Symbol -> SymbolMap -> Maybe SymbolData
 {-# INLINE require #-}
 require s m = lookup s m >>= ifDefined
 
-
-lookup :: Symbol -> SymbolMap a -> Maybe SymbolData
+lookup :: Symbol -> SymbolMap -> Maybe SymbolData
 {-# INLINE lookup #-}
 lookup = T.lookup . varName
 
-
-findWithDefault :: SymbolData -> Symbol -> SymbolMap a -> SymbolData
+findWithDefault :: SymbolData -> Symbol -> SymbolMap -> SymbolData
 {-# INLINE findWithDefault #-}
 findWithDefault def = T.findWithDefault def . varName
 
-
-delete :: Symbol -> SymbolMap a -> SymbolMap a
+delete :: Symbol -> SymbolMap -> SymbolMap
 {-# INLINE delete #-}
 delete = T.delete . varName
 
-
-adjust :: (SymbolData -> SymbolData) -> Symbol -> SymbolMap a -> SymbolMap a
+adjust :: (SymbolData -> SymbolData) -> Symbol -> SymbolMap -> SymbolMap
 {-# INLINE adjust #-}
 adjust f = T.adjust f . varName
 
-
-isMemberOf :: Symbol -> SymbolMap a -> Bool
+isMemberOf :: Symbol -> SymbolMap -> Bool
 {-# INLINE isMemberOf #-}
 isMemberOf = T.isMemberOf . varName
 
 
-
-instance Pretty SymbolMap a where
+instance Pretty SymbolMap where
     pretty sm = printf
         "\
 \+-Symbol--------+-Type---------------------------+-Visib.-+-Purity-+\n\
