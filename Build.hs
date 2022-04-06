@@ -17,7 +17,7 @@ import Builder.Builder
 import Builder.CmdLine
 import Builder.Output
 import Parser.Data (Expr)
-import Parser.Error (printParseErr)
+import Parser.Error (prettyParseErr)
 import Parser.Parser (roseParser)
 import Typing.Checker
 import Pretty
@@ -32,22 +32,21 @@ default (Int, Double)
 build :: BuilderIO ()
 build = do
     files <- getSourceFiles
-    forM_ files $ \file -> do
-        setFilePath file
-        buildFile
+    forM_ files buildFile
     status "Finished Building All Modules\n" []
 
 
-buildFile :: BuilderIO ()
-buildFile = do
+buildFile :: FilePath -> BuilderIO ()
+buildFile path = do
+    setFilePath path
     name <- getModule
+    setBuildDir (modToPath name)
     message "Building Module [%s]\n" [name]
     dir <- getBuildDir
     doTrace <- cmdTrace <$!> getCmdLine
     when doTrace <#>
         createDirectoryIfMissing True dir
 
-    path <- getFilePath
     src <- readFile <#> path
 
     parseRes <- parseFile src
@@ -58,13 +57,13 @@ buildFile = do
 parseFile :: Text -> BuilderIO [Expr]
 parseFile src = do
     name <- getModule
-    info "Parsing   [%s]\n" [name]
+    debug "Parsing   [%s]\n" [name]
     case parse roseParser name src of
-        Left err -> do
-            printParseErr err src
-            fatal "Failed while parsing module (%s)\n" [name]
+        Left err -> fatal
+            "%s\nFailed while parsing module (%s)\n"
+            [prettyParseErr err src, name]
         Right exprs -> do
-            trace (modToDir name ++ "Parse-Tree.txt") $
+            trace "Parse-Tree.txt" $
                 concatMap pretty exprs
             return exprs
 
@@ -73,9 +72,9 @@ analyzeFile :: Text -> [Expr] -> BuilderIO (Analysis ())
 analyzeFile src es = do
     cmd <- getCmdLine
     name <- getModule
-    info "Analyzing [%s]\n" [name]
+    debug "Analyzing [%s]\n" [name]
     let res = analyze cmd (mapM_ infer_ es)
-    trace (modToDir name ++ "Symbol-Table.txt") $
+    trace "Symbol-Table.txt" $
         detailed (arTable res)
     if null $ arErrors res then
         return res

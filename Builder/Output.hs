@@ -1,34 +1,28 @@
 module Builder.Output (
-    success,
-    warn,
-    message,
-    status,
-    info,
-    debug,
+    success, message, status, debug,
     trace,
     fatal,
 ) where
 
-import Control.Monad (when)
+import Control.Monad (when, (<$!>))
 import Data.List (foldl')
 import System.Exit
 
 import Builder.Builder
 import Builder.CmdLine
+import CmdLine (CmdLine(cmdTrace))
 import Color
 
 
 default (Int, Double)
 
 
-success, warn, message, status, debug, info
+success, message, status, debug
     :: String -> [String] -> BuilderIO ()
 success = myPutStr 1
-warn = myPutStr 2
 message = myPutStr 1
-status = myPutStr 3
-debug = myPutStr 4
-info = myPutStr 4
+status = myPutStr 2
+debug = myPutStr 3
 
 
 fatal :: String -> [String] -> BuilderIO a
@@ -48,6 +42,9 @@ trace path str = do
 myPutStr :: Int -> String -> [String] -> BuilderIO ()
 myPutStr thresh str args = do
     verb <- getVerbosity
-    when (verb >= thresh)
+    -- `when` doesnt work?
+    if (verb >= thresh) then
         putStr <#> foldl' printf str args
+    else
+        return ()
 

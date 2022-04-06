@@ -8,13 +8,15 @@ module Builder.Builder (
     liftBuild, (<#>),
     getCmdLine, getModule,
     getFilePath, setFilePath,
+    setSource, getSource,
+    setBuildDir, getBuildDir,
 ) where
 
 import Control.Monad ((<$!>))
 import Data.Functor.Identity (Identity)
 
 import Builder.State
-import CmdLine (CmdLine)
+import CmdLine (CmdLine(cmdBuildDir))
 import Utils (pathToModule)
 
 
@@ -38,10 +40,7 @@ instance Functor (BuilderT m) where
 
 instance Applicative (BuilderT m) where
     pure a = Builder $ \ !s go -> go a s
-    fb <*> ab = do
-        f <- fb
-        a <- ab
-        return $ f a
+    fb <*> ab = fb >>= (<$!> ab)
 
 instance Monad (BuilderT m) where
     -- :: Builder m a -> (a -> Builder m b) -> Builder m b
@@ -96,6 +95,15 @@ setFilePath p = modifyState (\s -> s {
         stFile = p,
         stModule = pathToModule p
     })
+
+setBuildDir :: FilePath -> BuilderT m ()
+setBuildDir path = do
+    cmd <- getCmdLine
+    let base = cmdBuildDir cmd
+    modifyState (\s -> s { stBuildDir = base ++ path })
+
+getBuildDir :: BuilderT m FilePath
+getBuildDir = stBuildDir <$!> getState
 
 setSource :: Stream -> BuilderT m ()
 {-# INLINE setSource #-}

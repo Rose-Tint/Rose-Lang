@@ -8,7 +8,7 @@ module Builder.CmdLine (
 
 import Control.Monad ((<$!>))
 
-import Builder.Builder (BuilderT, getCmdLine)
+import Builder.Builder
 import CmdLine hiding (getCmdLine)
 
 
@@ -19,7 +19,3 @@ getSourceFiles = cmdFiles <$!> getCmdLine
 getVerbosity :: BuilderT m Int
 {-# INLINE getVerbosity #-}
 getVerbosity = cmdVerb <$!> getCmdLine
-
-getBuildDir :: BuilderT m String
-{-# INLINE getBuildDir #-}
-getBuildDir = cmdBuildDir <$!> getCmdLine

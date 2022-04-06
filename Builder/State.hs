@@ -1,6 +1,6 @@
 module Builder.State where
 
-import Data.Text (Text)
+import Data.Text (Text, empty)
 
 import CmdLine
 
@@ -20,9 +20,4 @@ data State = State {
 
 mkState :: CmdLine -> State
 {-# INLINE mkState #-}
-mkState cmd = State cmd [] []
-
-
-setStateFile :: FilePath -> State -> State
-{-# INLINE setStateFile #-}
-setStateFile p s = s { stFile = p }
+mkState cmd = State cmd [] [] [] empty

@@ -1,4 +1,4 @@
-module Parser.Error (printParseErr) where
+module Parser.Error (prettyParseErr) where
 
 import Prelude hiding (lines)
 
@@ -6,27 +6,25 @@ import Data.Text (Text, unpack, lines)
 import Text.Parsec (sourceLine)
 import Text.Parsec.Error
 
-import Builder.Builder
-import Builder.Output
+import Color
 
 
 default (Int, Double)
 
 
-printParseErr :: ParseError -> Text -> BuilderIO ()
-printParseErr err input = 
-    if errLn < length srcLines then message
+prettyParseErr :: ParseError -> Text -> String
+prettyParseErr err input = 
+    if errLn < length srcLines then printf
         "Error while parsing %s:\n\
-        \    %4s | %s\n%s\n" [
-            show src,
-            show (sourceLine src),
-            show errLn,
-            unpack (lines input !! errLn),
+        \    %4d | %s\n%s\n"
+            (show src)
+            (sourceLine src)
+            (show errLn)
+            (unpack (lines input !! errLn))
             errMsg
-            ]
-    else warn
+    else printf
         "$runexpected EOF resulting from:\n    %s\n"
-        [errMsg]
+        errMsg
     where
         src = errorPos err
         srcLines = lines input
