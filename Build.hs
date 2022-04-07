@@ -62,8 +62,8 @@ parseFile src = do
     debug "Parsing   [%s]\n" [name]
     case parse roseParser name src of
         Left err -> fatal
-            "%s\nFailed while parsing module (%s)\n"
-            [prettyParseErr err src, name]
+            "%s\nFailed while parsing module\n"
+            [prettyParseErr err src]
         Right exprs -> do
             trace "Parse-Tree.txt" $
                 concatMap pretty exprs

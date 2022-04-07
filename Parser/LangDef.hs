@@ -48,53 +48,75 @@ roseDef = emptyDef {
         T.caseSensitive = True
     }
 
-thornTok :: T.GenTokenParser Text () Identity
-{-# INLINE thornTok #-}
-thornTok = T.makeTokenParser roseDef
+tokenP :: T.GenTokenParser Text () Identity
+{-# INLINE tokenP #-}
+tokenP = T.makeTokenParser roseDef
 
-{-# INLINABLE moduleName #-}
-moduleName = (do
-    pos <- getPosition
-    top <- ident
-    rest <- many (try (dot >> pure ('.':) <*> ident))
-    let fullIdent = top ++ concat rest
-    let pos' = SourcePos
-            (Module Export (Prim $! sourceName pos))
-            (sourceLine pos)
-            (sourceColumn pos)
-            (sourceColumn pos + length fullIdent)
-    return $ Var fullIdent pos')
-    <?> "module name"
-    where
-        ident = lookAhead upper >> T.identifier thornTok
+{-# INLINE moduleName #-}
+moduleName = bigIden <?> "module name"
+
+{-# INLINABLE qualifier #-}
+qualifier = (concat <$> many (try $ do
+    lookAhead upper
+    name <- T.identifier tokenP 
+    dot' <- char '.'
+    return $! name ++ [dot'])
+    ) <?> "source-module qualifier"
 
 {-# INLINABLE iden #-}
 iden = (do
     pos <- getPosition
-    name <- T.identifier thornTok
+    qual <- qualifier
+    name <- T.identifier tokenP
+    let name' = qual ++ name
     let pos' = SourcePos
             (Module Export (Prim $! sourceName pos))
             (sourceLine pos)
             (sourceColumn pos)
             (sourceColumn pos + length name)
-    return $ Var name pos')
-    <?> "identifier"
+    return $ name' `seq` Var name' pos'
+    ) <?> "identifier"
 
 {-# INLINE bigIden #-}
-bigIden = lookAhead upper >> iden
-    <?> "big identifier"
+bigIden = (do
+    pos <- getPosition
+    qual <- qualifier
+    lookAhead upper
+    name <- T.identifier tokenP
+    let name' = qual ++ name
+    let pos' = SourcePos
+            (Module Export (Prim $! sourceName pos))
+            (sourceLine pos)
+            (sourceColumn pos)
+            (sourceColumn pos + length name)
+    return $ name' `seq` Var name' pos'
+    ) <?> "big identifier"
 
 {-# INLINE smallIden #-}
-smallIden = lookAhead lower >> iden
-    <?> "small identifier"
+smallIden = (do
+    pos <- getPosition
+    qual <- qualifier
+    lookAhead lower
+    name <- T.identifier tokenP
+    let name' = qual ++ name
+    let pos' = SourcePos
+            (Module Export (Prim $! sourceName pos))
+            (sourceLine pos)
+            (sourceColumn pos)
+            (sourceColumn pos + length name)
+    return $ name' `seq` Var name' pos'
+    ) <?> "small identifier"
+
+{-# INLINE hole #-}
+hole = keyword "_"
 
 {-# INLINE keyword #-}
-keyword = T.reserved thornTok
+keyword = T.reserved tokenP
 
 {-# INLINABLE operator #-}
 operator = (do
     pos <- getPosition
-    op <- T.operator thornTok
+    op <- T.operator tokenP
     let pos' = SourcePos
             (Module Export (Prim $ sourceName pos))
             (sourceLine pos)
@@ -104,12 +126,12 @@ operator = (do
     <?> "operator"
 
 {-# INLINE resOper #-}
-resOper = T.reservedOp thornTok
+resOper = T.reservedOp tokenP
 
 {-# INLINE chrLit #-}
 chrLit = (do
     pos <- getPosition
-    chr <- T.charLiteral thornTok
+    chr <- T.charLiteral tokenP
     let pos' = SourcePos
             (Module Export (Prim $ sourceName pos))
             (sourceLine pos)
@@ -121,7 +143,7 @@ chrLit = (do
 {-# INLINABLE strLit #-}
 strLit = (do
     pos <- getPosition
-    str <- T.stringLiteral thornTok
+    str <- T.stringLiteral tokenP
     let pos' = SourcePos
             (Module Export (Prim $ sourceName pos))
             (sourceLine pos)
@@ -133,7 +155,7 @@ strLit = (do
 {-# INLINABLE intLit #-}
 intLit = (do
     pos <- getPosition
-    int <- fromInteger <$> T.integer thornTok
+    int <- fromInteger <$> T.integer tokenP
     end <- sourceColumn <$!> getPosition
     let pos' = SourcePos
             (Module Export (Prim $ sourceName pos))
@@ -146,7 +168,7 @@ intLit = (do
 {-# INLINABLE fltLit #-}
 fltLit = (do
     pos <- getPosition
-    flt <- T.float thornTok
+    flt <- T.float tokenP
     end <- sourceColumn <$!> getPosition
     let pos' = SourcePos
             (Module Export (Prim $ sourceName pos))
@@ -157,46 +179,46 @@ fltLit = (do
     <?> "floating literal"
 
 {-# INLINE symbol #-}
-symbol = T.symbol thornTok
+symbol = T.symbol tokenP
 
 {-# INLINE lexeme #-}
-lexeme = T.lexeme thornTok
+lexeme = T.lexeme tokenP
 
 {-# INLINE wspace #-}
-wspace = T.whiteSpace thornTok
+wspace = T.whiteSpace tokenP
 
 {-# INLINE parens #-}
-parens = T.parens thornTok
+parens = T.parens tokenP
 
 {-# INLINE braces #-}
-braces = T.braces thornTok
+braces = T.braces tokenP
 
 {-# INLINE angles #-}
-angles = T.angles thornTok
+angles = T.angles tokenP
 
 {-# INLINE brackets #-}
-brackets = T.brackets thornTok
+brackets = T.brackets tokenP
 
 {-# INLINE semi #-}
-semi = T.semi thornTok
+semi = T.semi tokenP
 
 {-# INLINE comma #-}
-comma = T.comma thornTok
+comma = T.comma tokenP
 
 {-# INLINE dot #-}
-dot = T.dot thornTok
+dot = T.dot tokenP
 
 {-# INLINE semiSep #-}
-semiSep = T.semiSep thornTok
+semiSep = T.semiSep tokenP
 
 {-# INLINE semiSepEnd #-}
 semiSepEnd p = many $ p <* semi
 
 {-# INLINE semiSep1 #-}
-semiSep1 = T.semiSep1 thornTok
+semiSep1 = T.semiSep1 tokenP
 
 {-# INLINE commaSep #-}
-commaSep = T.commaSep thornTok
+commaSep = T.commaSep tokenP
 
 {-# INLINE commaSep1 #-}
-commaSep1 = T.commaSep1 thornTok
+commaSep1 = T.commaSep1 tokenP
