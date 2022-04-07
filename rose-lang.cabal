@@ -42,7 +42,8 @@ common general
         Typing.Checker,
         Typing.Types,
         Typing.Traits,
-        Utils
+        Utils,
+        Warnings
     build-depends:
         base >= 4.7.0.0,
         -- i tried bytestring, but observed 0
@@ -68,6 +69,7 @@ common general
         -Wall
         -Wextra
         -Wcompat
+        -Wredundant-constraints
         -Wno-unused-do-bind
         -Werror
         -Wwarn=unused-imports
