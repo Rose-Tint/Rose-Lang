@@ -1,4 +1,6 @@
 module CmdLine (
+    module CmdLine.Flags,
+    module CmdLine.Warnings,
     CmdLine(..),
     getCmdLine
 ) where
@@ -7,6 +9,9 @@ import System.Console.GetOpt
 import System.Directory
 import System.Environment (getArgs)
 import System.Exit (exitSuccess)
+
+import CmdLine.Flags
+import CmdLine.Warnings
 
 default (Int, Double)
 
@@ -20,7 +25,9 @@ data CmdLine = CmdLine {
         cmdTrace :: !Bool,
         cmdErrors :: ![String],
         cmdShadowing :: !Bool,
-        cmdThreaded :: !Bool
+        cmdThreaded :: !Bool,
+        cmdFlags :: !Flags,
+        cmdWarns :: !Warning
     }
 
 
@@ -29,8 +36,8 @@ data Flag
     | BuildDir FilePath
     | Trace
     | Threaded
-    | Wall
-    | Werror
+    | Flag (Flags -> Flags)
+    | Warn Warning
 
 
 
@@ -57,7 +64,7 @@ buildDir path = do
 
 
 options :: [OptDescr (IO Flag)]
-options = [
+options = id $! [
         Option "h" ["help"]              (NoArg help)
             "Displays help information",
         Option "v" ["verbosity"]         (OptArg verbosity "LEVEL")
@@ -70,13 +77,10 @@ options = [
             "Enables lower-level debug info",
         Option "B" ["build-dir"]         (ReqArg buildDir "DIRECTORY")
             "Directory to put build files",
-        Option ""  ["Werror"]            (NoArg (return Werror))
-            "Turns warnings into errors",
-        Option ""  ["Wall"]              (NoArg (return Wall))
-            "Turns on all warnings",
         Option ""  ["threaded"]          (NoArg (return Threaded))
             "Turns on multi-threaded building"
-    ]
+    ] ++ (fmap (pure . Warn) <$> warningOptions)
+      ++ (fmap (pure . Flag) <$> flagOptions)
 
 
 setFlags :: [Flag] -> CmdLine -> CmdLine
@@ -87,22 +91,23 @@ setFlags (flg:flgs) cmd = setFlags flgs $! case flg of
     BuildDir dir -> cmd { cmdBuildDir = dir ++ "/" }
     Trace -> cmd { cmdTrace = True }
     Threaded -> cmd { cmdThreaded = True }
-    _ -> cmd
+    Flag f -> cmd { cmdFlags = f (cmdFlags cmd) }
+    Warn w -> cmd { cmdWarns = enableWarningFor w (cmdWarns cmd) }
 
 
 mkCmdLine :: IO [Flag] -> [String] -> [String] -> IO CmdLine
 mkCmdLine flgs fnames errs = do
     flgs' <- flgs
-    -- currDir <- getCurrentDirectory
     let cmd = CmdLine {
             cmdFiles = fnames,
             cmdVerb = 1,
             cmdErrors = errs,
             cmdTrace = False,
             cmdBuildDir = "Rose-Build/",
-            -- cmdCurrDir = currDir,
             cmdShadowing = True,
-            cmdThreaded = False
+            cmdThreaded = False,
+            cmdFlags = f_default,
+            cmdWarns = w_default
         }
     return $! setFlags flgs' cmd
 

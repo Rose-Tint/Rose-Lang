@@ -27,6 +27,8 @@ common general
         Builder.Output,
         Builder.State,
         CmdLine,
+        CmdLine.Flags,
+        CmdLine.Warnings,
         Color,
         Parser.Data,
         Parser.Error,
@@ -42,8 +44,7 @@ common general
         Typing.Checker,
         Typing.Types,
         Typing.Traits,
-        Utils,
-        Warnings
+        Utils
     build-depends:
         base >= 4.7.0.0,
         -- i tried bytestring, but observed 0
