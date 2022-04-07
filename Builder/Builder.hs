@@ -17,12 +17,20 @@ import Data.Functor.Identity (Identity)
 
 import Builder.State
 import CmdLine (CmdLine(cmdBuildDir))
-import Utils (pathToModule)
+import Utils (pathToModule, pathToDir)
 
 
 -- TODO: Decide if this should also be in the
 -- IO Monad (m (IO b) for the addition of a
 -- thread manager
+-- UPDATE: i tried it. i had file writing and
+-- console output launching in new threads that
+-- are waited for after the Builder runs (i
+-- _did_ forget to try to launch each building
+-- file in a new thread, but that can be easily
+-- done without any modifications to BuilderT).
+-- it was slower (if only a little bit, yet
+-- observably and consistently).
 newtype BuilderT m a = Builder {
         unB :: forall b. State
             -> (a -> State -> m b)
@@ -41,15 +49,15 @@ instance Functor (BuilderT m) where
 
 instance Applicative (BuilderT m) where
     {-# INLINE pure #-}
-    pure a = Builder $ \ !s go -> go a s
+    pure a = Builder $ \ !s !go -> go a s
     {-# INLINE (<*>) #-}
     fb <*> ab = fb >>= (<$!> ab)
 
 instance Monad (BuilderT m) where
     -- :: Builder m a -> (a -> Builder m b) -> Builder m b
     {-# INLINE (>>=) #-}
-    b >>= m = Builder $ \ !s go ->
-        let go' !x s' = let !x' = m x in unB x' s' go
+    b >>= m = Builder $ \ !s !go ->
+        let go' x s' = let !x' = m x in unB x' s' go
         in unB b s go'
 
 
@@ -105,7 +113,7 @@ setBuildDir :: FilePath -> BuilderT m ()
 setBuildDir path = do
     cmd <- getCmdLine
     let base = cmdBuildDir cmd
-    modifyState (\s -> s { stBuildDir = base ++ path })
+    modifyState (\s -> s { stBuildDir = base ++ pathToDir path })
 
 getBuildDir :: BuilderT m FilePath
 {-# INLINE getBuildDir #-}

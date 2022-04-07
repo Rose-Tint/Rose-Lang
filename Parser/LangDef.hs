@@ -18,7 +18,6 @@ default (Int, Double)
 type Parser a = ParsecT Text () Identity a
 
 
-
 roseDef :: T.GenLanguageDef Text () Identity
 {-# INLINE roseDef #-}
 roseDef = emptyDef {
@@ -49,11 +48,9 @@ roseDef = emptyDef {
         T.caseSensitive = True
     }
 
-
 thornTok :: T.GenTokenParser Text () Identity
 {-# INLINE thornTok #-}
 thornTok = T.makeTokenParser roseDef
-
 
 {-# INLINABLE moduleName #-}
 moduleName = (do
@@ -83,20 +80,16 @@ iden = (do
     return $ Var name pos')
     <?> "identifier"
 
-
 {-# INLINE bigIden #-}
 bigIden = lookAhead upper >> iden
     <?> "big identifier"
-
 
 {-# INLINE smallIden #-}
 smallIden = lookAhead lower >> iden
     <?> "small identifier"
 
-
 {-# INLINE keyword #-}
 keyword = T.reserved thornTok
-
 
 {-# INLINABLE operator #-}
 operator = (do
@@ -110,10 +103,8 @@ operator = (do
     return $ Var op pos')
     <?> "operator"
 
-
 {-# INLINE resOper #-}
 resOper = T.reservedOp thornTok
-
 
 {-# INLINE chrLit #-}
 chrLit = (do
@@ -127,7 +118,6 @@ chrLit = (do
     return $ ChrLit chr pos')
     <?> "char literal"
 
-
 {-# INLINABLE strLit #-}
 strLit = (do
     pos <- getPosition
@@ -140,11 +130,10 @@ strLit = (do
     return $ StrLit str pos')
     <?> "string literal"
 
-
 {-# INLINABLE intLit #-}
 intLit = (do
     pos <- getPosition
-    int <- T.integer thornTok
+    int <- fromInteger <$> T.integer thornTok
     end <- sourceColumn <$!> getPosition
     let pos' = SourcePos
             (Module Export (Prim $ sourceName pos))
@@ -153,7 +142,6 @@ intLit = (do
             end
     return $ IntLit int pos')
     <?> "integer literal"
-
 
 {-# INLINABLE fltLit #-}
 fltLit = (do
@@ -167,7 +155,6 @@ fltLit = (do
             end
     return $ FltLit flt pos')
     <?> "floating literal"
-
 
 {-# INLINE symbol #-}
 symbol = T.symbol thornTok

@@ -2,19 +2,19 @@
 {-# LANGUAGE BangPatterns #-}
 
 module Analyzer.Analyzer (
+    Control.Monad.Fail.fail,
     Analyzer,
     Analysis(..),
-    analyze,
-    getTable, setTable, modifyTable,
+    analyze_,
+    getTable, setTable, modifyTable, modifyTable_,
     getModuleName,
     pushScope, popScope,
-    pushExpType, popExpType, peekExpType, withExpType,
+    peekExpType, expectIn,
     define,
     addImport,
     updatePos,
     option, optional,
-    throw, warn, catch,
-    throwUndefined
+    throw, warn, catch, throwUndefined
 ) where
 
 import Control.Monad ((<$!>))
@@ -25,26 +25,21 @@ import Analyzer.State
 import Parser.Data (Module(..), Visibility, Variable(..))
 import SymbolTable
 import Typing.Types
-import Utils ((.!))
 
 
 default (Int, Double)
 
 
-
 data Analyzer a
     = Analyzer {
-        runA :: forall b .
-            State
+        runA :: forall b. State
             -> (a -> State -> b)     -- analyzed
             -> (Error -> State -> b) -- error
             -> b
     }
 
-
-data Analysis a
+data Analysis
     = Analysis {
-        arResult :: !(Maybe a),
         arErrors :: ![ErrorMessage],
         arTable :: !SymbolTable,
         arImports :: ![Module]
@@ -52,79 +47,80 @@ data Analysis a
     deriving (Show)
 
 
-
-analyze :: Analyzer a -> Analysis a
-analyze a = runA a newState okay err
+analyze_ :: Analyzer a -> Analysis
+analyze_ a = runA a newState okay err
     where
         err _ s = Analysis {
-                    arResult = Nothing,
                     arErrors = stErrors s,
                     arTable = stTable s,
                     arImports = stImports s
                 }
-        okay x s = (err FalseError s) { arResult = Just x }
+        okay _ s = Analysis {
+                    arErrors = [],
+                    arTable = stTable s,
+                    arImports = stImports s
+                }
 
+getState :: Analyzer State
+{-# INLINE getState #-}
+getState = modifyState id
 
--- getState :: Analyzer State
--- {-# INLINE getState #-}
--- getState = Analyzer $ \ !s okay _ -> okay s s
+modifyState :: (State -> State) -> Analyzer State
+{-# INLINE modifyState #-}
+modifyState f = Analyzer $ \ s okay _ ->
+    let !s' = f s in okay s' s'
 
-
--- setState :: State -> Analyzer ()
--- {-# INLINE setState #-}
--- setState !s = Analyzer $ \ _ okay _ -> okay () s
-
+modifyState_ :: (State -> State) -> Analyzer ()
+{-# INLINE modifyState_ #-}
+modifyState_ f = Analyzer $ \ s okay _ ->
+    let !s' = f s in okay () s'
 
 getTable :: Analyzer SymbolTable
 {-# INLINE getTable #-}
-getTable = Analyzer $ \ !s okay _ -> okay (stTable s) s
+getTable = stTable <$!> getState
 
-
-setTable :: SymbolTable -> Analyzer ()
+setTable :: SymbolTable -> Analyzer SymbolTable
 {-# INLINE setTable #-}
-setTable tbl = Analyzer $ \ !s okay _ ->
-    okay () (s { stTable = tbl })
+setTable = modifyTable . const
 
-
-modifyTable :: (SymbolTable -> SymbolTable) -> Analyzer ()
+modifyTable :: (SymbolTable -> SymbolTable) -> Analyzer SymbolTable
 {-# INLINE modifyTable #-}
-modifyTable f = Analyzer $ \ !s okay _ ->
-    okay () (s { stTable = f (stTable s) })
+modifyTable f = do
+    tbl <- f <$!> getTable
+    modifyState (\s -> s { stTable = tbl })
+    return tbl
 
+modifyTable_ :: (SymbolTable -> SymbolTable) -> Analyzer ()
+{-# INLINE modifyTable_ #-}
+modifyTable_ f = do
+    tbl <- f <$!> getTable
+    modifyState (\s -> s { stTable = tbl })
+    return ()
 
 getModuleName :: Analyzer Module
 {-# INLINE getModuleName #-}
-getModuleName = Analyzer $ \ !s okay _ ->
-    okay (stModule s) s
+getModuleName = stModule <$!> getState
 
+enterDef :: Symbol -> Analyzer ()
+{-# INLINE enterDef #-}
+enterDef name = modifyState_ (\s -> s { stDefName = Just name })
 
-enterDefinition :: Symbol -> Analyzer ()
-{-# INLINABLE enterDefinition #-}
-enterDefinition name = Analyzer $ \ !s okay _ ->
-    okay () (s { stDefName = Just name })
+exitDef :: Analyzer ()
+{-# INLINE exitDef #-}
+exitDef = modifyState_ (\s -> s { stDefName = Nothing })
 
+pushScope :: Analyzer ()
+{-# INLINE pushScope #-}
+pushScope = modifyTable_ $ \tbl ->
+    tbl { tblScopeds = (empty:tblScopeds tbl) }
 
-exitDefinition :: Analyzer ()
-{-# INLINABLE exitDefinition #-}
-exitDefinition = Analyzer $ \ !s okay _ ->
-    okay () (s { stDefName = Nothing })
-
-
-pushScope, popScope :: Analyzer ()
-pushScope = Analyzer $ \ !s okay _ ->
-    let tbl = stTable s
-        tbl' = tbl { tblScopeds = (empty:tblScopeds tbl) }
-        s' = s { stTable = tbl' }
-    in okay () s'
-popScope = Analyzer $ \ !s okay _ ->
-    let tbl = (stTable s) { tblScopeds =
-            case tblScopeds (stTable s) of
-                [] -> []
-                (_:scps) -> scps
-            }
-        s' = s { stTable = tbl }
-    in okay () s'
-
+popScope :: Analyzer ()
+{-# INLINE popScope #-}
+popScope = modifyTable_ $ \tbl ->
+    tbl { tblScopeds = case tblScopeds tbl of
+            [] -> []
+            (_:scps) -> scps
+        }
 
 pushExpType :: Type -> Analyzer ()
 {-# INLINE pushExpType #-}
@@ -133,7 +129,7 @@ pushExpType typ = Analyzer $ \ !s okay _ ->
 
 
 popExpType :: Analyzer Type
-{-# INLINABLE popExpType #-}
+{-# INLINE popExpType #-}
 popExpType = Analyzer $ \ !s okay _ -> case stExpType s of
     [] -> okay NoType s
     (typ:rest) -> okay typ (s { stExpType = rest })
@@ -147,57 +143,44 @@ peekExpType = Analyzer $ \ !s okay _ ->
             (typ':_) -> typ'
     in okay typ s
 
-
-define :: Symbol -> Analyzer a -> Analyzer Type
-{-# INLINABLE define #-}
-define name analyzer = do
-    updatePos $! varPos name
-    enterDefinition name
-    analyzer
-    exitDefinition
-    return NoType
-
-
-withExpType :: Type -> Analyzer a -> Analyzer a
-{-# INLINE withExpType #-}
-withExpType t a = do
+expectIn :: Type -> Analyzer a -> Analyzer a
+{-# INLINE expectIn #-}
+expectIn t a = do
     pushExpType t
     x <- a
     popExpType
     return x
 
+define :: Symbol -> Analyzer a -> Analyzer Type
+{-# INLINABLE define #-}
+define !name analyzer = do
+    updatePos $ varPos name
+    enterDef name
+    analyzer
+    exitDef
+    return NoType
 
 updatePos :: Position -> Analyzer ()
 {-# INLINE updatePos #-}
-updatePos p = Analyzer $ \ !s okay _ ->
-    okay () (s { stPosition = p })
-
+updatePos p = modifyState_ $ \s -> s { stPosition = p }
 
 addImport :: Visibility -> Variable -> Analyzer ()
 {-# INLINE addImport #-}
-addImport vis var = Analyzer $ \ !s okay _ ->
-    okay () (s { stImports = (Module vis var:stImports s) })
-
+addImport vis var = modifyState_ $ \s ->
+    s { stImports = (Module vis var:stImports s) }
 
 option :: a -> Analyzer a -> Analyzer a
-{-# INLINABLE option #-}
-option def a = catch a >>= \x -> return $ case x of
-    Left _ -> def
-    Right y -> y
-
+{-# INLINE option #-}
+option def a = catch a >>= return . either (const def) id
 
 optional :: Analyzer a -> Analyzer ()
 {-# INLINE optional #-}
-optional a = do
-    catch a
-    return ()
-
+optional a = catch a >> return ()
 
 throw :: Error -> Analyzer a
-{-# INLINABLE throw #-}
-throw FalseError = Analyzer $ \ !s _ err ->
-    err FalseError s
-throw e = Analyzer $ \ !s _ err ->
+{-# INLINE throw #-}
+throw FalseError = Analyzer $ \ !s _ err -> err FalseError s
+throw e = Analyzer $ \ s _ err ->
     let es = stErrors s
         em = ErrorMessage {
                 emPosition = stPosition s,
@@ -206,33 +189,24 @@ throw e = Analyzer $ \ !s _ err ->
             }
     in err e (s { stErrors = (em:es) })
 
-
 warn :: Warning -> Analyzer ()
-{-# INLINABLE warn #-}
-warn w = Analyzer $ \ !s okay _ ->
-    let es = stErrors s
-        wm = ErrorMessage {
-                emPosition = stPosition s,
-                emDefName = stDefName s,
-                emError = Left w
-            }
-    in okay () (s { stErrors = (wm:es) })
-
+{-# INLINE warn #-}
+warn w = modifyState_ $ \s -> s { stErrors = ((ErrorMessage {
+        emPosition = stPosition s,
+        emDefName = stDefName s,
+        emError = Left w
+    }):stErrors s) }
 
 catch :: Analyzer a -> Analyzer (Either Error a)
 {-# INLINE catch #-}
-catch a = Analyzer $ \ !s aok _ ->
-    let okay x = aok (Right x)
-        err e = aok (Left e)
-    in runA a s okay err
-
+catch a = Analyzer $ \s okay _ ->
+    runA a s (okay . Right) (okay . Left)
 
 throwUndefined :: Symbol -> Analyzer a
 {-# INLINE throwUndefined #-}
 throwUndefined sym = do
     syms <- getSimilarSymbols sym <$!> getTable
     throw $ Undefined sym syms
-
 
 
 instance Functor Analyzer where
@@ -261,4 +235,4 @@ instance Monad Analyzer where
 
 instance MonadFail Analyzer where
     {-# INLINE fail #-}
-    fail = throw .! OtherError
+    fail = throw . OtherError
