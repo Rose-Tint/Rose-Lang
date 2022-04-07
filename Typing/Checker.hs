@@ -1,7 +1,6 @@
 module Typing.Checker where
 
 import Control.Monad (
-    (<$!>),
     foldM,
     unless, when,
     forM_
@@ -48,14 +47,14 @@ instance Checker Value where
     infer (StrLit _ p) = updatePos p >>
         return strLitType
     infer (FuncCall name args) = do
-        updatePos $! varPos name
+        updatePos $ varPos name
         dta <- searchScopeds name
-        withExpType (sdType dta) $!
+        withExpType (sdType dta) $
             apply (sdType dta) args
     infer (CtorVal name args) = do
-        updatePos $! varPos name
+        updatePos $ varPos name
         dta <- searchGlobals name
-        withExpType (sdType dta) $!
+        withExpType (sdType dta) $
             apply (sdType dta) args
     infer (ExprVal expr) = infer expr
     infer (Array arr p) = do
@@ -82,14 +81,14 @@ instance Checker Expr where
             mDta <- findGlobal name
             let typ' = addCons cons $! fromPDTypes typs
             case mDta of
-                Nothing -> pushGlobal name $! mkSymbolData
+                Nothing -> pushGlobal name $ mkSymbolData
                     name typ' (Just vis) (Just pur)
                 Just dta -> expect typ' (sdType dta)
     infer (FuncDef name pars _) = define name $! do
         mDta <- findGlobal name
         case mDta of
             Nothing -> throwUndefined name
-            Just dta -> withExpType (sdType dta) $!
+            Just dta -> withExpType (sdType dta) $
                 pushParams (sdType dta) pars
     -- infer (DataDef vis name tps ctrs) = do
     infer (DataDef vis name tps ctrs) = define name $! do
@@ -99,9 +98,9 @@ instance Checker Expr where
                 (Just vis) (Just Pure)
         pushType name dta
         forM_ ctrs $ \(DataCtor vis' name' ts) ->
-            let tps' = (fromPDType <$!> ts) ++ [sdType dta]
+            let tps' = (fromPDType <$> ts) ++ [sdType dta]
                 typ = Applied tps' []
-            in pushGlobal name' $! mkSymbolData
+            in pushGlobal name' $ mkSymbolData
                 name' typ (Just vis') (Just Pure)
     infer (IfElse cls tb fb) = do
         expect cls boolType
@@ -110,7 +109,7 @@ instance Checker Expr where
         return NoType
     infer (Pattern val cases) = do
         valT <- infer val
-        forM_ cases $! \(case', bdy) -> do
+        forM_ cases $ \(case', bdy) -> do
             expect case' valT
             mapM_ infer_ bdy
         return NoType
@@ -124,16 +123,16 @@ instance Checker Expr where
     infer (TraitDecl vis _ name _ fns) = define name $! do
             mDta <- findTrait name
             case mDta of
-                Nothing -> pushTrait name $! mkSymbolData
+                Nothing -> pushTrait name $ mkSymbolData
                     name NoType (Just vis) Nothing
                 (Just dta) ->
                     let nm = varName name
                         orig = maybe (Prim nm) (Var nm)
                             (sdPos dta)
                     in throw $ Redefinition name orig
-            forM_ fns $! \fn -> case fn of
+            forM_ fns $ \fn -> case fn of
                 FuncTypeDecl _ _ _ _ _ -> infer fn
-                _ -> throw $! OtherError
+                _ -> fail
                     "non-function-type-declaration \
                     \as trait-method declaration"
     -- TraitImpl name cons typ defs
@@ -143,14 +142,14 @@ instance Checker Expr where
                 Nothing -> throwUndefined name
                 Just _ -> mapM_ infer_ defs
     infer (NewVar mut typ var val) = do
-        updatePos $! varPos var
+        updatePos $ varPos var
         let typ' = fromPDType typ
         pushExpType typ'
         valT <- infer val
         chk <- check valT typ'
         popExpType
         if chk then do
-            pushScoped var $! mkSymbolData
+            pushScoped var $ mkSymbolData
                 var typ' (Just Intern) (Just mut)
             return NoType
         else
@@ -190,14 +189,14 @@ instance Checker SymbolData where
 pushParams :: Type -> [Value] -> Analyzer Type
 pushParams typ [] = return typ
 pushParams typ@(Applied tps cs) (param:params) = do
-    updatePos $! valPos param
-    when (null tps) $! do
+    updatePos $ valPos param
+    when (null tps) $ do
         eT <- peekExpType
         throw $ TypeMismatch typ eT
     let (eT, tps') = ((head tps), (tail tps))
     _ <- case param of
         FuncCall var [] -> do
-            updatePos $! varPos var
+            updatePos $ varPos var
             let dta = mkSymbolData var eT Nothing Nothing
             pushScoped var dta
             return ()
@@ -205,7 +204,7 @@ pushParams typ@(Applied tps cs) (param:params) = do
             "pattern-match variable \
             \case cannot have arguments"
         CtorVal name _ -> do
-            modifyGlobal name $! \dta ->
+            modifyGlobal name $ \dta ->
                 case sdType dta of
                     NoType -> dta { sdType = eT }
                     Delayed _ -> dta { sdType = eT }
@@ -231,19 +230,14 @@ pushParams NoType _ = fail "`NoType` in pushParams"
 apply :: Type -> [Value] -> Analyzer Type
 apply ft [] = return ft
 apply ft (val:vals) = do
-    updatePos $! valPos val
+    updatePos $ valPos val
     valT <- infer val
     expT <- peekExpType
     areSame <- check valT expT
     if areSame then
         apply ft vals
-    else case val of
-        -- areSame will be True if expT is Nothing,
-        -- so fromJust is safe here
-        FuncCall _ _ -> throw $
-            TypeMismatch valT expT
-        _ -> throw $
-            TypeMismatch valT expT
+    else 
+        throw $ TypeMismatch valT expT
 
 
 infer_ :: (Checker a) => a -> Analyzer ()
@@ -262,8 +256,8 @@ checkAll (x:xs) = do
 
 expect :: (Checker a) => a -> Type -> Analyzer ()
 {-# INLINE expect #-}
-expect a t = withExpType t $! do
+expect a t = withExpType t $ do
     typ <- infer a
     chk <- check typ t
-    unless chk $! throw $
+    unless chk $ throw $
         TypeMismatch typ t

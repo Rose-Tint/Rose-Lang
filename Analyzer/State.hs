@@ -17,7 +17,7 @@ data State
         stModule :: Module,
         stExpType :: [Type],
         stErrors :: [ErrorMessage],
-        stTable :: !SymbolTable,
+        stTable :: SymbolTable,
         stImports :: [Module],
         stDefName :: Maybe Symbol,
         stPosition :: Position

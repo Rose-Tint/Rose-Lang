@@ -70,11 +70,11 @@ parseFile src = do
             return exprs
 
 
-analyzeFile :: Text -> [Expr] -> BuilderIO (Analysis ())
+analyzeFile :: Text -> [Expr] -> BuilderIO Analysis
 analyzeFile src es = do
     name <- getModule
     debug "Analyzing [%s]\n" [name]
-    let !res = analyze $! mapM_ infer_ es
+    let !res = analyze_ $! mapM_ infer_ es
     trace "Symbol-Table.txt" $
         detailed (arTable res)
     if null $ arErrors res then

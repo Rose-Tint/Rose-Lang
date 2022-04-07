@@ -4,7 +4,7 @@
 module Analyzer.Analyzer (
     Analyzer,
     Analysis(..),
-    analyze,
+    analyze_,
     getTable, setTable, modifyTable,
     getModuleName,
     pushScope, popScope,
@@ -25,7 +25,6 @@ import Analyzer.State
 import Parser.Data (Module(..), Visibility, Variable(..))
 import SymbolTable
 import Typing.Types
-import Utils ((.!))
 
 
 default (Int, Double)
@@ -34,17 +33,15 @@ default (Int, Double)
 
 data Analyzer a
     = Analyzer {
-        runA :: forall b .
-            State
+        runA :: forall b. State
             -> (a -> State -> b)     -- analyzed
             -> (Error -> State -> b) -- error
             -> b
     }
 
 
-data Analysis a
+data Analysis
     = Analysis {
-        arResult :: !(Maybe a),
         arErrors :: ![ErrorMessage],
         arTable :: !SymbolTable,
         arImports :: ![Module]
@@ -53,16 +50,19 @@ data Analysis a
 
 
 
-analyze :: Analyzer a -> Analysis a
-analyze a = runA a newState okay err
+analyze_ :: Analyzer a -> Analysis
+analyze_ a = runA a newState okay err
     where
         err _ s = Analysis {
-                    arResult = Nothing,
                     arErrors = stErrors s,
                     arTable = stTable s,
                     arImports = stImports s
                 }
-        okay x s = (err FalseError s) { arResult = Just x }
+        okay _ s = Analysis {
+                    arErrors = [],
+                    arTable = stTable s,
+                    arImports = stImports s
+                }
 
 
 -- getState :: Analyzer State
@@ -150,7 +150,7 @@ peekExpType = Analyzer $ \ !s okay _ ->
 
 define :: Symbol -> Analyzer a -> Analyzer Type
 {-# INLINABLE define #-}
-define name analyzer = do
+define !name analyzer = do
     updatePos $! varPos name
     enterDefinition name
     analyzer
@@ -261,4 +261,4 @@ instance Monad Analyzer where
 
 instance MonadFail Analyzer where
     {-# INLINE fail #-}
-    fail = throw .! OtherError
+    fail = throw . OtherError
