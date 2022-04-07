@@ -137,19 +137,19 @@ modifyScoped sym f = do
 
 pushType :: Symbol -> SymbolData -> Analyzer ()
 {-# INLINE pushType #-}
-pushType sym = modifyTable . insertType sym
+pushType sym = modifyTable_ . insertType sym
 
 
 pushTrait :: Symbol -> SymbolData -> Analyzer ()
 {-# INLINE pushTrait #-}
-pushTrait sym = modifyTable . insertTrait sym
+pushTrait sym = modifyTable_ . insertTrait sym
 
 
 pushGlobal :: Symbol -> SymbolData -> Analyzer ()
 {-# INLINE pushGlobal #-}
-pushGlobal sym = modifyTable . insertGlobal sym
+pushGlobal sym = modifyTable_ . insertGlobal sym
 
 
 pushScoped :: Symbol -> SymbolData -> Analyzer ()
 {-# INLINE pushScoped #-}
-pushScoped sym = modifyTable . insertScoped sym
+pushScoped sym = modifyTable_ . insertScoped sym
