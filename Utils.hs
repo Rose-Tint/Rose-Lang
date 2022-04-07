@@ -39,7 +39,7 @@ modToDir (ch:rest) = (ch:modToDir rest)
 
 indentAllUsing :: (a -> String) -> [a] -> String
 {-# INLINE indentAllUsing #-}
-indentAllUsing f = concat .! fmap (indentUsing f)
+indentAllUsing f = concat . fmap (indentUsing f)
 
 
 indentUsing :: (a -> String) -> a -> String
@@ -78,10 +78,3 @@ areSimilar :: String -> String -> Bool
 {-# INLINE areSimilar #-}
 areSimilar s1 s2 = similarity s1 s2 <=
     min 3 (max (length s1) (length s2))
-
-
--- strict function composition
-infix 1 .!
-(.!) :: (b -> c) -> (a -> b) -> (a -> c)
-{-# INLINE (.!) #-}
-bcf .! abf = (\ !b -> bcf $! b) . (\ !a -> abf $! a)

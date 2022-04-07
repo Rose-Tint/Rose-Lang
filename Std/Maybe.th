@@ -37,9 +37,3 @@ filterMaybes [List head tail] {
         return List head (filterMaybes tail);
     };
 }
-
-
-impl Logical (Maybe a) {
-    asBool [Nothing] := False;
-    asBool [Just a] := True;
-}

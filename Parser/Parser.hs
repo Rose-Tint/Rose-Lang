@@ -52,7 +52,7 @@ modImport = (do
     keyword "import"
     vis <- option Intern visibility
     name <- moduleName
-    return $! ModImport vis name)
+    return $ ModImport vis name)
     <?> "module import"
 
 

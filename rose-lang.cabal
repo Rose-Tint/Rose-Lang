@@ -16,31 +16,38 @@ build-type:         Simple
 
 common general
     other-modules:
-        Build,
-        CmdLine,
-        Color,
-        Output,
-        Pretty,
-        Threading,
-        Utils,
         Analyzer.Analyzer,
         Analyzer.Error,
         Analyzer.Prims,
         Analyzer.State,
         Analyzer.SymbolTable,
+        Build,
+        Builder.Builder,
+        Builder.CmdLine,
+        Builder.Output,
+        Builder.State,
+        CmdLine,
+        Color,
         Parser.Data,
         Parser.Error,
         Parser.Keywords,
         Parser.LangDef,
         Parser.Parser,
+        Pretty,
         SymbolTable,
         SymbolTable.SymbolData,
         SymbolTable.SymbolMap,
         SymbolTable.Trie,
+        Threading,
         Typing.Checker,
-        Typing.Types
+        Typing.Types,
+        Typing.Traits,
+        Utils
     build-depends:
         base >= 4.7.0.0,
+        -- i tried bytestring, but observed 0
+        -- performance improvement, so text is
+        -- better because of unicode support
         text,
         parsec,
         containers,
@@ -59,10 +66,12 @@ common general
         -fhide-source-paths
         -fshow-warning-groups
         -Wall
+        -Wextra
         -Wcompat
         -Wno-unused-do-bind
         -Werror
         -Wwarn=unused-imports
+        -Wwarn=unused-top-binds
 
 
 executable Rose

@@ -18,8 +18,8 @@ default (Int, Double)
 type Parser a = ParsecT Text () Identity a
 
 
-
 roseDef :: T.GenLanguageDef Text () Identity
+{-# INLINE roseDef #-}
 roseDef = emptyDef {
         T.commentStart = "{-",
         T.commentEnd = "-}",
@@ -48,53 +48,50 @@ roseDef = emptyDef {
         T.caseSensitive = True
     }
 
-
 thornTok :: T.GenTokenParser Text () Identity
+{-# INLINE thornTok #-}
 thornTok = T.makeTokenParser roseDef
 
-
+{-# INLINABLE moduleName #-}
 moduleName = (do
     pos <- getPosition
     top <- ident
     rest <- many (try (dot >> pure ('.':) <*> ident))
     let fullIdent = top ++ concat rest
     let pos' = SourcePos
-            (Module Export (Prim $ sourceName pos))
+            (Module Export (Prim $! sourceName pos))
             (sourceLine pos)
             (sourceColumn pos)
             (sourceColumn pos + length fullIdent)
-    return $! Var fullIdent pos')
+    return $ Var fullIdent pos')
     <?> "module name"
     where
         ident = lookAhead upper >> T.identifier thornTok
 
-
+{-# INLINABLE iden #-}
 iden = (do
     pos <- getPosition
     name <- T.identifier thornTok
     let pos' = SourcePos
-            (Module Export (Prim $ sourceName pos))
+            (Module Export (Prim $! sourceName pos))
             (sourceLine pos)
             (sourceColumn pos)
             (sourceColumn pos + length name)
-    return $! Var name pos')
+    return $ Var name pos')
     <?> "identifier"
-
 
 {-# INLINE bigIden #-}
 bigIden = lookAhead upper >> iden
     <?> "big identifier"
 
-
 {-# INLINE smallIden #-}
 smallIden = lookAhead lower >> iden
     <?> "small identifier"
 
-
 {-# INLINE keyword #-}
 keyword = T.reserved thornTok
 
-
+{-# INLINABLE operator #-}
 operator = (do
     pos <- getPosition
     op <- T.operator thornTok
@@ -106,10 +103,8 @@ operator = (do
     return $ Var op pos')
     <?> "operator"
 
-
 {-# INLINE resOper #-}
 resOper = T.reservedOp thornTok
-
 
 {-# INLINE chrLit #-}
 chrLit = (do
@@ -123,7 +118,6 @@ chrLit = (do
     return $ ChrLit chr pos')
     <?> "char literal"
 
-
 {-# INLINABLE strLit #-}
 strLit = (do
     pos <- getPosition
@@ -136,11 +130,10 @@ strLit = (do
     return $ StrLit str pos')
     <?> "string literal"
 
-
 {-# INLINABLE intLit #-}
 intLit = (do
     pos <- getPosition
-    int <- T.integer thornTok
+    int <- fromInteger <$> T.integer thornTok
     end <- sourceColumn <$!> getPosition
     let pos' = SourcePos
             (Module Export (Prim $ sourceName pos))
@@ -149,7 +142,6 @@ intLit = (do
             end
     return $ IntLit int pos')
     <?> "integer literal"
-
 
 {-# INLINABLE fltLit #-}
 fltLit = (do
@@ -163,7 +155,6 @@ fltLit = (do
             end
     return $ FltLit flt pos')
     <?> "floating literal"
-
 
 {-# INLINE symbol #-}
 symbol = T.symbol thornTok

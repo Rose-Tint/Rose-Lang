@@ -4,6 +4,11 @@ import Parser.Data hiding (Type)
 import Typing.Types
 
 
+boolType :: Type
+{-# INLINE boolType #-}
+boolType = Type (Prim "Boolean") [] []
+
+
 integral :: Constraint
 {-# INLINE integral #-}
 integral = Constraint

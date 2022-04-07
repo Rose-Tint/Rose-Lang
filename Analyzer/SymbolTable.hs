@@ -1,13 +1,12 @@
+{-# LANGUAGE BangPatterns #-}
+
 module Analyzer.SymbolTable where
 
 import Prelude hiding (lookup)
 
-import Control.Monad ((<$!>), unless)
+import Control.Monad ((<$!>))
 
 import Analyzer.Analyzer
-import Analyzer.Error
-import CmdLine (CmdLine(..))
-import Parser.Data (Variable(..))
 import SymbolTable
 import Typing.Types (Type(..))
 
@@ -23,6 +22,7 @@ import Typing.Types (Type(..))
 
 
 searchTypes :: Symbol -> Analyzer SymbolData
+{-# INLINABLE searchTypes #-}
 searchTypes sym = do
     typs <- tblTypes <$!> getTable
     case lookup sym typs of
@@ -34,6 +34,7 @@ searchTypes sym = do
 
 
 searchTraits :: Symbol -> Analyzer SymbolData
+{-# INLINABLE searchTraits #-}
 searchTraits sym = do
     trts <- tblTraits <$!> getTable
     case lookup sym trts of
@@ -45,6 +46,7 @@ searchTraits sym = do
 
 
 searchGlobals :: Symbol -> Analyzer SymbolData
+{-# INLINABLE searchGlobals #-}
 searchGlobals sym = do
     glbs <- tblGlobals <$!> getTable
     case lookup sym glbs of
@@ -61,52 +63,39 @@ searchGlobals sym = do
 
 
 searchScopeds :: Symbol -> Analyzer SymbolData
-searchScopeds sym = tblScopeds <$!> getTable >>= go >>= \res ->
-    case res of
-        Nothing -> do
-            eT <- peekExpType
-            let dta = mkSymbolData sym eT Nothing Nothing
-            modifyTable (insertGlobal sym dta)
-            return dta
-        Just dta -> return $! dta
+{-# INLINE searchScopeds #-}
+searchScopeds sym = do
+    scps <- tblScopeds <$!> getTable
+    go scps
     where
-        go [] = Just <$!> searchGlobals sym
-        go (scp:scps) = case lookup sym scp of
-            Just dta -> do
-                allowShadowing <- fromCmdLine cmdShadowing
-                unless allowShadowing $! do
-                    shadows <- go scps
-                    case shadows >>= sdPos of
-                        Nothing -> return ()
-                        Just pos -> warn $ ShadowsName sym
-                            (Var (varName sym) pos)
-                return (Just dta)
-            Nothing -> go scps
+        go [] = searchGlobals sym
+        go (scp:scps) = maybe
+            (go scps) return (lookup sym scp)
 
 
 findType :: Symbol -> Analyzer (Maybe SymbolData)
-{-# INLINABLE findType #-}
+{-# INLINE findType #-}
 findType sym = do
     typs <- tblTypes <$!> getTable
     return $! lookup sym typs
 
 
 findTrait :: Symbol -> Analyzer (Maybe SymbolData)
-{-# INLINABLE findTrait #-}
+{-# INLINE findTrait #-}
 findTrait sym = do
     trts <- tblTraits <$!> getTable
     return $! lookup sym trts
 
 
 findGlobal :: Symbol -> Analyzer (Maybe SymbolData)
-{-# INLINABLE findGlobal #-}
+{-# INLINE findGlobal #-}
 findGlobal sym = do
     glbs <- tblGlobals <$!> getTable
     return $! lookup sym glbs
 
 
 findScoped :: Symbol -> Analyzer (Maybe SymbolData)
-{-# INLINABLE findScoped #-}
+{-# INLINE findScoped #-}
 findScoped sym = do
     scps <- tblScopeds <$!> getTable
     go scps
@@ -118,53 +107,49 @@ findScoped sym = do
             Just dta -> return $! Just dta
 
 
-modifyType :: Symbol -> (SymbolData -> SymbolData)
-           -> Analyzer ()
-{-# INLINABLE modifyType #-}
+modifyType :: Symbol -> (SymbolData -> SymbolData) -> Analyzer ()
+{-# INLINE modifyType #-}
 modifyType sym f = do
     dta <- searchTypes sym
     pushType sym $! f dta
 
 
-modifyTrait :: Symbol -> (SymbolData -> SymbolData)
-            -> Analyzer ()
-{-# INLINABLE modifyTrait #-}
+modifyTrait :: Symbol -> (SymbolData -> SymbolData) -> Analyzer ()
+{-# INLINE modifyTrait #-}
 modifyTrait sym f = do
     dta <- searchTraits sym
     pushTrait sym $! f dta
 
 
-modifyGlobal :: Symbol -> (SymbolData -> SymbolData)
-             -> Analyzer ()
-{-# INLINABLE modifyGlobal #-}
+modifyGlobal :: Symbol -> (SymbolData -> SymbolData) -> Analyzer ()
+{-# INLINE modifyGlobal #-}
 modifyGlobal sym f = do
     dta <- searchGlobals sym
     pushGlobal sym $! f dta
 
 
-modifyScoped :: Symbol -> (SymbolData -> SymbolData)
-             -> Analyzer ()
-{-# INLINABLE modifyScoped #-}
+modifyScoped :: Symbol -> (SymbolData -> SymbolData) -> Analyzer ()
+{-# INLINE modifyScoped #-}
 modifyScoped sym f = do
     dta <- searchScopeds sym
     pushScoped sym $! f dta
 
 
 pushType :: Symbol -> SymbolData -> Analyzer ()
-{-# INLINABLE pushType #-}
-pushType sym = modifyTable . insertType sym
+{-# INLINE pushType #-}
+pushType sym = modifyTable_ . insertType sym
 
 
 pushTrait :: Symbol -> SymbolData -> Analyzer ()
-{-# INLINABLE pushTrait #-}
-pushTrait sym = modifyTable . insertTrait sym
+{-# INLINE pushTrait #-}
+pushTrait sym = modifyTable_ . insertTrait sym
 
 
 pushGlobal :: Symbol -> SymbolData -> Analyzer ()
-{-# INLINABLE pushGlobal #-}
-pushGlobal sym = modifyTable . insertGlobal sym
+{-# INLINE pushGlobal #-}
+pushGlobal sym = modifyTable_ . insertGlobal sym
 
 
 pushScoped :: Symbol -> SymbolData -> Analyzer ()
-{-# INLINABLE pushScoped #-}
-pushScoped sym = modifyTable . insertScoped sym
+{-# INLINE pushScoped #-}
+pushScoped sym = modifyTable_ . insertScoped sym
