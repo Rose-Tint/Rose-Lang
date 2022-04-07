@@ -4,28 +4,23 @@ module CmdLine (
 ) where
 
 import System.Console.GetOpt
-import System.Directory (makeAbsolute, getCurrentDirectory)
+import System.Directory
 import System.Environment (getArgs)
-
-import Threading
-
+import System.Exit (exitSuccess)
 
 default (Int, Double)
 
 
-
 -- everything is strict for concurrency safety
-data CmdLine
-    = CmdLine {
+data CmdLine = CmdLine {
         cmdFiles :: ![String],
         cmdVerb :: !Int,
         cmdBuildDir :: !FilePath,
-        cmdCurrDir :: !FilePath,
+        -- cmdCurrDir :: !FilePath,
         cmdTrace :: !Bool,
         cmdErrors :: ![String],
         cmdShadowing :: !Bool,
-        cmdThreaded :: !Bool,
-        cmdTermWidth :: !Int
+        cmdThreaded :: !Bool
     }
 
 
@@ -52,8 +47,8 @@ debug_info = return (Verbosity 5)
 help :: IO Flag
 help = do
     let header = "Usage: rose [FILES...] [OPTIONS...]"
-    _ <- putStrLn $! usageInfo header options
-    exitSelf ExitSuccess
+    putStrLn $! usageInfo header options
+    exitSuccess
 
 buildDir :: FilePath -> IO Flag
 buildDir path = do
@@ -98,17 +93,16 @@ setFlags (flg:flgs) cmd = setFlags flgs $! case flg of
 mkCmdLine :: IO [Flag] -> [String] -> [String] -> IO CmdLine
 mkCmdLine flgs fnames errs = do
     flgs' <- flgs
-    currDir <- getCurrentDirectory
+    -- currDir <- getCurrentDirectory
     let cmd = CmdLine {
             cmdFiles = fnames,
             cmdVerb = 1,
             cmdErrors = errs,
             cmdTrace = False,
             cmdBuildDir = "Rose-Build/",
-            cmdCurrDir = currDir,
+            -- cmdCurrDir = currDir,
             cmdShadowing = True,
-            cmdThreaded = False,
-            cmdTermWidth = 50 :: Int
+            cmdThreaded = False
         }
     return $! setFlags flgs' cmd
 
@@ -117,4 +111,4 @@ getCmdLine :: IO CmdLine
 getCmdLine = do
     args <- reverse <$> getArgs
     let (opts, nons, errs) = getOpt RequireOrder options args
-    mkCmdLine (sequence opts) nons errs
+    mkCmdLine (reverse <$> sequence opts) nons errs

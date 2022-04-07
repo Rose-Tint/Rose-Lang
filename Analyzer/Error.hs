@@ -2,7 +2,6 @@ module Analyzer.Error where
 
 import Data.Text (Text, unpack)
 
-import CmdLine (CmdLine(cmdTermWidth))
 import Color
 import Pretty
 import Parser.Data hiding (Type)
@@ -39,26 +38,27 @@ data ErrorMessage
 
 
 
-prettyError :: CmdLine -> [Text] -> ErrorMessage -> String
-prettyError cmd lns em = printf
+prettyError :: {-CmdLine -> -}[Text] -> ErrorMessage -> String
+prettyError {-cmd-} lns em = printf
     "%s\n%s\n       $R%s$r%s$R\n"
     (pretty em) src caretStart caretRed
     where
         pos = emPosition em
         lno = min (length lns) (max 0 (posLine pos))
+        mainLine = unpack $ lns !! (lno - 1)
         -- "..." + "%5d | " = 11 wide
-        width = cmdTermWidth cmd
-        width' = width - 8
-        width'' = width' - 3
-        mainLine = if length str < width' then str else
-            if posEnd pos >= width' then
-                "..." ++ drop (min
-                    (width'')
-                    (posEnd pos - width')
-                ) str
-            else take width'' str ++ "..."
-            where
-                str = unpack $! lns !! (lno - 1)
+        -- width = cmdTermWidth cmd
+        -- width' = width - 8
+        -- width'' = width' - 3
+        -- mainLine = if length str < width' then str else
+        --     if posEnd pos >= width' then
+        --         "..." ++ drop (min
+        --             (width'')
+        --             (posEnd pos - width')
+        --         ) str
+        --     else take width'' str ++ "..."
+        --     where
+        --         str = unpack $! lns !! (lno - 1)
         caretStart = replicate (max 0 (posStart pos)) ' '
         caretRed = replicate (posEnd pos - posStart pos) '^'
         src | lno <= 0 = "   0 | " ++ unpack (head lns)

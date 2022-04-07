@@ -1,12 +1,20 @@
 {-# LANGUAGE DefaultSignatures #-}
 {-# LANGUAGE Rank2Types        #-}
 
-module Pretty where
+module Pretty (
+    module Color,
+    Pretty(..),
+    seps, sepsD, sepsE,
+    prettyPrint,
+    hPrettyPrint,
+) where
 
 import Control.Monad ((<$!>))
 import Data.List (intercalate)
 import System.IO (Handle, hPutStrLn)
 import Text.Printf(IsChar(..))
+
+import Color
 
 
 default (Int, Double)
@@ -23,13 +31,13 @@ class Pretty a where
     -- to detailed
     exhaustive :: a -> String
     exhaustive = detailed
+
     default pretty :: (Show a) => a -> String
     pretty = show
 
 
 
-seps, sepsD, sepsE ::
-    (Pretty a) => String -> [a] -> String
+seps, sepsD, sepsE :: (Pretty a) => String -> [a] -> String
 seps sep as = intercalate sep (pretty <$!> as)
 sepsD sep as = intercalate sep (detailed <$!> as)
 sepsE sep as = intercalate sep (exhaustive <$!> as)

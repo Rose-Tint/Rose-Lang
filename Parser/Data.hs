@@ -61,9 +61,9 @@ data Type
 data Value
     -- strictness is because it would not be evaluated
     -- for a long time
-    = IntLit !Integer Position
-    | FltLit !Double Position
-    | ChrLit !Char Position
+    = IntLit {-# UNPACK #-} !Int Position
+    | FltLit {-# UNPACK #-} !Double Position
+    | ChrLit {-# UNPACK #-} !Char Position
     | StrLit String Position
     | FuncCall Variable [Value]
     | CtorVal Variable [Value]
@@ -78,10 +78,6 @@ data Purity = Pure | Impure | Unsafe
 
 data Visibility = Export | Intern
     deriving (Show, Eq, Ord)
-
-
--- data Mutability = Immutable | Mutable
---     deriving (Show, Eq, Ord)
 
 
 data DataCtor = DataCtor {
