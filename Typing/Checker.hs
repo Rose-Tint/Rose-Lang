@@ -1,5 +1,7 @@
 module Typing.Checker where
 
+import Prelude hiding (fail)
+
 import Control.Monad (
     foldM,
     unless, when,
@@ -19,7 +21,6 @@ import Typing.Types
 default (Int, Double)
 
 
-
 class Checker a where
     infer :: a -> Analyzer Type
     check :: a -> Type -> Analyzer Bool
@@ -28,14 +29,12 @@ class Checker a where
         return $! (typ == expected)
 
 
-
 instance Checker Type where
     infer t@(Delayed _) = do
         typ <- peekExpType
         return $! t <~> typ
     infer t = return t
     check t = return . (t ==)
-
 
 instance Checker Value where
     infer (IntLit _ p) = updatePos p >>
@@ -49,12 +48,12 @@ instance Checker Value where
     infer (FuncCall name args) = do
         updatePos $ varPos name
         dta <- searchScopeds name
-        withExpType (sdType dta) $
+        expectIn (sdType dta) $
             apply (sdType dta) args
     infer (CtorVal name args) = do
         updatePos $ varPos name
         dta <- searchGlobals name
-        withExpType (sdType dta) $
+        expectIn (sdType dta) $
             apply (sdType dta) args
     infer (ExprVal expr) = infer expr
     infer (Array arr p) = do
@@ -66,7 +65,6 @@ instance Checker Value where
             forM_ arr $ \t -> expect t typ
             return typ
 
-
 instance Checker Expr where
     infer (ValueE val) = infer val
     infer (ModImport vis var) = do
@@ -74,23 +72,23 @@ instance Checker Expr where
         return NoType
     infer (FuncTypeDecl pur vis name cons typs) =
         define name $! do
-            -- if this function-type-decl already exists, then
+            -- if this fn-type-decl already exists, then
             -- check that they are the same (allow dupe-decls
-            -- as long as they are the same)
-            -- else, create a new global
+            -- as long as they are the same) else, create a
+            -- new global
             mDta <- findGlobal name
-            let typ' = addCons cons $! fromPDTypes typs
+            let typ' = addCons cons $ fromPDTypes typs
             case mDta of
                 Nothing -> pushGlobal name $ mkSymbolData
                     name typ' (Just vis) (Just pur)
                 Just dta -> expect typ' (sdType dta)
-    infer (FuncDef name pars _) = define name $! do
+    infer (FuncDef name pars bdy) = define name $! do
+        mapM_ infer_ bdy
         mDta <- findGlobal name
         case mDta of
             Nothing -> throwUndefined name
-            Just dta -> withExpType (sdType dta) $
+            Just dta -> expectIn (sdType dta) $
                 pushParams (sdType dta) pars
-    -- infer (DataDef vis name tps ctrs) = do
     infer (DataDef vis name tps ctrs) = define name $! do
         let dta = mkSymbolData name
                 (Type name (fmap
@@ -144,10 +142,10 @@ instance Checker Expr where
     infer (NewVar mut typ var val) = do
         updatePos $ varPos var
         let typ' = fromPDType typ
-        pushExpType typ'
-        valT <- infer val
-        chk <- check valT typ'
-        popExpType
+        (valT, chk) <- expectIn typ' $ do
+            valT <- infer val
+            chk <- check valT typ'
+            return (valT, chk)
         if chk then do
             pushScoped var $ mkSymbolData
                 var typ' (Just Intern) (Just mut)
@@ -162,7 +160,6 @@ instance Checker Expr where
                 expect val (sdType dta)
                 return NoType
     infer (Return val) = infer val
-
 
 {-
 ModImport -- WIP
@@ -185,7 +182,7 @@ instance Checker SymbolData where
 
 -- | the @typ@ in @`pushParams` typ ps@ represents the
 -- current 'working' type (the type left). Remember to
--- push the overall function type using @pushExpType@
+-- push the overall function type using @`expectIn`@
 pushParams :: Type -> [Value] -> Analyzer Type
 pushParams typ [] = return typ
 pushParams typ@(Applied tps cs) (param:params) = do
@@ -211,7 +208,7 @@ pushParams typ@(Applied tps cs) (param:params) = do
                     _ -> dta
             -- dTyp <- sdType <$!> searchGlobals name
             -- let dTyp' = dTyp <~> eT
-            -- withExpType dTyp' $! pushParams dTyp' vals
+            -- expectIn dTyp' $! pushParams dTyp' vals
             return ()
         -- TODO: Literals
         _ -> return ()
@@ -226,7 +223,6 @@ pushParams typ@(Delayed _) ps = do
         _ -> pushParams typ' ps
 pushParams NoType _ = fail "`NoType` in pushParams"
 
-
 apply :: Type -> [Value] -> Analyzer Type
 apply ft [] = return ft
 apply ft (val:vals) = do
@@ -239,11 +235,9 @@ apply ft (val:vals) = do
     else 
         throw $ TypeMismatch valT expT
 
-
 infer_ :: (Checker a) => a -> Analyzer ()
 {-# INLINE infer_ #-}
 infer_ = optional . infer
-
 
 checkAll :: (Checker a) => [a] -> Analyzer Bool
 {-# INLINE checkAll #-}
@@ -253,10 +247,9 @@ checkAll (x:xs) = do
     foldM (\b a -> if not b then return b else do
         check a xT) True xs
 
-
 expect :: (Checker a) => a -> Type -> Analyzer ()
 {-# INLINE expect #-}
-expect a t = withExpType t $ do
+expect a t = expectIn t $ do
     typ <- infer a
     chk <- check typ t
     unless chk $ throw $
