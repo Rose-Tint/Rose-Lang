@@ -2,19 +2,19 @@
 {-# LANGUAGE BangPatterns #-}
 
 module Analyzer.Analyzer (
+    Control.Monad.Fail.fail,
     Analyzer,
     Analysis(..),
     analyze_,
     getTable, setTable, modifyTable, modifyTable_,
     getModuleName,
     pushScope, popScope,
-    pushExpType, popExpType, peekExpType, withExpType,
+    peekExpType, expectIn,
     define,
     addImport,
     updatePos,
     option, optional,
-    throw, warn, catch,
-    throwUndefined
+    throw, warn, catch, throwUndefined
 ) where
 
 import Control.Monad ((<$!>))
@@ -30,7 +30,6 @@ import Typing.Types
 default (Int, Double)
 
 
-
 data Analyzer a
     = Analyzer {
         runA :: forall b. State
@@ -38,7 +37,6 @@ data Analyzer a
             -> (Error -> State -> b) -- error
             -> b
     }
-
 
 data Analysis
     = Analysis {
@@ -107,11 +105,9 @@ enterDef :: Symbol -> Analyzer ()
 {-# INLINE enterDef #-}
 enterDef name = modifyState_ (\s -> s { stDefName = Just name })
 
-
 exitDef :: Analyzer ()
 {-# INLINE exitDef #-}
 exitDef = modifyState_ (\s -> s { stDefName = Nothing })
-
 
 pushScope :: Analyzer ()
 {-# INLINE pushScope #-}
@@ -122,9 +118,9 @@ popScope :: Analyzer ()
 {-# INLINE popScope #-}
 popScope = modifyTable_ $ \tbl ->
     tbl { tblScopeds = case tblScopeds tbl of
-                [] -> []
-                (_:scps) -> scps
-            }
+            [] -> []
+            (_:scps) -> scps
+        }
 
 pushExpType :: Type -> Analyzer ()
 {-# INLINE pushExpType #-}
@@ -133,7 +129,7 @@ pushExpType typ = Analyzer $ \ !s okay _ ->
 
 
 popExpType :: Analyzer Type
-{-# INLINABLE popExpType #-}
+{-# INLINE popExpType #-}
 popExpType = Analyzer $ \ !s okay _ -> case stExpType s of
     [] -> okay NoType s
     (typ:rest) -> okay typ (s { stExpType = rest })
@@ -147,9 +143,9 @@ peekExpType = Analyzer $ \ !s okay _ ->
             (typ':_) -> typ'
     in okay typ s
 
-withExpType :: Type -> Analyzer a -> Analyzer a
-{-# INLINE withExpType #-}
-withExpType t a = do
+expectIn :: Type -> Analyzer a -> Analyzer a
+{-# INLINE expectIn #-}
+expectIn t a = do
     pushExpType t
     x <- a
     popExpType
