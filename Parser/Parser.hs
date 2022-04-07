@@ -8,7 +8,7 @@ TODO:
 module Parser.Parser (roseParser) where
 
 import Control.Monad ((<$!>))
-import Data.Char (isLower)
+import Data.Array (listArray)
 import Data.List.NonEmpty (NonEmpty((:|)), fromList)
 import Data.Maybe (catMaybes)
 import Text.Parsec
@@ -16,6 +16,9 @@ import Text.Parsec
 import Parser.Data
 import Parser.Keywords
 import Parser.LangDef
+
+
+default (Int, Double)
 
 
 
@@ -49,14 +52,22 @@ modImport = (do
     keyword "import"
     vis <- option Intern visibility
     name <- moduleName
-    return $! ModImport vis name)
+    return $ ModImport vis name)
     <?> "module import"
 
 
 arrayLit :: Parser Value
 arrayLit = (do
+    pos <- getPosition
     arr <- brackets $ commaSep term
-    return $! (Array (length arr) arr))
+    end <- sourceColumn <$!> getPosition
+    let pos' = SourcePos
+            (Module Export (Prim $! sourceName pos))
+            (sourceLine pos)
+            (sourceColumn pos)
+            end
+    return $ Array
+        (listArray (0 :: Int, length arr) arr) pos')
     <?> "array"
 
 
@@ -92,10 +103,7 @@ terminalType :: Parser Type
 terminalType = (do
     name <- iden
     tas <- many ttype
-    return $! if isLower (head $ varName name) then
-        TerminalType name tas
-    else
-        TerminalType name tas)
+    return $ TerminalType name tas)
     <?> "terminal type"
 
 
@@ -105,14 +113,24 @@ nonTermType = (do
     typs <- fromList <$!> (parens $ commaSep1 ttype)
     case typs of
         (typ :| []) -> return typ
-        (t1 :| (t2:ts)) -> return (NonTermType t1 (t2 :| ts)))
+        (t1 :| (t2:ts)) ->
+            return (NonTermType t1 (t2 :| ts)))
     <?> "non-terminal type"
 
 
+-- arrayType doubles run-time!!! :(
 ttype :: Parser Type
 {-# INLINABLE ttype #-}
-ttype = terminalType <|> nonTermType <|> parens ttype
-    <?> "type"
+ttype = choice [
+        -- arrayType,
+        terminalType,
+        nonTermType,
+        parens ttype
+    ] <?> "type"
+    -- where
+    --     arrayType = do
+    --         typ <- brackets ttype
+    --         return $ TerminalType (Prim "Array") [typ]
 
 
 param :: Parser Value
@@ -156,7 +174,7 @@ funcTypeDecl = (do
     return $! FuncTypeDecl
         pur vis name cons typs)
     <?> "func-type-decl"
- 
+
 
 funcDef :: Parser Expr
 funcDef = (do
@@ -191,10 +209,12 @@ returnE = (do
 
 
 body :: Parser [Expr]
+{-# INLINE body #-}
 body = braces $ semiSepEnd statement
 
 
 body' :: Parser [Expr]
+{-# INLINE body' #-}
 body' = ((:[]) <$!> statement)
     <|> braces (semiSepEnd statement)
 
@@ -222,10 +242,11 @@ statement = choice [
         newVar,
         try reassign,
         ValueE <$!> funcCall
-    ]
+    ] <?> "statement"
 
 
 reassign :: Parser Expr
+{-# INLINABLE reassign #-}
 reassign = (do
     name <- smallIden
     resOper "="
@@ -235,6 +256,7 @@ reassign = (do
 
 
 newVar :: Parser Expr
+{-# INLINABLE newVar #-}
 newVar = (do
     keyword "let"
     mut <- mutability
@@ -247,6 +269,7 @@ newVar = (do
 
 
 operCall :: Parser Value
+{-# INLINABLE operCall #-}
 operCall = (do
     lhs <- optionMaybe arg
     op <- operator
@@ -259,6 +282,7 @@ operCall = (do
 
 
 funcCall :: Parser Value
+{-# INLINE funcCall #-}
 funcCall = (do
     name <- smallIden
     args <- many term
@@ -268,11 +292,12 @@ funcCall = (do
 
 -- (f)unction or (o)perator (call)
 foCall :: Parser Value
-{-# INLINABLE foCall #-}
+{-# INLINE foCall #-}
 foCall = try operCall <|> funcCall
 
 
 ctorCall :: Parser Value
+{-# INLINABLE ctorCall #-}
 ctorCall = (do
     name <- bigIden
     as <- many term
@@ -281,6 +306,7 @@ ctorCall = (do
 
 
 ifElse :: Parser Expr
+{-# INLINABLE ifElse #-}
 ifElse = (do
     keyword "if"
     cnd <- term
@@ -291,6 +317,7 @@ ifElse = (do
 
 
 loop :: Parser Expr
+{-# INLINABLE loop #-}
 loop = (do
     keyword "loop"
     lexeme $ char '('
@@ -304,6 +331,7 @@ loop = (do
 
 
 dataDef :: Parser Expr
+{-# INLINABLE dataDef #-}
 dataDef = (do
     vis <- visibility
     keyword "data"
@@ -315,6 +343,7 @@ dataDef = (do
 
 
 dataCtor :: Visibility -> Parser DataCtor
+{-# INLINABLE dataCtor #-}
 dataCtor parVis = (do
     vis <- option parVis visibility
     name <- bigIden
@@ -323,8 +352,7 @@ dataCtor parVis = (do
     <?> "constructor"
 
 
-methodDecl ::
-    Visibility -> Constraint -> Parser Expr
+methodDecl :: Visibility -> Constraint -> Parser Expr
 methodDecl parVis parCon = (do
     pur <- purity
     name <- foName
@@ -365,6 +393,7 @@ traitImpl = (do
 
 
 match :: Parser Expr
+{-# INLINABLE match #-}
 match = (do
     keyword "match"
     val <- term
@@ -374,6 +403,7 @@ match = (do
 
 
 matchCase :: Parser (Value, Body)
+{-# INLINABLE matchCase #-}
 matchCase = (do
     val <- brackets (ctorCall <|> literal)
     bdy <- bodyAssignment

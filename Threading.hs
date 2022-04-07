@@ -22,6 +22,9 @@ import qualified Data.Map as Map
 import System.Exit (ExitCode(..))
 
 
+default (Int, Double)
+
+
 data Status
     = Running
     | Finished
@@ -63,7 +66,7 @@ wait (Mgr mgr) thrID = join $! modifyMVar mgr $ \m -> return $!
     (case Map.updateLookupWithKey (\_ _ -> Nothing) thrID m of
         (Nothing, _) -> (m, return Nothing)
         (Just st, m') -> (m', Just <$!> takeMVar st))
-    
+
 
 waitAll :: Manager -> IO ()
 waitAll (Mgr mgr) = do

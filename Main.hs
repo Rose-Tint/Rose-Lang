@@ -1,37 +1,28 @@
 module Main (main) where
 
-import Control.Monad (when)
+import Control.Monad (unless)
 import Data.Time (diffUTCTime, getCurrentTime)
 
+import Builder.Builder (buildM_)
 import CmdLine (CmdLine(..), getCmdLine)
-import Output (fatal, status)
+import Color (printf)
 import Build (build)
-import Threading
+-- import Threading
+
+
+default (Int, Double)
 
 
 
--- main thread is slow in concurrency because
--- it is an OS thread, not a haskell-runtime
--- thread
-main, main' :: IO ()
+main :: IO ()
 main = do
-    mgr <- newManager
-    thrID <- fork mgr main'
-    wait mgr thrID
-    return ()
-main' = do
-    cmdLine <- getCmdLine
-    let verb = cmdVerb cmdLine
-        errs = cmdErrors cmdLine
-    when (not (null errs)) $
-        fatal verb (concat errs) []
-    -- when (null (cmdFiles cmdLine)) $! do
-    --     exitSelf ExitSuccess
-
+    cmd <- getCmdLine
+    let errs = cmdErrors cmd
+    unless (null errs) $
+        putStrLn (concat errs)
     timeStart <- getCurrentTime
-
-    build cmdLine
-
+    buildM_ build cmd
     timeEnd <- getCurrentTime
-    status verb "Finished in %s\n"
-        [show (diffUTCTime timeEnd timeStart )]
+    unless (cmdVerb cmd <= 0) $ printf
+        "Finished in %s\n"
+        (show (diffUTCTime timeEnd timeStart))

@@ -2,15 +2,25 @@ module SymbolTable (
     module SymbolTable.SymbolData,
     module SymbolTable.SymbolMap,
     SymbolTable(..),
-    insertType, insertUndefType,
-    insertTrait, insertUndefTrait,
-    insertGlobal, insertUndefGlobal,
+    insertType,
+    insertTrait,
+    insertGlobal,
     insertScoped,
     emptyTable,
+    getSimilarSymbols
 ) where
 
+import Color
+import Data.Maybe (mapMaybe)
+import Parser.Data (Variable(..))
+import Pretty
 import SymbolTable.SymbolData
 import SymbolTable.SymbolMap
+import SymbolTable.Trie (assocs)
+import Utils
+
+
+default (Int, Double)
 
 
 
@@ -47,21 +57,29 @@ insertGlobal sym dta tbl = tbl { tblGlobals = insert sym dta (tblGlobals tbl) }
 
 insertScoped :: Symbol -> SymbolData -> SymbolTable -> SymbolTable
 {-# INLINABLE insertScoped #-}
-insertScoped sym dta tbl = case tblScopeds tbl of
-    [] -> tbl { tblScopeds = [insert sym dta empty] }
-    (scp:scps) -> tbl { tblScopeds = (insert sym dta scp:scps) }
+insertScoped sym dta tbl = let insert' = insert sym dta in
+    case tblScopeds tbl of
+        [] -> tbl { tblScopeds = [insert' empty] }
+        (scp:scps) -> tbl { tblScopeds = (insert' scp:scps) }
 
 
-insertUndefType :: Symbol -> SymbolTable -> SymbolTable
-{-# INLINABLE insertUndefType #-}
-insertUndefType sym = insertType sym (undef sym)
+getSimilarSymbols :: Symbol -> SymbolTable -> [Symbol]
+{-# INLINABLE getSimilarSymbols #-}
+getSimilarSymbols sym (SymbolTable typs trts glbs scps) =
+    let var = varName sym
+        filt = mapMaybe (\(key, dta) ->
+            if areSimilar var key then
+                Just $! maybe (Prim key) (Var key) (sdPos dta)
+            else
+                Nothing) . assocs
+        scpKeys = concatMap filt scps
+    in concatMap filt [typs, trts, glbs] ++ scpKeys
 
 
-insertUndefTrait :: Symbol -> SymbolTable -> SymbolTable
-{-# INLINABLE insertUndefTrait #-}
-insertUndefTrait sym = insertTrait sym (undef sym)
 
-
-insertUndefGlobal :: Symbol -> SymbolTable -> SymbolTable
-{-# INLINABLE insertUndefGlobal #-}
-insertUndefGlobal sym = insertGlobal sym (undef sym)
+instance Pretty SymbolTable where
+    pretty (SymbolTable typs trts glbs _) = printf
+        "Type Table:\n%s\n\n\n\
+        \Trait Table:\n%s\n\n\n\
+        \Top-Level Table:\n%s"
+        (pretty typs) (pretty trts) (pretty glbs)

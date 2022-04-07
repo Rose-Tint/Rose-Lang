@@ -2,20 +2,24 @@
 
 module Parser.LangDef where
 
+import Control.Monad ((<$!>))
 import Data.Text (Text)
 import Text.Parsec
 import Text.Parsec.Language
 import qualified Text.Parsec.Token as T
 import Data.Functor.Identity (Identity)
 
-import Parser.Data (Value(..), Variable(..))
+import Parser.Data
+
+
+default (Int, Double)
 
 
 type Parser a = ParsecT Text () Identity a
 
 
-
 roseDef :: T.GenLanguageDef Text () Identity
+{-# INLINE roseDef #-}
 roseDef = emptyDef {
         T.commentStart = "{-",
         T.commentEnd = "-}",
@@ -44,82 +48,155 @@ roseDef = emptyDef {
         T.caseSensitive = True
     }
 
-
 thornTok :: T.GenTokenParser Text () Identity
+{-# INLINE thornTok #-}
 thornTok = T.makeTokenParser roseDef
 
-
+{-# INLINABLE moduleName #-}
 moduleName = (do
     pos <- getPosition
-    let (line, start) = (sourceLine pos, sourceColumn pos)
     top <- ident
     rest <- many (try (dot >> pure ('.':) <*> ident))
     let fullIdent = top ++ concat rest
-    return $! Var fullIdent line start)
+    let pos' = SourcePos
+            (Module Export (Prim $! sourceName pos))
+            (sourceLine pos)
+            (sourceColumn pos)
+            (sourceColumn pos + length fullIdent)
+    return $ Var fullIdent pos')
     <?> "module name"
     where
         ident = lookAhead upper >> T.identifier thornTok
+
+{-# INLINABLE iden #-}
 iden = (do
     pos <- getPosition
-    let (line, start) = (sourceLine pos, sourceColumn pos)
     name <- T.identifier thornTok
-    return $! Var name line start)
+    let pos' = SourcePos
+            (Module Export (Prim $! sourceName pos))
+            (sourceLine pos)
+            (sourceColumn pos)
+            (sourceColumn pos + length name)
+    return $ Var name pos')
     <?> "identifier"
-{-# INLINABLE bigIden #-}
+
+{-# INLINE bigIden #-}
 bigIden = lookAhead upper >> iden
     <?> "big identifier"
-{-# INLINABLE smallIden #-}
+
+{-# INLINE smallIden #-}
 smallIden = lookAhead lower >> iden
     <?> "small identifier"
-{-# INLINABLE keyword #-}
+
+{-# INLINE keyword #-}
 keyword = T.reserved thornTok
+
+{-# INLINABLE operator #-}
 operator = (do
     pos <- getPosition
-    let (line, start) = (sourceLine pos, sourceColumn pos)
     op <- T.operator thornTok
-    return $! Var op line start)
+    let pos' = SourcePos
+            (Module Export (Prim $ sourceName pos))
+            (sourceLine pos)
+            (sourceColumn pos)
+            (sourceColumn pos + length op)
+    return $ Var op pos')
     <?> "operator"
-{-# INLINABLE resOper #-}
+
+{-# INLINE resOper #-}
 resOper = T.reservedOp thornTok
-{-# INLINABLE chrLit #-}
-chrLit = ChrLit <$> T.charLiteral thornTok
+
+{-# INLINE chrLit #-}
+chrLit = (do
+    pos <- getPosition
+    chr <- T.charLiteral thornTok
+    let pos' = SourcePos
+            (Module Export (Prim $ sourceName pos))
+            (sourceLine pos)
+            (sourceColumn pos)
+            (sourceColumn pos + 2)
+    return $ ChrLit chr pos')
     <?> "char literal"
+
 {-# INLINABLE strLit #-}
-strLit = StrLit <$> T.stringLiteral thornTok
+strLit = (do
+    pos <- getPosition
+    str <- T.stringLiteral thornTok
+    let pos' = SourcePos
+            (Module Export (Prim $ sourceName pos))
+            (sourceLine pos)
+            (sourceColumn pos)
+            (sourceColumn pos + length str + 2)
+    return $ StrLit str pos')
     <?> "string literal"
+
 {-# INLINABLE intLit #-}
-intLit = IntLit <$> T.integer thornTok
+intLit = (do
+    pos <- getPosition
+    int <- fromInteger <$> T.integer thornTok
+    end <- sourceColumn <$!> getPosition
+    let pos' = SourcePos
+            (Module Export (Prim $ sourceName pos))
+            (sourceLine pos)
+            (sourceColumn pos)
+            end
+    return $ IntLit int pos')
     <?> "integer literal"
+
 {-# INLINABLE fltLit #-}
-fltLit = FltLit <$> T.float thornTok
+fltLit = (do
+    pos <- getPosition
+    flt <- T.float thornTok
+    end <- sourceColumn <$!> getPosition
+    let pos' = SourcePos
+            (Module Export (Prim $ sourceName pos))
+            (sourceLine pos)
+            (sourceColumn pos)
+            end
+    return $ FltLit flt pos')
     <?> "floating literal"
-{-# INLINABLE symbol #-}
+
+{-# INLINE symbol #-}
 symbol = T.symbol thornTok
-{-# INLINABLE lexeme #-}
+
+{-# INLINE lexeme #-}
 lexeme = T.lexeme thornTok
-{-# INLINABLE wspace #-}
+
+{-# INLINE wspace #-}
 wspace = T.whiteSpace thornTok
-{-# INLINABLE parens #-}
+
+{-# INLINE parens #-}
 parens = T.parens thornTok
-{-# INLINABLE braces #-}
+
+{-# INLINE braces #-}
 braces = T.braces thornTok
-{-# INLINABLE angles #-}
+
+{-# INLINE angles #-}
 angles = T.angles thornTok
-{-# INLINABLE brackets #-}
+
+{-# INLINE brackets #-}
 brackets = T.brackets thornTok
-{-# INLINABLE semi #-}
+
+{-# INLINE semi #-}
 semi = T.semi thornTok
-{-# INLINABLE comma #-}
+
+{-# INLINE comma #-}
 comma = T.comma thornTok
-{-# INLINABLE dot #-}
+
+{-# INLINE dot #-}
 dot = T.dot thornTok
-{-# INLINABLE semiSep #-}
+
+{-# INLINE semiSep #-}
 semiSep = T.semiSep thornTok
-{-# INLINABLE semiSepEnd #-}
+
+{-# INLINE semiSepEnd #-}
 semiSepEnd p = many $ p <* semi
-{-# INLINABLE semiSep1 #-}
+
+{-# INLINE semiSep1 #-}
 semiSep1 = T.semiSep1 thornTok
-{-# INLINABLE commaSep #-}
+
+{-# INLINE commaSep #-}
 commaSep = T.commaSep thornTok
-{-# INLINABLE commaSep1 #-}
+
+{-# INLINE commaSep1 #-}
 commaSep1 = T.commaSep1 thornTok

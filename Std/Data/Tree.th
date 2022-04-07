@@ -27,10 +27,10 @@ search a [Node v l r] := match (a <=> v) {
 
 export pure height => Tree a, Int;
 height [Empty] := 0;
-height [Node v l r] := max (height l) (height r) + 1;
+height [Node v l r] := (max (height l) (height r)) + 1;
 
 
-export pure size => Tree a, Int;
+export pure size => Trea a, Int;
 size [Empty] := 0;
 size [Node v l r] := (size l + size r) + 1;
 

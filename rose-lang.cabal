@@ -16,65 +16,72 @@ build-type:         Simple
 
 common general
     other-modules:
-        Build,
-        CmdLine,
-        Color,
-        Output,
-        Pretty,
-        Threading,
-        Utils,
         Analyzer.Analyzer,
         Analyzer.Error,
         Analyzer.Prims,
         Analyzer.State,
         Analyzer.SymbolTable,
+        Build,
+        Builder.Builder,
+        Builder.CmdLine,
+        Builder.Output,
+        Builder.State,
+        CmdLine,
+        Color,
         Parser.Data,
         Parser.Error,
         Parser.Keywords,
         Parser.LangDef,
         Parser.Parser,
+        Pretty,
         SymbolTable,
         SymbolTable.SymbolData,
         SymbolTable.SymbolMap,
+        SymbolTable.Trie,
+        Threading,
         Typing.Checker,
-        Typing.Types
+        Typing.Types,
+        Typing.Traits,
+        Utils
     build-depends:
         base >= 4.7.0.0,
+        -- i tried bytestring, but observed 0
+        -- performance improvement, so text is
+        -- better because of unicode support
         text,
         parsec,
         containers,
         time,
+        array,
         directory
     default-language:
         Haskell2010
     other-extensions:
         Rank2Types,
         BangPatterns,
-        DefaultSignatures
+        DefaultSignatures,
+        TypeSynonymInstances
     ghc-options:
         -threaded
-        -Wall
-        -Werror
-        -Wno-unused-do-bind
         -fhide-source-paths
+        -fshow-warning-groups
+        -Wall
+        -Wextra
+        -Wcompat
+        -Wno-unused-do-bind
+        -Werror
+        -Wwarn=unused-imports
+        -Wwarn=unused-top-binds
 
 
 executable Rose
     import: general
     main-is: Main.hs
     ghc-options:
-        -O3
+        -O2
 
-executable Rose-Dev-Build
+executable Rose-Dev
     import: general
     main-is: Main.hs
     ghc-options:
         -O0
-
-
-benchmark Rose-Build-bm
-    import: general
-    type: exitcode-stdio-1.0
-    main-is: Benchmarks/Build.hs
-    ghc-options:
-        -O3
