@@ -135,6 +135,7 @@ ttype = choice [
 
 param :: Parser Value
 param = choice [
+        hole,
         (\i -> FuncCall i []) <$!> smallIden,
         brackets (ctorCall <|> literal)
     ] <?> "param"

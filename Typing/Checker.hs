@@ -64,6 +64,7 @@ instance Checker Value where
             typ <- infer (arr ! (0 :: Int))
             forM_ arr $ \t -> expect t typ
             return typ
+    infer (Hole p) = updatePos p >> peekExpType
 
 instance Checker Expr where
     infer (ValueE val) = infer val
@@ -198,8 +199,8 @@ pushParams typ@(Applied tps cs) (param:params) = do
             pushScoped var dta
             return ()
         FuncCall _ _ -> fail
-            "pattern-match variable \
-            \case cannot have arguments"
+            "pattern-match variable case cannot have \
+                \arguments"
         CtorVal name _ -> do
             modifyGlobal name $ \dta ->
                 case sdType dta of
@@ -220,7 +221,7 @@ pushParams typ@(Delayed _) ps = do
     case typ' of
         Delayed _ -> fail
             "unavoidable `Delayed` in pushParams"
-        _ -> pushParams typ' ps
+        _ -> expectIn typ' $ pushParams typ' ps
 pushParams NoType _ = fail "`NoType` in pushParams"
 
 apply :: Type -> [Value] -> Analyzer Type

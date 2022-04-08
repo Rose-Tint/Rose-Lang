@@ -69,6 +69,7 @@ data Value
     | CtorVal Variable [Value]
     | Array {-# UNPACK #-} !(Array Int Value) Position
     | ExprVal Expr
+    | Hole Position
     deriving (Show, Eq, Ord)
 
 
@@ -162,6 +163,7 @@ valPos (FuncCall var _) = varPos var
 valPos (CtorVal var _) = varPos var
 valPos (Array _ p) = p
 valPos (ExprVal _) = UnknownPos
+valPos (Hole p) = p
 
 
 posModule :: Position -> Module

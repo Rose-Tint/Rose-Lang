@@ -108,7 +108,15 @@ smallIden = (do
     ) <?> "small identifier"
 
 {-# INLINE hole #-}
-hole = keyword "_"
+hole = do
+    pos <- getPosition
+    keyword "_"
+    let pos' = SourcePos
+            (Module Export (Prim $! sourceName pos))
+            (sourceLine pos)
+            (sourceColumn pos)
+            (sourceColumn pos + 1)
+    return $ Hole pos'
 
 {-# INLINE keyword #-}
 keyword = T.reserved tokenP
