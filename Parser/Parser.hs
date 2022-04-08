@@ -72,6 +72,7 @@ arrayLit = (do
 
 
 literal :: Parser Value
+{-# INLINE literal #-}
 literal = choice [
         chrLit, strLit,
         intLit, fltLit
@@ -172,7 +173,7 @@ constraint :: Parser Constraint
 constraint = (do
     con <- bigIden
     typ <- smallIden
-    return $! Constraint con typ)
+    return $ Constraint con typ)
     <?> "constraint"
 
 
@@ -181,7 +182,7 @@ typeDecl = (do
     cons <- option []
         (braces (commaSep constraint) <* comma)
     typs <- commaSep1 ttype
-    return $! (cons, typs))
+    return $ (cons, typs))
     <?> "type declaration"
 
 
@@ -199,8 +200,7 @@ funcTypeDecl = (do
     typDcl <- typeDecl
     let (cons, typs) = typDcl
     semi
-    return $! FuncTypeDecl
-        pur vis name cons typs)
+    return $ FuncTypeDecl pur vis name cons typs)
     <?> "func-type-decl"
 
 
@@ -211,17 +211,17 @@ funcDef = (do
                 lhs <- param
                 op <- operator
                 rhs <- param
-                return $! (op, [lhs, rhs])
+                return $ (op, [lhs, rhs])
             ),
             (do
                 name <- foName
                 pars <- many param
-                return $! (name, pars)
+                return $ (name, pars)
             )
         ]
     let (name, pars) = name_pars
     bdy <- bodyAssignment
-    return $! FuncDef name pars bdy)
+    return $ FuncDef name pars bdy)
     <?> "func-def"
 
 
@@ -229,7 +229,7 @@ returnE :: Parser Expr
 returnE = (do
     keyword "return"
     val <- expr <|> term'
-    return $! Return val)
+    return $ Return val)
     <?> "return expression"
     where
         expr = resOper "::"
@@ -257,7 +257,7 @@ bodyAssignment = choice [
                 term'
             ]
         semi
-        return $! [bdy])
+        return $ [bdy])
     ]
 
 
@@ -279,7 +279,7 @@ reassign = (do
     name <- smallIden
     resOper "="
     val <- term'
-    return $! Reassign name val)
+    return $ Reassign name val)
     <?> "reassignment"
 
 
@@ -292,7 +292,7 @@ newVar = (do
     typ <- angles ttype
     resOper ":="
     val <- term'
-    return $! NewVar mut typ name val)
+    return $ NewVar mut typ name val)
     <?> "new var"
 
 
@@ -303,7 +303,7 @@ operCall = (do
     op <- operator
     rhs <- optionMaybe arg
     let args = catMaybes [lhs, rhs]
-    return $! FuncCall op args)
+    return $ FuncCall op args)
     <?> "operator call"
     where
         arg = funcCall <|> term
@@ -314,7 +314,7 @@ funcCall :: Parser Value
 funcCall = (do
     name <- smallIden
     args <- many term
-    return $! FuncCall name args)
+    return $ FuncCall name args)
     <?> "function call"
 
 
@@ -329,7 +329,7 @@ ctorCall :: Parser Value
 ctorCall = (do
     name <- bigIden
     as <- many term
-    return $! CtorVal name as)
+    return $ CtorVal name as)
     <?> "constructor call"
 
 
@@ -340,7 +340,7 @@ ifElse = (do
     cnd <- term
     tBody <- body'
     fBody <- option [] (keyword "else" >> body')
-    return $! IfElse cnd tBody fBody)
+    return $ IfElse cnd tBody fBody)
     <?> "if-else"
 
 
@@ -354,7 +354,7 @@ loop = (do
     itr <- optionMaybe $ comma *> statement
     lexeme $ char ')'
     bdy <- body'
-    return $! Loop ini cnd itr bdy)
+    return $ Loop ini cnd itr bdy)
     <?> "loop"
 
 
@@ -366,7 +366,7 @@ dataDef = (do
     name <- bigIden
     tps <- manyTill smallIden (resOper ":=")
     ctrs <- try (dataCtor vis) `sepBy1` resOper "|="
-    return $! DataDef vis name tps ctrs)
+    return $ DataDef vis name tps ctrs)
     <?> "data-def"
 
 
@@ -376,7 +376,7 @@ dataCtor parVis = (do
     vis <- option parVis visibility
     name <- bigIden
     ts <- option [] (resOper "=>" >> commaSep1 ttype)
-    return $! DataCtor vis name ts)
+    return $ DataCtor vis name ts)
     <?> "constructor"
 
 
@@ -387,7 +387,7 @@ methodDecl parVis parCon = (do
     resOper "=>"
     typDcl <- typeDecl
     let (cons, typs) = typDcl
-    return $! FuncTypeDecl
+    return $ FuncTypeDecl
         pur parVis name (parCon:cons) typs)
     <?> "method declaration"
 
@@ -404,7 +404,7 @@ traitDecl = (do
     fns <- braces $ semiSepEnd
         (try $ (methodDecl vis thisCon
             <?> "method declaration"))
-    return $! TraitDecl vis cons name typ fns)
+    return $ TraitDecl vis cons name typ fns)
     <?> "trait declaration"
 
 
@@ -416,7 +416,7 @@ traitImpl = (do
     name <- bigIden
     typ <- optionMaybe ttype
     defs <- braces $ many1 (funcDef <?> "method definition")
-    return $! TraitImpl name cons typ defs)
+    return $ TraitImpl name cons typ defs)
     <?> "trait def"
 
 
@@ -426,7 +426,7 @@ match = (do
     keyword "match"
     val <- term
     cases <- braces (many matchCase)
-    return $! Pattern val cases)
+    return $ Pattern val cases)
     <?> "pattern"
 
 
