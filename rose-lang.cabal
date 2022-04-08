@@ -58,9 +58,10 @@ common general
         directory
     default-language:
         Haskell2010
+    default-extensions:
+        BangPatterns
     other-extensions:
         Rank2Types,
-        BangPatterns,
         DefaultSignatures,
         TypeSynonymInstances
     ghc-options:

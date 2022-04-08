@@ -13,6 +13,7 @@ import System.IO ()
 import Text.Parsec (parse)
 
 import CmdLine (CmdLine(..))
+import CmdLine.Flags
 import Analyzer.Analyzer
 import Analyzer.Error (prettyError)
 import Builder.Builder
@@ -23,7 +24,6 @@ import Parser.Error (prettyParseErr)
 import Parser.Parser (roseParser)
 import Typing.Checker
 import Pretty
--- import Threading
 import Utils
 
 
@@ -35,7 +35,7 @@ build :: BuilderIO ()
 build = do
     files <- getSourceFiles
     forM_ files buildFile
-    status "Finished Building All Modules\n" []
+    status "Finished building\n"
 
 
 buildFile :: FilePath -> BuilderIO ()
@@ -43,7 +43,7 @@ buildFile path = do
     setFilePath path
     name <- getModule
     setBuildDir (modToPath name)
-    message "Building Module [%s]\n" [name]
+    message ("Building Module ["+|name|+"]\n")
     dir <- getBuildDir
     doTrace <- cmdTrace <$!> getCmdLine
     when doTrace <#>
@@ -59,11 +59,11 @@ buildFile path = do
 parseFile :: Text -> BuilderIO [Expr]
 parseFile src = do
     name <- getModule
-    debug "Parsing   [%s]\n" [name]
+    debug ("Parsing   ["+|name|+"]\n")
     case parse roseParser name src of
         Left err -> fatal
-            "%s\nFailed while parsing module\n"
-            [prettyParseErr err src]
+            (prettyParseErr err src|+
+            "\nFailed while parsing module("+|name|+")\n")
         Right exprs -> do
             trace "Parse-Tree.txt" $
                 concatMap pretty exprs
@@ -73,7 +73,7 @@ parseFile src = do
 analyzeFile :: Text -> [Expr] -> BuilderIO Analysis
 analyzeFile src es = do
     name <- getModule
-    debug "Analyzing [%s]\n" [name]
+    debug ("Analyzing ["+|name|+"]\n")
     let !res = analyze_ $! mapM_ infer_ es
     trace "Symbol-Table.txt" $
         detailed (arTable res)
@@ -81,8 +81,9 @@ analyzeFile src es = do
         return res
     else let lns = T.lines src in do
         forM_ (arErrors res) $ \em -> do
-            message (prettyError {-cmd-} lns em) []
-        return res
-        -- fatal (cmdVerb cmd)
-        --     "Failed while analyzing module (%s)\n"
-        --     [name]
+            message (prettyError lns em)
+        flgs <- cmdFlags <$!> getCmdLine
+        if f_fatal_errors `isFEnabled` flgs then fatal
+            ("Failed while analyzing module ("+|name|+")\n")
+        else
+            return res

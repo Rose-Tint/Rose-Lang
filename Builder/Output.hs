@@ -5,7 +5,6 @@ module Builder.Output (
 ) where
 
 import Control.Monad (when, (<$!>))
-import Data.List (foldl')
 import System.Exit
 
 import Builder.Builder
@@ -17,17 +16,16 @@ import Color
 default (Int, Double)
 
 
-success, message, status, debug
-    :: String -> [String] -> BuilderIO ()
+success, message, status, debug :: String -> BuilderIO ()
 success = myPutStr 1
 message = myPutStr 1
 status = myPutStr 2
 debug = myPutStr 3
 
 
-fatal :: String -> [String] -> BuilderIO a
-fatal str as = do
-    myPutStr 0 str as
+fatal :: String -> BuilderIO a
+fatal str = do
+    myPutStr 0 str
     liftBuild exitFailure
 
 
@@ -39,12 +37,12 @@ trace path str = do
         writeFile (dir ++ path) (uncolor str)
 
 
-myPutStr :: Int -> String -> [String] -> BuilderIO ()
-myPutStr thresh str args = do
+myPutStr :: Int -> String -> BuilderIO ()
+myPutStr thresh str = do
     verb <- getVerbosity
     -- `when` doesnt work?
     if (verb >= thresh) then
-        putStr <#> foldl' printf str args
+        putStr <#> str
     else
         return ()
 
