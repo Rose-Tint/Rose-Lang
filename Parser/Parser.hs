@@ -119,19 +119,19 @@ nonTermType = (do
     ) <?> "non-terminal type"
 
 
--- arrayType doubles run-time!!! :(
+-- arrayType significantly increases run-time?! :(
 ttype :: Parser Type
 {-# INLINABLE ttype #-}
 ttype = choice [
-        -- arrayType,
+        arrayType,
         terminalType,
         nonTermType,
         parens ttype
     ] <?> "type"
-    -- where
-    --     arrayType = do
-    --         typ <- brackets ttype
-    --         return $ TerminalType (Prim "Array") [typ]
+    where
+        arrayType = do
+            typ <- brackets ttype
+            return $ TerminalType (Prim "Array") [typ]
 
 
 param :: Parser Value
