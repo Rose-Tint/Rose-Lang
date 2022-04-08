@@ -1,6 +1,7 @@
 module Builder.State where
 
-import Data.Text (Text, empty)
+import Data.Set as S (Set, empty)
+import Data.Text as T (Text, empty)
 
 import CmdLine
 
@@ -14,10 +15,14 @@ data State = State {
         -- current build directory, as opposed to
         -- cmdBuildDir, which is the base
         stBuildDir :: !FilePath,
+        -- list of Up-To-Date modules, whether it's
+        -- because they were already built, or because
+        -- (in the future) they dont need to be
+        stUTDModules :: Set String,
         stSource :: Text
     }
 
 
 mkState :: CmdLine -> State
 {-# INLINE mkState #-}
-mkState cmd = State cmd [] [] [] empty
+mkState cmd = State cmd [] [] [] S.empty T.empty

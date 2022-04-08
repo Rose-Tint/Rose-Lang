@@ -10,10 +10,12 @@ module Builder.Builder (
     getFilePath, setFilePath,
     setSource, getSource,
     setBuildDir, getBuildDir,
+    addUTDModule, isUpToDate,
 ) where
 
 import Control.Monad ((<$!>))
 import Data.Functor.Identity (Identity)
+import Data.Set (member, insert)
 
 import Builder.State
 import CmdLine (CmdLine(cmdBuildDir))
@@ -111,9 +113,10 @@ setFilePath p = modifyState (\s -> s {
 setBuildDir :: FilePath -> BuilderT m ()
 {-# INLINE setBuildDir #-}
 setBuildDir path = do
-    cmd <- getCmdLine
-    let base = cmdBuildDir cmd
-    modifyState (\s -> s { stBuildDir = base ++ pathToDir path })
+    base <- cmdBuildDir <$> getCmdLine
+    modifyState (\s -> s {
+            stBuildDir = base ++ pathToDir path
+        })
 
 getBuildDir :: BuilderT m FilePath
 {-# INLINE getBuildDir #-}
@@ -126,3 +129,24 @@ setSource t = modifyState (\s -> s { stSource = t })
 getSource :: BuilderT m Stream
 {-# INLINE getSource #-}
 getSource = stSource <$!> getState
+
+addUTDModule :: String -> BuilderT m ()
+{-# INLINE addUTDModule #-}
+addUTDModule name = modifyState $ \s ->
+    s { stUTDModules = insert name (stUTDModules s) }
+
+-- filterUTDs :: [String] -> BuilderT m [String]
+-- {-# INLINABLE filterUTDs #-}
+-- filterUTDs names = do
+--     utds <- stUTDModules <$!> getState
+--     return $! go names utds
+--     where
+--         go [] _ = []
+--         go (m:ms) utds = if member m utds then
+--                 go ms utds
+--             else
+--                 (m:go ms utds)
+
+isUpToDate :: String -> BuilderT m Bool
+{-# INLINE isUpToDate #-}
+isUpToDate name = member name . stUTDModules <$> getState
