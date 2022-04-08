@@ -134,11 +134,38 @@ ttype = choice [
 
 
 param :: Parser Value
-param = choice [
+{-# INLINE param #-}
+param = pattern <?> "param"
+
+
+pattern :: Parser Value
+{-# INLINABLE pattern #-}
+pattern = choice [
         hole,
-        (\i -> FuncCall i []) <$!> smallIden,
-        brackets (ctorCall <|> literal)
-    ] <?> "param"
+        noArgFnCall,
+        brackets nonWild
+        -- for accepting multiple patterns
+        -- brackets (commaSep nonWild)
+    ] <?> "pattern"
+    where
+        {-# INLINE nonWild #-}
+        nonWild = ctorPattern <|> literal
+
+
+noArgFnCall :: Parser Value
+{-# INLINE noArgFnCall #-}
+noArgFnCall = do
+    i <- smallIden
+    return (FuncCall i [])
+
+
+ctorPattern :: Parser Value
+{-# INLINE ctorPattern #-}
+ctorPattern = (do
+    name <- bigIden
+    as <- many pattern
+    return (CtorVal name as)
+    ) <?> "constructor"
 
 
 constraint :: Parser Constraint
@@ -406,7 +433,7 @@ match = (do
 matchCase :: Parser (Value, Body)
 {-# INLINABLE matchCase #-}
 matchCase = (do
-    val <- brackets (ctorCall <|> literal)
+    val <- pattern
     bdy <- bodyAssignment
-    return $! (val, bdy))
+    return $ (val, bdy))
     <?> "match case"

@@ -18,7 +18,7 @@ insert a [Node v l r] := match (a <=> v) {
 
 export pure search => { Ord a }, a, Tree a, Tree a;
 search a [Empty] := Empty;
-search a [Node v l r] := match (a <=> v) {
+search a [Node _ l r] := match (a <=> v) {
         [LT] := (search a l);
         [EQ] := (Node v l r);
         [GT] := (search a r);
@@ -27,12 +27,12 @@ search a [Node v l r] := match (a <=> v) {
 
 export pure height => Tree a, Int;
 height [Empty] := 0;
-height [Node v l r] := (max (height l) (height r)) + 1;
+height [Node _ l r] := (max (height l) (height r)) + 1;
 
 
 export pure size => Trea a, Int;
 size [Empty] := 0;
-size [Node v l r] := (size l + size r) + 1;
+size [Node _ l r] := (size l + size r) + 1;
 
 
 export pure invert => Tree a, Tree a;
