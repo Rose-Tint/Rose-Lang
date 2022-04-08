@@ -228,5 +228,8 @@ semiSep1 = T.semiSep1 tokenP
 {-# INLINE commaSep #-}
 commaSep = T.commaSep tokenP
 
+{-# INLINE commaSepEnd #-}
+commaSepEnd p = many $ p <* comma
+
 {-# INLINE commaSep1 #-}
 commaSep1 = T.commaSep1 tokenP

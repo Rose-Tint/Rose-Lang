@@ -68,9 +68,6 @@ instance Checker Value where
 
 instance Checker Expr where
     infer (ValueE val) = infer val
-    infer (ModImport vis var) = do
-        addImport vis var
-        return NoType
     infer (FuncTypeDecl pur vis name cons typs) =
         define name $! do
             -- if this fn-type-decl already exists, then

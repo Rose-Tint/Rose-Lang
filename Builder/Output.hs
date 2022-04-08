@@ -46,3 +46,7 @@ myPutStr thresh str = do
     else
         return ()
 
+
+printfHelper :: String -> [String] -> String
+printfHelper [] _ = []
+printfHelper 

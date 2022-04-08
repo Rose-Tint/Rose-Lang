@@ -19,9 +19,9 @@ import Analyzer.Error (prettyError)
 import Builder.Builder
 import Builder.CmdLine
 import Builder.Output
-import Parser.Data (Expr)
+import Parser.Data (Expr, Import(..))
 import Parser.Error (prettyParseErr)
-import Parser.Parser (roseParser)
+import Parser.Parser
 import Typing.Checker
 import Pretty
 import Utils
@@ -51,13 +51,32 @@ buildFile path = do
 
     src <- readFile <#> path
 
-    parseRes <- parseFile src
+    (_, src') <- getImports src
+
+    parseRes <- parseFile src src'
     analyzeFile src parseRes
     return ()
 
+-- get the list of imports to build
+getImports :: Text -> BuilderIO ([Import], Text)
+getImports src = do
+    name <- getModule
+    case parse importsParser name src of
+        Left err -> fatal
+            "%s\n$rFailed while parsing module\n"
+            [prettyParseErr err src]
+        Right (modName, imports, src') -> do
+            when (name /= modName) $ fatal
+                "module declaration does not match \
+                \file-name \n\
+                \    Expected: %s\n\
+                \    Found   : %s\n\
+                \$rFailed while parsing module %s\n"
+                [name, modName, name]
+            return (imports, src')
 
-parseFile :: Text -> BuilderIO [Expr]
-parseFile src = do
+parseFile :: Text -> Text -> BuilderIO [Expr]
+parseFile src src' = do
     name <- getModule
     debug ("Parsing   ["+|name|+"]\n")
     case parse roseParser name src of

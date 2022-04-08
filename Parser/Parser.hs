@@ -5,13 +5,14 @@ TODO:
         multiple errors
 -}
 
-module Parser.Parser (roseParser) where
+module Parser.Parser (roseParser, importsParser) where
 
 import Control.Monad ((<$!>))
 import Data.Array (listArray)
 import Data.List.NonEmpty (NonEmpty((:|)), fromList)
 import Data.Maybe (catMaybes)
 import Text.Parsec
+import Data.Text (Text)
 
 import Parser.Data
 import Parser.Keywords
@@ -23,19 +24,22 @@ default (Int, Double)
 
 
 roseParser :: Parser [Expr]
-roseParser = do
+roseParser = manyTill (choice [
+        funcDef,
+        try funcTypeDecl,
+        try dataDef,
+        try traitDecl,
+        traitImpl
+    ]) eof
+
+
+importsParser :: Parser (String, [Import], Text)
+importsParser = do
     wspace
-    moduleDecl
-    exprs <- manyTill (choice [
-            modImport,
-            funcDef,
-            try funcTypeDecl,
-            try dataDef,
-            try traitDecl,
-            traitImpl
-        ])
-        eof
-    return $! exprs
+    modName <- moduleDecl
+    imports <- many modImport
+    rest <- getInput
+    return (varName modName, imports, rest)
 
 
 moduleDecl :: Parser Variable
@@ -47,12 +51,23 @@ moduleDecl = (do
     ) <?> "module declaration"
 
 
-modImport :: Parser Expr
+modImport :: Parser Import
 modImport = (do
     keyword "import"
     vis <- option Intern visibility
     name <- moduleName
-    return $ ModImport vis name
+    alias <- option name $ do
+        keyword "as"
+        moduleName <?> "module alias"
+    idens <- optionMaybe $ do
+        keyword "using"
+        brackets (commaSepEnd foName)
+            <?> "import list"
+    return $ Import
+        (varName name)
+        (varName alias)
+        vis
+        (fmap varName <$> idens)
     ) <?> "module import"
 
 
