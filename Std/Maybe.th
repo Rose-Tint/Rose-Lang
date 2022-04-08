@@ -1,5 +1,6 @@
-module Std.Data.Maybe where
+module Std.Maybe where
 
+import Std.Data.List
 
 
 export data Maybe a
@@ -7,26 +8,21 @@ export data Maybe a
     |= Just => a
 
 
-
 export pure maybe => (a, b), Maybe a, Maybe b;
-maybe f [Nothing] := Nothing;
+maybe _ [Nothing] := Nothing;
 maybe f [Just a] := Just (f a);
-
 
 export pure maybeApply => b, Maybe a, (a, b), b;
 maybeApply b [Nothing] f := b;
-maybeApply b [Just a] f := f a;
-
+maybeApply _ [Just a] f := f a;
 
 export pure exists => Maybe a, Boolean;
 exists [Nothing] := False;
-exists m := True;
-
+exists _ := True;
 
 export pure (:?) => Maybe a, (a, b), Maybe b;
-[Nothing] :? f := Nothing;
+[Nothing] :? _ := Nothing;
 [Just a] :? f := Just (f a);
-
 
 export pure filterMaybes => List (Maybe a), List a;
 filterMaybes [Null] := Null;

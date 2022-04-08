@@ -19,7 +19,6 @@ prettyParseErr err input =
         \    %4d | %s\n%s\n"
             (show src)
             (sourceLine src)
-            (show errLn)
             (unpack (lines input !! errLn))
             errMsg
     else printf

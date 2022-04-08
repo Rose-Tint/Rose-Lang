@@ -27,6 +27,8 @@ common general
         Builder.Output,
         Builder.State,
         CmdLine,
+        CmdLine.Flags,
+        CmdLine.Warnings,
         Color,
         Parser.Data,
         Parser.Error,
@@ -56,9 +58,10 @@ common general
         directory
     default-language:
         Haskell2010
+    default-extensions:
+        BangPatterns
     other-extensions:
         Rank2Types,
-        BangPatterns,
         DefaultSignatures,
         TypeSynonymInstances
     ghc-options:
@@ -68,6 +71,7 @@ common general
         -Wall
         -Wextra
         -Wcompat
+        -Wredundant-constraints
         -Wno-unused-do-bind
         -Werror
         -Wwarn=unused-imports

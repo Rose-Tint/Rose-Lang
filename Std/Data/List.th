@@ -6,7 +6,6 @@ export data List a
     |= List => a, List a
 
 
-
 export pure new => a, List a;
 new := Single;
 

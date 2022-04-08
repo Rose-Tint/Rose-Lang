@@ -12,6 +12,14 @@ import Utils
 default (Int, Double)
 
 
+data Import = Import {
+        impModule :: String,
+        impAlias :: String,
+        impVisib :: Visibility,
+        impIdens :: Maybe [String]
+    }
+
+
 data Position
     = UnknownPos
     | SourcePos Module
@@ -69,6 +77,7 @@ data Value
     | CtorVal Variable [Value]
     | Array {-# UNPACK #-} !(Array Int Value) Position
     | ExprVal Expr
+    | Hole Position
     deriving (Show, Eq, Ord)
 
 
@@ -90,10 +99,6 @@ data DataCtor = DataCtor {
 
 data Expr
     = ValueE Value
-    | ModImport {
-        exprVisib :: Visibility,
-        exprName :: Variable
-    }
     | FuncTypeDecl {
         exprPurity :: Purity,
         exprVisib :: Visibility,
@@ -162,6 +167,7 @@ valPos (FuncCall var _) = varPos var
 valPos (CtorVal var _) = varPos var
 valPos (Array _ p) = p
 valPos (ExprVal _) = UnknownPos
+valPos (Hole p) = p
 
 
 posModule :: Position -> Module
@@ -205,11 +211,6 @@ instance Ord Variable where
 
 instance Pretty Expr where
     pretty (ValueE v) = pretty v
-    pretty (ModImport vis name) = printf
-        "Module Import:\n\
-        \    Visibility : %s\n\
-        \    Name       : %s"
-        (show vis) (pretty name)
     pretty (FuncTypeDecl pur vis name cons ts)
         = printf
         "Function Type Declaration:\n\

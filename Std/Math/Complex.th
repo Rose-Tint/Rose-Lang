@@ -6,10 +6,10 @@ export data Complex n := Complex => n n
 
 
 export pure real => Complex n, n;
-real [Complex r i] := r;
+real [Complex r _] := r;
 
 export pure imag => Complex n, n;
-imag [Complex r i] := i;
+imag [Complex _ i] := i;
 
 export pure conjugate => Complex n, Complex n;
 conjugate [Complex r i] := Comlex i r;
