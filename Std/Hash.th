@@ -20,7 +20,6 @@ impl Hashable {
     salted s a := combine s (hash a);
 }
 
-
 impl Hashable Int {
     hash n := n;
 }

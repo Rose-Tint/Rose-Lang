@@ -26,6 +26,7 @@ debug = myPutStr 3
 fatal :: String -> BuilderIO a
 fatal str = do
     myPutStr 0 str
+    putChar <#> '\n'
     liftBuild exitFailure
 
 
@@ -42,11 +43,6 @@ myPutStr thresh str = do
     verb <- getVerbosity
     -- `when` doesnt work?
     if (verb >= thresh) then
-        putStr <#> str
+        putStr <#> color str
     else
         return ()
-
-
-printfHelper :: String -> [String] -> String
-printfHelper [] _ = []
-printfHelper 

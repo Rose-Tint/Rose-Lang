@@ -8,8 +8,8 @@ module Pretty (
     seps, sepsD, sepsE,
     prettyPrint,
     hPrettyPrint,
-    (+|),(|+|),(|+),
-    (*|),(|*|),(|*),
+    (+|),(|+|),(|+),(+\),
+    (*|),(|*|),(|*),(*\),
     (|+*|), (|*+|),
 ) where
 
@@ -72,6 +72,13 @@ a |+| b = pretty a ++ pretty b
 a |*| b = detailed a ++ detailed b
 a |+*| b = pretty a ++ detailed b
 a |*+| b = detailed a ++ pretty b
+
+infixr 2 +\
+infixr 2 *\
+(+\), (*\) :: (Pretty a, Pretty b) => a -> b -> String
+a +\ b = pretty a ++ ('\n':pretty b)
+a *\ b = detailed a ++ ('\n':detailed b)
+
 
 
 instance Pretty Char where
