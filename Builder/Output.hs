@@ -44,7 +44,12 @@ myPutStr thresh str args = do
     verb <- getVerbosity
     -- `when` doesnt work?
     if (verb >= thresh) then
-        putStr <#> foldl' printf str args
+    -- doesn't fold properly?
+        putStr <#> foldl printf str args
     else
         return ()
 
+
+printfHelper :: String -> [String] -> String
+printfHelper [] _ = []
+printfHelper 
