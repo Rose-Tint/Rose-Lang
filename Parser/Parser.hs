@@ -43,8 +43,8 @@ moduleDecl = (do
     keyword "module"
     name <- moduleName
     keyword "where"
-    return $ name)
-    <?> "module declaration"
+    return $ name
+    ) <?> "module declaration"
 
 
 modImport :: Parser Expr
@@ -52,8 +52,8 @@ modImport = (do
     keyword "import"
     vis <- option Intern visibility
     name <- moduleName
-    return $ ModImport vis name)
-    <?> "module import"
+    return $ ModImport vis name
+    ) <?> "module import"
 
 
 arrayLit :: Parser Value
@@ -67,8 +67,8 @@ arrayLit = (do
             (sourceColumn pos)
             end
     return $ Array
-        (listArray (0 :: Int, length arr) arr) pos')
-    <?> "array"
+        (listArray (0 :: Int, length arr) arr) pos'
+    ) <?> "array"
 
 
 literal :: Parser Value
@@ -104,8 +104,8 @@ terminalType :: Parser Type
 terminalType = (do
     name <- iden
     tas <- many ttype
-    return $ TerminalType name tas)
-    <?> "terminal type"
+    return $ TerminalType name tas
+    ) <?> "terminal type"
 
 
 nonTermType :: Parser Type
@@ -115,8 +115,8 @@ nonTermType = (do
     case typs of
         (typ :| []) -> return typ
         (t1 :| (t2:ts)) ->
-            return (NonTermType t1 (t2 :| ts)))
-    <?> "non-terminal type"
+            return (NonTermType t1 (t2 :| ts))
+    ) <?> "non-terminal type"
 
 
 -- arrayType doubles run-time!!! :(
@@ -173,8 +173,8 @@ constraint :: Parser Constraint
 constraint = (do
     con <- bigIden
     typ <- smallIden
-    return $ Constraint con typ)
-    <?> "constraint"
+    return $ Constraint con typ
+    ) <?> "constraint"
 
 
 typeDecl :: Parser ([Constraint], [Type])
@@ -182,8 +182,8 @@ typeDecl = (do
     cons <- option []
         (braces (commaSep constraint) <* comma)
     typs <- commaSep1 ttype
-    return $ (cons, typs))
-    <?> "type declaration"
+    return $ (cons, typs)
+    ) <?> "type declaration"
 
 
 foName :: Parser Variable
@@ -200,8 +200,8 @@ funcTypeDecl = (do
     typDcl <- typeDecl
     let (cons, typs) = typDcl
     semi
-    return $ FuncTypeDecl pur vis name cons typs)
-    <?> "func-type-decl"
+    return $ FuncTypeDecl pur vis name cons typs
+    ) <?> "func-type-decl"
 
 
 funcDef :: Parser Expr
@@ -221,16 +221,16 @@ funcDef = (do
         ]
     let (name, pars) = name_pars
     bdy <- bodyAssignment
-    return $ FuncDef name pars bdy)
-    <?> "func-def"
+    return $ FuncDef name pars bdy
+    ) <?> "func-def"
 
 
 returnE :: Parser Expr
 returnE = (do
     keyword "return"
     val <- expr <|> term'
-    return $ Return val)
-    <?> "return expression"
+    return $ Return val
+    ) <?> "return expression"
     where
         expr = resOper "::"
             >> ExprVal <$!> (try match <|> ifElse)
@@ -279,8 +279,8 @@ reassign = (do
     name <- smallIden
     resOper "="
     val <- term'
-    return $ Reassign name val)
-    <?> "reassignment"
+    return $ Reassign name val
+    ) <?> "reassignment"
 
 
 newVar :: Parser Expr
@@ -292,8 +292,8 @@ newVar = (do
     typ <- angles ttype
     resOper ":="
     val <- term'
-    return $ NewVar mut typ name val)
-    <?> "new var"
+    return $ NewVar mut typ name val
+    ) <?> "new var"
 
 
 operCall :: Parser Value
@@ -303,8 +303,8 @@ operCall = (do
     op <- operator
     rhs <- optionMaybe arg
     let args = catMaybes [lhs, rhs]
-    return $ FuncCall op args)
-    <?> "operator call"
+    return $ FuncCall op args
+    ) <?> "operator call"
     where
         arg = funcCall <|> term
 
@@ -314,8 +314,8 @@ funcCall :: Parser Value
 funcCall = (do
     name <- smallIden
     args <- many term
-    return $ FuncCall name args)
-    <?> "function call"
+    return $ FuncCall name args
+    ) <?> "function call"
 
 
 -- (f)unction or (o)perator (call)
@@ -329,8 +329,8 @@ ctorCall :: Parser Value
 ctorCall = (do
     name <- bigIden
     as <- many term
-    return $ CtorVal name as)
-    <?> "constructor call"
+    return $ CtorVal name as
+    ) <?> "constructor call"
 
 
 ifElse :: Parser Expr
@@ -340,8 +340,8 @@ ifElse = (do
     cnd <- term
     tBody <- body'
     fBody <- option [] (keyword "else" >> body')
-    return $ IfElse cnd tBody fBody)
-    <?> "if-else"
+    return $ IfElse cnd tBody fBody
+    ) <?> "if-else"
 
 
 loop :: Parser Expr
@@ -354,8 +354,8 @@ loop = (do
     itr <- optionMaybe $ comma *> statement
     lexeme $ char ')'
     bdy <- body'
-    return $ Loop ini cnd itr bdy)
-    <?> "loop"
+    return $ Loop ini cnd itr bdy
+    ) <?> "loop"
 
 
 dataDef :: Parser Expr
@@ -366,8 +366,8 @@ dataDef = (do
     name <- bigIden
     tps <- manyTill smallIden (resOper ":=")
     ctrs <- try (dataCtor vis) `sepBy1` resOper "|="
-    return $ DataDef vis name tps ctrs)
-    <?> "data-def"
+    return $ DataDef vis name tps ctrs
+    ) <?> "data-def"
 
 
 dataCtor :: Visibility -> Parser DataCtor
@@ -376,8 +376,8 @@ dataCtor parVis = (do
     vis <- option parVis visibility
     name <- bigIden
     ts <- option [] (resOper "=>" >> commaSep1 ttype)
-    return $ DataCtor vis name ts)
-    <?> "constructor"
+    return $ DataCtor vis name ts
+    ) <?> "constructor"
 
 
 methodDecl :: Visibility -> Constraint -> Parser Expr
@@ -388,8 +388,8 @@ methodDecl parVis parCon = (do
     typDcl <- typeDecl
     let (cons, typs) = typDcl
     return $ FuncTypeDecl
-        pur parVis name (parCon:cons) typs)
-    <?> "method declaration"
+        pur parVis name (parCon:cons) typs
+    ) <?> "method declaration"
 
 
 traitDecl :: Parser Expr
@@ -404,8 +404,8 @@ traitDecl = (do
     fns <- braces $ semiSepEnd
         (try $ (methodDecl vis thisCon
             <?> "method declaration"))
-    return $ TraitDecl vis cons name typ fns)
-    <?> "trait declaration"
+    return $ TraitDecl vis cons name typ fns
+    ) <?> "trait declaration"
 
 
 traitImpl :: Parser Expr
@@ -416,8 +416,8 @@ traitImpl = (do
     name <- bigIden
     typ <- optionMaybe ttype
     defs <- braces $ many1 (funcDef <?> "method definition")
-    return $ TraitImpl name cons typ defs)
-    <?> "trait def"
+    return $ TraitImpl name cons typ defs
+    ) <?> "trait def"
 
 
 match :: Parser Expr
@@ -426,8 +426,8 @@ match = (do
     keyword "match"
     val <- term
     cases <- braces (many matchCase)
-    return $ Pattern val cases)
-    <?> "pattern"
+    return $ Pattern val cases
+    ) <?> "pattern"
 
 
 matchCase :: Parser (Value, Body)
@@ -435,5 +435,5 @@ matchCase :: Parser (Value, Body)
 matchCase = (do
     val <- pattern
     bdy <- bodyAssignment
-    return $ (val, bdy))
-    <?> "match case"
+    return $ (val, bdy)
+    ) <?> "match case"
