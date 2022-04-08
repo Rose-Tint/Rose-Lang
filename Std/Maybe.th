@@ -1,11 +1,18 @@
 module Std.Maybe where
 
 import Std.Data.List
+import Std.Data.Alternative
 
 
 export data Maybe a
     := Nothing
     |= Just => a
+
+
+impl Alternative (Maybe a) {
+    [Nothing] <|> m := m;
+    m <|> _ := m;
+}
 
 
 export pure maybe => (a, b), Maybe a, Maybe b;
