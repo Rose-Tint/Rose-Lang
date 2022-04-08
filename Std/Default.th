@@ -1,0 +1,14 @@
+module Std.Default where
+
+
+export trait Defaultable a {
+    default => a;
+}
+
+impl Defaultable Int {
+    default := 0;
+}
+
+impl Defaultable Boolean {
+    default := False;
+}

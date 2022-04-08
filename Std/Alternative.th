@@ -1,0 +1,13 @@
+module Std.Alternative where
+
+
+export trait Alternative a {
+    vacant => a;
+    (<|>) => a, a, a;
+}
+
+impl Alternative Bool {
+    vacant := False;
+    [False] <|> a := a;
+    a <|> _ := a;
+}

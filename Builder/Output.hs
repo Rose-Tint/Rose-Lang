@@ -45,8 +45,3 @@ myPutStr thresh str = do
         putStr <#> str
     else
         return ()
-
-
-printfHelper :: String -> [String] -> String
-printfHelper [] _ = []
-printfHelper 
