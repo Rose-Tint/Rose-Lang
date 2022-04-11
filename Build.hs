@@ -10,7 +10,7 @@ import qualified Data.Text as T (lines)
 import Data.Text.IO (readFile)
 import System.Directory
 import System.IO ()
-import Text.Parsec (parse)
+import Text.Parsec (parse, SourcePos)
 
 import CmdLine (CmdLine(..))
 import CmdLine.Flags
@@ -19,7 +19,7 @@ import Analyzer.Error (prettyError)
 import Builder.Builder
 import Builder.CmdLine
 import Builder.Output
-import Parser.Data (Expr, Import(..))
+import Parser.Data (Expr, ImportModule(..))
 import Parser.Error (prettyParseErr)
 import Parser.Parser
 import Typing.Checker
@@ -29,6 +29,12 @@ import Utils
 
 default (Int, Double)
 
+
+data ImportInfo = ImportInfo {
+        iiModules :: [ImportModule],
+        iiRemSource :: Text,
+        iiEndPos :: !SourcePos
+    }
 
 
 build :: BuilderIO ()
@@ -52,37 +58,36 @@ buildFile path = do
         when doTrace <#>
             createDirectoryIfMissing True dir
         src <- readFile <#> path
-        (imports, src') <- getImports src
+        ImportInfo imports src' pos <- getImports src
         forM_ imports $ \imp ->
             buildFile (modToPath (impModule imp))
         setSource src
-        parseRes <- parseFile src'
+        parseRes <- parseFile pos src'
         analyzeFile parseRes
         addUTDModule name
 
 -- get the list of imports to build
-getImports :: Text -> BuilderIO ([Import], Text)
+getImports :: Text -> BuilderIO ImportInfo
 getImports src = do
     name <- getModule
     case parse importsParser name src of
         Left err -> fatal $
             prettyParseErr err src|+
             "\n$rFailed while parsing module\n"
-            
-        Right (modName, imports, src') -> do
+        Right (modName, imports, src', pos) -> do
             when (name /= modName) $ fatal $
                 "module declaration does not match the \
                 \filename\n\
                 \    Expected: "+|name|+"\n\
                 \    Found   : "+|modName|+"\n$r\
                 \Failed while parsing module "+|name|+"\n"
-            return (imports, src')
+            return $ ImportInfo imports src' pos
 
-parseFile :: Text -> BuilderIO [Expr]
-parseFile src = do
+parseFile :: SourcePos -> Text -> BuilderIO [Expr]
+parseFile pos src = do
     name <- getModule
     debug ("Parsing   ["+|name|+"]\n")
-    case parse roseParser name src of
+    case parse (roseParser pos) name src of
         Left err -> do
             fatal $ prettyParseErr err src+\
                 "Failed while parsing module("+|name|+")"

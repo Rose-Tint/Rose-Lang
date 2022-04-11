@@ -1,13 +1,8 @@
 module Std.Data.List where
 
+-- import Std.Default as D using { trait Default, }
+
 
 export data List a
     := Single => a
     |= List => a, List a
-
-
-export pure new => a, List a;
-new := Single;
-
-
-

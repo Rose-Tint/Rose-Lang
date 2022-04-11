@@ -1,7 +1,7 @@
 module Std.Maybe where
 
 import Std.Data.List
-import Std.Data.Alternative
+import Std.Alternative
 
 
 export data Maybe a

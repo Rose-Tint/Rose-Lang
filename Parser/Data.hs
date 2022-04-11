@@ -12,11 +12,16 @@ import Utils
 default (Int, Double)
 
 
-data Import = Import {
+data ImportIden
+    = ImportedType { impiName :: String }
+    | ImportedTrait { impiName :: String }
+    | ImportedFunc { impiName :: String }
+
+data ImportModule = Import {
         impModule :: String,
         impAlias :: String,
         impVisib :: Visibility,
-        impIdens :: Maybe [String]
+        impIdens :: Maybe [ImportIden]
     }
 
 

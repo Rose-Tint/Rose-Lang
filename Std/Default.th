@@ -1,8 +1,8 @@
 module Std.Default where
 
 
-export trait Defaultable a {
-    default => a;
+export trait Default a {
+    pure default => a;
 }
 
 impl Defaultable Int {

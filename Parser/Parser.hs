@@ -23,8 +23,8 @@ default (Int, Double)
 
 
 
-roseParser :: Parser [Expr]
-roseParser = manyTill (choice [
+roseParser :: SourcePos -> Parser [Expr]
+roseParser pos = setPosition pos >> manyTill (choice [
         funcDef,
         try funcTypeDecl,
         try dataDef,
@@ -33,13 +33,15 @@ roseParser = manyTill (choice [
     ]) eof
 
 
-importsParser :: Parser (String, [Import], Text)
+importsParser ::
+    Parser (String, [ImportModule], Text, SourcePos)
 importsParser = do
     wspace
     modName <- moduleDecl
     imports <- many modImport
     rest <- getInput
-    return (varName modName, imports, rest)
+    pos <- getPosition
+    return (varName modName, imports, rest, pos)
 
 
 moduleDecl :: Parser Variable
@@ -51,7 +53,7 @@ moduleDecl = (do
     ) <?> "module declaration"
 
 
-modImport :: Parser Import
+modImport :: Parser ImportModule
 modImport = (do
     keyword "import"
     vis <- option Intern visibility
@@ -59,17 +61,25 @@ modImport = (do
     alias <- option name $ do
         keyword "as"
         moduleName <?> "module alias"
-    idens <- optionMaybe $ do
+    imps <- optionMaybe $ do
         keyword "using"
-        brackets (commaSepEnd foName)
+        braces (commaSepEnd idenImport)
             <?> "import list"
-    return $ Import
-        (varName name)
-        (varName alias)
-        vis
-        (fmap varName <$> idens)
+    return $ Import (varName name) (varName alias) vis imps
     ) <?> "module import"
 
+idenImport :: Parser ImportIden
+idenImport = try traitImp <|> try dataImp <|> foImp
+    where
+        traitImp = (do
+            keyword "trait"
+            ImportedTrait . varName <$!> bigIden
+            ) <?> "trait name"
+        dataImp = (do
+            keyword "data"
+            ImportedType . varName <$!> bigIden
+            ) <?> "datatype name"
+        foImp = ImportedFunc . varName <$!> foName
 
 arrayLit :: Parser Value
 arrayLit = (do

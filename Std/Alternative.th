@@ -2,8 +2,8 @@ module Std.Alternative where
 
 
 export trait Alternative a {
-    vacant => a;
-    (<|>) => a, a, a;
+    pure vacant => a;
+    pure (<|>) => a, a, a;
 }
 
 impl Alternative Bool {
