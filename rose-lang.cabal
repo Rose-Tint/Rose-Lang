@@ -8,6 +8,8 @@ synopsis:           a new language written in haskell
 author:             Rose Aetherius: roseaetherius@gmail.com
 maintainer:         Rose Aetherius: roseaetherius@gmail.com
 category:           Language
+license:            MIT
+license-file:       LICENSE
 extra-source-files: README.md
 
 -- package information
@@ -89,3 +91,12 @@ executable Rose-Dev
     main-is: Main.hs
     ghc-options:
         -O0
+
+executable Rose-Profile
+    import: general
+    main-is: Main.hs
+    ghc-options:
+        -- -prof
+        -fprof-auto
+        -O2
+        "-with-rtsopts=-N -p -s -h -i0.1"
