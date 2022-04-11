@@ -1,0 +1,8 @@
+module Std.IO.Input where
+
+
+import Std.IO.Handle
+
+
+export impure hGetChar => Handle, Char;
+export impure hGetWord => Handle, String;

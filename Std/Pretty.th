@@ -1,0 +1,33 @@
+module Std.Pretty where
+
+
+import Std.Compare
+import Std.Default
+
+
+export trait Pretty a {
+    pure pretty => a, String;
+}
+
+
+impl Pretty Int {
+    pretty n {
+        let mut x<Int> := n;
+        let mut str<String> := default;
+        loop (True) {
+            rem = x % 10;
+            x = x / 10;
+            let ch<Char> := '0' + rem;
+            str = append ch str;
+            if (x < 10) { return str; };
+        };
+    }
+}
+
+impl Pretty Char {
+    pretty c := charToString s';
+}
+
+impl Pretty String {
+    pretty s := s;
+}

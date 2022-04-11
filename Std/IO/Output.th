@@ -1,0 +1,9 @@
+module Std.IO.Output where
+
+
+import Std.IO.Handle
+
+
+export impure hPutChar => Char, Void;
+export impure hPrint => String, Void;
+export impure println => String, Void;
