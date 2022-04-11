@@ -1,10 +1,3 @@
-{-
-TODO:
-    Imports are not working (expects extranuous "."),
-    some sort of monad to store
-        multiple errors
--}
-
 module Parser.Parser (roseParser, importsParser) where
 
 import Control.Monad ((<$!>))

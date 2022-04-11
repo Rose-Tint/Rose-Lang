@@ -2,29 +2,28 @@
 
 module Build where
 
-import Prelude hiding (readFile, lines)
+import Prelude hiding (readFile)
 
 import Control.Monad ((<$!>), when, forM_, mapM_)
 import Data.Text (Text)
 import qualified Data.Text as T (lines)
 import Data.Text.IO (readFile)
 import System.Directory
-import System.IO ()
 import Text.Parsec (parse, SourcePos)
 
 import CmdLine (CmdLine(..))
 import CmdLine.Flags
-import Analyzer.Analyzer
+import Analyzer.Analyzer (Analysis(..), analyze_)
 import Analyzer.Error (prettyError)
 import Builder.Builder
 import Builder.CmdLine
 import Builder.Output
 import Parser.Data (Expr, ImportModule(..))
 import Parser.Error (prettyParseErr)
-import Parser.Parser
-import Typing.Checker
+import Parser.Parser (importsParser, roseParser)
+import Typing.Checker (infer_)
 import Pretty
-import Utils
+import Utils (modToPath)
 
 
 default (Int, Double)
