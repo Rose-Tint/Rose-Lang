@@ -5,7 +5,7 @@ import Std.Compare
 import Std.Default
 
 
-export trait Pretty a {
+trait Pretty a {
     pure pretty => a, String;
 }
 

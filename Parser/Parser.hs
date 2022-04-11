@@ -56,7 +56,7 @@ moduleDecl = (do
 modImport :: Parser ImportModule
 modImport = (do
     keyword "import"
-    vis <- option Intern visibility
+    vis <- option Intern visibility'
     name <- moduleName
     alias <- option name $ do
         keyword "as"

@@ -1,13 +1,13 @@
 module Std.Hash where
 
 
-export trait Hashable a {
+trait Hashable a {
     pure hash => a, Int;
     pure salted => Int, a, Int;
 }
 
 
-export pure combine => Int, Int, Int;
+pure combine => Int, Int, Int;
 combine a b {
     let mut result <Int> := b;
     result = result + (a << 6);

@@ -1,3 +1,3 @@
 module Std.IO.Handle where
 
-export data Handle := Handle
+data Handle := Handle

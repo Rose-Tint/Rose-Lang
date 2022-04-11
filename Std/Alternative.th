@@ -1,7 +1,7 @@
 module Std.Alternative where
 
 
-export trait Alternative a {
+trait Alternative a {
     pure vacant => a;
     pure (<|>) => a, a, a;
 }

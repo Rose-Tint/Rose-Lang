@@ -16,12 +16,17 @@ purity = choice [
     ] <?> "purity"
 
 
-visibility :: Parser Visibility
-{-# INLINABLE visibility #-}
-visibility = choice [
+visibility' :: Parser Visibility
+{-# INLINABLE visibility' #-}
+visibility' = choice [
         keyword "export" >> return Export,
         keyword "intern" >> return Intern
     ] <?> "visibility"
+
+
+visibility :: Parser Visibility
+{-# INLINE visibility #-}
+visibility = option Export visibility'
 
 
 mutability :: Parser Mutability

@@ -1,18 +1,18 @@
 module Std.Compare where
 
 
-export data Ordering
+data Ordering
     := LT
     |= EQ
     |= GT
 
 
-export trait Eq a {
+trait Eq a {
     pure (==) => a, a, Boolean;
     pure (==) => a, a, Boolean;
 }
 
-export trait { Eq a }, Ord a {
+trait { Eq a }, Ord a {
     pure (<)   => a, a, Boolean;
     pure (<=)  => a, a, Boolean;
     pure (>)   => a, a, Boolean;
@@ -20,7 +20,7 @@ export trait { Eq a }, Ord a {
     pure (<=>) => a, a, Ordering;
 }
 
-export trait Logical a {
+trait Logical a {
     pure asBool => a, Boolean;
     pure (&&) => a, a, Boolean;
     pure (||) => a, a, Boolean;
@@ -29,21 +29,21 @@ export trait Logical a {
 }
 
 
-export pure min => { Ord a }, a, a, a;
+pure min => { Ord a }, a, a, a;
 min a b := match (a <=> b) {
         [LT] := a;
         [EQ] := a;
         [GT] := b;
     };
 
-export pure max => { Ord a }, a, a, a;
+pure max => { Ord a }, a, a, a;
 max a b := match (a <=> b) {
         [LT] := b;
         [EQ] := b;
         [GT] := a;
     };
 
-export pure clamp => { Ord a }, a, a, a, a;
+pure clamp => { Ord a }, a, a, a, a;
 clamp mn mx x := min mn (max mx x);
 
 
