@@ -137,6 +137,7 @@ ttype = choice [
         parens ttype
     ] <?> "type"
     where
+        {-# INLINE arrayType #-}
         arrayType = do
             typ <- brackets ttype
             return $ TerminalType (Prim "Array") [typ]
