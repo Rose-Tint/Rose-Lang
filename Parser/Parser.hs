@@ -15,7 +15,6 @@ import Parser.LangDef
 default (Int, Double)
 
 
-
 roseParser :: SourcePos -> Parser [Expr]
 roseParser pos = setPosition pos >> manyTill (choice [
         funcDef,
@@ -24,7 +23,6 @@ roseParser pos = setPosition pos >> manyTill (choice [
         try traitDecl,
         traitImpl
     ]) eof
-
 
 importsParser ::
     Parser (String, [ImportModule], Text, SourcePos)
@@ -36,7 +34,6 @@ importsParser = do
     pos <- getPosition
     return (varName modName, imports, rest, pos)
 
-
 moduleDecl :: Parser Variable
 moduleDecl = (do
     keyword "module"
@@ -44,7 +41,6 @@ moduleDecl = (do
     keyword "where"
     return $ name
     ) <?> "module declaration"
-
 
 modImport :: Parser ImportModule
 modImport = (do
@@ -62,16 +58,20 @@ modImport = (do
     ) <?> "module import"
 
 idenImport :: Parser ImportIden
+{-# INLINABLE idenImport #-}
 idenImport = try traitImp <|> try dataImp <|> foImp
     where
+        {-# INLINE traitImp #-}
         traitImp = (do
             keyword "trait"
             ImportedTrait . varName <$!> bigIden
             ) <?> "trait name"
+        {-# INLINE dataImp #-}
         dataImp = (do
             keyword "data"
             ImportedType . varName <$!> bigIden
             ) <?> "datatype name"
+        {-# INLINE foImp #-}
         foImp = ImportedFunc . varName <$!> foName
 
 arrayLit :: Parser Value
@@ -84,10 +84,8 @@ arrayLit = (do
             (sourceLine pos)
             (sourceColumn pos)
             end
-    return $ Array
-        (listArray (0 :: Int, length arr) arr) pos'
+    return $ Array (listArray (0, length arr) arr) pos'
     ) <?> "array"
-
 
 literal :: Parser Value
 {-# INLINE literal #-}
@@ -96,17 +94,13 @@ literal = choice [
         intLit, fltLit
     ] <?> "literal"
 
-
 term :: Parser Value
 {-# INLINABLE term #-}
 term = choice [
         try literal, arrayLit,
         (\i -> FuncCall i []) <$!> iden,
-        parens (ctorCall
-            <|> foCall
-            <|> term)
+        parens (ctorCall <|> foCall <|> term)
     ] <?> "term"
-
 
 term' :: Parser Value
 {-# INLINABLE term' #-}
@@ -116,7 +110,6 @@ term' = choice [
         term
     ] <?> "term'"
 
-
 terminalType :: Parser Type
 {-# INLINABLE terminalType #-}
 terminalType = (do
@@ -124,7 +117,6 @@ terminalType = (do
     tas <- many ttype
     return $ TerminalType name tas
     ) <?> "terminal type"
-
 
 nonTermType :: Parser Type
 {-# INLINABLE nonTermType #-}
@@ -136,8 +128,6 @@ nonTermType = (do
             return (NonTermType t1 (t2 :| ts))
     ) <?> "non-terminal type"
 
-
--- arrayType significantly increases run-time?! :(
 ttype :: Parser Type
 {-# INLINABLE ttype #-}
 ttype = choice [
@@ -151,11 +141,9 @@ ttype = choice [
             typ <- brackets ttype
             return $ TerminalType (Prim "Array") [typ]
 
-
 param :: Parser Value
 {-# INLINE param #-}
 param = pattern <?> "param"
-
 
 pattern :: Parser Value
 {-# INLINABLE pattern #-}
@@ -170,13 +158,11 @@ pattern = choice [
         {-# INLINE nonWild #-}
         nonWild = ctorPattern <|> literal
 
-
 noArgFnCall :: Parser Value
 {-# INLINE noArgFnCall #-}
 noArgFnCall = do
     i <- smallIden
     return (FuncCall i [])
-
 
 ctorPattern :: Parser Value
 {-# INLINE ctorPattern #-}
@@ -186,14 +172,13 @@ ctorPattern = (do
     return (CtorVal name as)
     ) <?> "constructor"
 
-
 constraint :: Parser Constraint
+{-# INLINE constraint #-}
 constraint = (do
     con <- bigIden
     typ <- smallIden
     return $ Constraint con typ
     ) <?> "constraint"
-
 
 typeDecl :: Parser ([Constraint], [Type])
 typeDecl = (do
@@ -203,11 +188,9 @@ typeDecl = (do
     return $ (cons, typs)
     ) <?> "type declaration"
 
-
 foName :: Parser Variable
-{-# INLINABLE foName #-}
+{-# INLINE foName #-}
 foName = smallIden <|> parens operator
-
 
 funcTypeDecl :: Parser Expr
 funcTypeDecl = (do
@@ -221,63 +204,56 @@ funcTypeDecl = (do
     return $ FuncTypeDecl pur vis name cons typs
     ) <?> "func-type-decl"
 
-
 funcDef :: Parser Expr
 funcDef = (do
-    name_pars <- choice [
+    (name, pars) <- choice [
             try (do
                 lhs <- param
                 op <- operator
                 rhs <- param
-                return $ (op, [lhs, rhs])
+                return (op, [lhs, rhs])
             ),
             (do
                 name <- foName
                 pars <- many param
-                return $ (name, pars)
+                return (name, pars)
             )
         ]
-    let (name, pars) = name_pars
     bdy <- bodyAssignment
     return $ FuncDef name pars bdy
     ) <?> "func-def"
 
-
 returnE :: Parser Expr
+{-# INLINABLE returnE #-}
 returnE = (do
     keyword "return"
     val <- expr <|> term'
     return $ Return val
     ) <?> "return expression"
     where
+        {-# INLINE expr #-}
         expr = resOper "::"
             >> ExprVal <$!> (try match <|> ifElse)
-
 
 body :: Parser [Expr]
 {-# INLINE body #-}
 body = braces $ semiSepEnd statement
-
 
 body' :: Parser [Expr]
 {-# INLINE body' #-}
 body' = ((:[]) <$!> statement)
     <|> braces (semiSepEnd statement)
 
-
 bodyAssignment :: Parser [Expr]
-bodyAssignment = choice [
-    body,
-    (do resOper ":="
-        bdy <- Return <$!> choice [
-                try (ExprVal <$!> match),
-                try (ExprVal <$!> ifElse),
-                term'
-            ]
-        semi
-        return $ [bdy])
-    ]
-
+{-# INLINE bodyAssignment #-}
+bodyAssignment = body <|> (do
+    resOper ":="
+    bdy <- Return <$!> choice [
+            try (ExprVal <$!> match),
+            try (ExprVal <$!> ifElse),
+            term'
+        ] <* semi
+    return [bdy])
 
 statement :: Parser Expr
 statement = choice [
@@ -290,7 +266,6 @@ statement = choice [
         ValueE <$!> funcCall
     ] <?> "statement"
 
-
 reassign :: Parser Expr
 {-# INLINABLE reassign #-}
 reassign = (do
@@ -299,7 +274,6 @@ reassign = (do
     val <- term'
     return $ Reassign name val
     ) <?> "reassignment"
-
 
 newVar :: Parser Expr
 {-# INLINABLE newVar #-}
@@ -313,7 +287,6 @@ newVar = (do
     return $ NewVar mut typ name val
     ) <?> "new var"
 
-
 operCall :: Parser Value
 {-# INLINABLE operCall #-}
 operCall = (do
@@ -326,7 +299,6 @@ operCall = (do
     where
         arg = funcCall <|> term
 
-
 funcCall :: Parser Value
 {-# INLINE funcCall #-}
 funcCall = (do
@@ -335,12 +307,10 @@ funcCall = (do
     return $ FuncCall name args
     ) <?> "function call"
 
-
 -- (f)unction or (o)perator (call)
 foCall :: Parser Value
 {-# INLINE foCall #-}
 foCall = try operCall <|> funcCall
-
 
 ctorCall :: Parser Value
 {-# INLINABLE ctorCall #-}
@@ -349,7 +319,6 @@ ctorCall = (do
     as <- many term
     return $ CtorVal name as
     ) <?> "constructor call"
-
 
 ifElse :: Parser Expr
 {-# INLINABLE ifElse #-}
@@ -360,7 +329,6 @@ ifElse = (do
     fBody <- option [] (keyword "else" >> body')
     return $ IfElse cnd tBody fBody
     ) <?> "if-else"
-
 
 loop :: Parser Expr
 {-# INLINABLE loop #-}
@@ -375,7 +343,6 @@ loop = (do
     return $ Loop ini cnd itr bdy
     ) <?> "loop"
 
-
 dataDef :: Parser Expr
 {-# INLINABLE dataDef #-}
 dataDef = (do
@@ -387,7 +354,6 @@ dataDef = (do
     return $ DataDef vis name tps ctrs
     ) <?> "data-def"
 
-
 dataCtor :: Visibility -> Parser DataCtor
 {-# INLINABLE dataCtor #-}
 dataCtor parVis = (do
@@ -396,7 +362,6 @@ dataCtor parVis = (do
     ts <- option [] (resOper "=>" >> commaSep1 ttype)
     return $ DataCtor vis name ts
     ) <?> "constructor"
-
 
 methodDecl :: Visibility -> Constraint -> Parser Expr
 methodDecl parVis parCon = (do
@@ -408,7 +373,6 @@ methodDecl parVis parCon = (do
     return $ FuncTypeDecl
         pur parVis name (parCon:cons) typs
     ) <?> "method declaration"
-
 
 traitDecl :: Parser Expr
 traitDecl = (do
@@ -425,7 +389,6 @@ traitDecl = (do
     return $ TraitDecl vis cons name typ fns
     ) <?> "trait declaration"
 
-
 traitImpl :: Parser Expr
 traitImpl = (do
     keyword "impl"
@@ -437,7 +400,6 @@ traitImpl = (do
     return $ TraitImpl name cons typ defs
     ) <?> "trait def"
 
-
 match :: Parser Expr
 {-# INLINABLE match #-}
 match = (do
@@ -447,9 +409,8 @@ match = (do
     return $ Pattern val cases
     ) <?> "pattern"
 
-
 matchCase :: Parser (Value, Body)
-{-# INLINABLE matchCase #-}
+{-# INLINE matchCase #-}
 matchCase = (do
     val <- pattern
     bdy <- bodyAssignment
