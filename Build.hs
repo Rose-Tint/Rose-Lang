@@ -4,14 +4,13 @@ module Build where
 
 import Prelude hiding (readFile)
 
-import Control.Monad ((<$!>), when, forM_, mapM_)
+import Control.Monad ((<$!>), when, forM_)
 import Data.Text (Text)
 import qualified Data.Text as T (lines)
 import Data.Text.IO (readFile)
 import System.Directory
 import Text.Parsec (parse, SourcePos)
 
-import CmdLine (CmdLine(..))
 import CmdLine.Flags
 import Analyzer.Analyzer (Analysis(..), analyze_)
 import Analyzer.Error (prettyError)

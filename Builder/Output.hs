@@ -9,7 +9,6 @@ import System.Exit
 
 import Builder.Builder
 import Builder.CmdLine
-import CmdLine (CmdLine(cmdTrace))
 import Color
 
 
