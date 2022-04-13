@@ -1,4 +1,3 @@
-{-# LANGUAGE BangPatterns #-}
 {-# LANGUAGE Rank2Types #-}
 
 module Builder.Builder (

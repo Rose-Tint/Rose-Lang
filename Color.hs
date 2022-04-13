@@ -44,12 +44,12 @@ color ('$':(ch:rest)) = clrStr ++ color rest
             'w' -> show White
             'R' -> show Reset
             _   -> ['$', ch]
-color (c:cs) = (c:color cs)
+color (c:!cs) = (c:color cs)
 
 
 colored :: String -> Color -> String
 {-# INLINE colored #-}
-colored str clr = show clr ++ (str ++ show Reset)
+colored str !clr = show clr ++ (str ++ show Reset)
 
 
 reset :: String -> String
@@ -65,7 +65,7 @@ uncolor :: String -> String
 uncolor [] = []
 uncolor ('\027':'[':'0':'m':str) = uncolor str
 uncolor ('\027':'[':'3':_:'m':str) = uncolor str
-uncolor (c:cs) = (c:uncolor cs)
+uncolor (c: !cs) = (c:uncolor cs)
 
 
 

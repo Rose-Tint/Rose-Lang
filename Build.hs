@@ -1,5 +1,3 @@
-{-# LANGUAGE BangPatterns #-}
-
 module Build where
 
 import Prelude hiding (readFile)

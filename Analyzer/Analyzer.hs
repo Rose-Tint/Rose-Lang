@@ -1,5 +1,4 @@
-{-# LANGUAGE Rank2Types   #-}
-{-# LANGUAGE BangPatterns #-}
+{-# LANGUAGE Rank2Types #-}
 
 module Analyzer.Analyzer (
     Control.Monad.Fail.fail,
