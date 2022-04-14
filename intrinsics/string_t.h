@@ -12,7 +12,7 @@ typedef struct {
 } string_t;
 
 
-string_t* allocString(const uint8_t size, const char* cs){
+string_t* alloc_string(const uint8_t size, const char* cs){
     // add one to size for the initial byte
     string_t* ptr = (string_t*)malloc(sizeof(string_t));
     ptr->size = size;
@@ -22,7 +22,7 @@ string_t* allocString(const uint8_t size, const char* cs){
     return ptr;
 }
 
-void freeString(string_t* str){
+void free_string(string_t* str){
     free(str->chars);
     free(str);
     return;
@@ -33,12 +33,12 @@ string_t* string_concat(string_t* str1, string_t* str2){
     string_t* new_str = (string_t*)realloc(str1, str1->size + str2->size + 1);
     for (uint8_t j = 0; j < str2->size; j++)
         new_str->chars[str1->size + j] = str2->chars[j];
-    freeString(str2);
+    free_string(str2);
     return new_str;
 }
 
-string_t* chToStr(const char ch){
-    return allocString(1, &ch);
+string_t* chtostr(const char ch){
+    return alloc_string(1, &ch);
 }
 
 
