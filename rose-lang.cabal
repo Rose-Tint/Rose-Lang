@@ -1,7 +1,5 @@
 cabal-version: 2.4
 
-
--- package information
 name:               rose-lang
 version:            0.1.0.0
 synopsis:           a new language written in haskell
@@ -12,7 +10,6 @@ license:            MIT
 license-file:       LICENSE
 extra-source-files: README.md
 
--- package information
 build-type:         Simple
 
 

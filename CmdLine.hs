@@ -21,7 +21,6 @@ data CmdLine = CmdLine {
         cmdFiles :: ![String],
         cmdVerb :: !Int,
         cmdBuildDir :: !FilePath,
-        -- cmdCurrDir :: !FilePath,
         cmdTrace :: !Bool,
         cmdErrors :: ![String],
         cmdShadowing :: !Bool,

@@ -2,9 +2,10 @@
 
 module CmdLine.Warnings (Warning,
     warningOptions,
-    isWEnabled,
+    isWEnabledFor,
     enableWarningFor,
     w_default,
+    w_error,
     w_name_shadowing,
     w_unused_imports,
     w_unused_interns,
@@ -36,23 +37,23 @@ warningOptions = [
                 \but never used"
     ]
 
-isWEnabled :: Warning -> Warning -> Bool
-isWEnabled (W w1) (W w2) = w1 .&. w2 /= 0
+isWEnabledFor :: Warning -> Warning -> Bool
+isWEnabledFor (W w1) (W w2) = w1 .&. w2 /= 0
 
 enableWarningFor :: Warning -> Warning -> Warning
 enableWarningFor (W w1) (W w2) = W (w1 .|. w2)
 
 w :: Int64 -> Warning
 w = W . (^(2 :: Int64))
-w_default = foldr (\(W w2) (W w1) -> W (w2 .|. w1)) (W 0) [
+w_default = foldr enableWarningFor (W 0) [
         w_name_shadowing,
         w_unused_imports
     ]
-w_all = foldr (\(W w2) (W w1) -> W (w2 .|. w1)) (W 0) [
+w_all = foldr enableWarningFor w_default [
         w_name_shadowing,
         w_unused_imports
     ]
-w_error = W (minBound `xor` (shiftR minBound 1)) -- sets last bit
-w_name_shadowing = w 1
-w_unused_imports = w 2
-w_unused_interns = w 3
+w_error = w 1
+w_name_shadowing = w 2
+w_unused_imports = w 3
+w_unused_interns = w 4

@@ -75,7 +75,7 @@ data Constraint
     deriving (Show, Eq, Ord)
 
 data Type
-    = NonTermType Type (NonEmpty Type)
+    = NonTermType Type {-# UNPACK #-} !(NonEmpty Type)
     | TerminalType Variable [Type]
     deriving (Show, Eq, Ord)
 
@@ -86,24 +86,22 @@ data Value
     | FltLit {-# UNPACK #-} !Double Position
     | ChrLit {-# UNPACK #-} !Char Position
     | StrLit String Position
-    | FuncCall Variable [Value]
-    | CtorVal Variable [Value]
+    | FuncCall !Variable [Value]
+    | CtorVal !Variable [Value]
     | Array {-# UNPACK #-} !(Array Int Value) Position
-    | ExprVal Expr
+    | ExprVal !Expr
     | Hole Position
     deriving (Show, Eq, Ord)
 
 data Purity = Pure | Impure | Unsafe
     deriving (Show, Eq, Ord)
 
-type Mutability = Purity
-
 data Visibility = Export | Intern
     deriving (Show, Eq, Ord)
 
 data DataCtor = DataCtor {
         ctorVisib :: Visibility,
-        ctorName :: Variable,
+        ctorName :: !Variable,
         ctorTypes :: [Type]
     }
     deriving (Show, Eq, Ord)
@@ -113,52 +111,52 @@ data Expr
     | FuncTypeDecl {
         exprPurity :: Purity,
         exprVisib :: Visibility,
-        exprName :: Variable,
+        exprName :: !Variable,
         exprCons :: [Constraint],
         exprType :: [Type]
     }
     | FuncDef {
-        exprName :: Variable,
+        exprName :: !Variable,
         exprPars :: [Value],
         exprBody :: Body
     }
     | DataDef {
         exprVisib :: Visibility,
-        exprName :: Variable,
+        exprName :: !Variable,
         exprTypePars :: [Variable],
         exprCtors :: [DataCtor]
     }
     | IfElse {
-        exprClause :: Value,
+        exprClause :: !Value,
         exprTrue :: Body,
         exprFalse :: Body
     }
     | Pattern {
-        exprValue :: Value,
+        exprValue :: !Value,
         exprCases :: [(Value, Body)]
     }
     | Loop {
         exprInit :: Maybe Expr,
-        exprCond :: Value,
+        exprCond :: !Value,
         exprIter :: Maybe Expr,
         exprBody :: Body
     }
     | TraitDecl {
         exprVisib :: Visibility,
         exprCons :: [Constraint],
-        exprName :: Variable,
+        exprName :: !Variable,
         exprTypeVar :: Variable,
         exprFuncs :: [Expr]
     }
     | TraitImpl {
-        exprName :: Variable,
+        exprName :: !Variable,
         exprCons :: [Constraint],
         exprTraitType :: Maybe Type,
         exprDefs :: [Expr]
     }
-    | NewVar Mutability Type Variable Value
-    | Reassign Variable Value
-    | Return Value
+    | NewVar Mutability !Type Variable !Value
+    | Reassign !Variable !Value
+    | Return !Value
     deriving (Show, Eq, Ord)
 
 

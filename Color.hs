@@ -49,7 +49,7 @@ color (c:cs) = (c:color cs)
 
 colored :: String -> Color -> String
 {-# INLINE colored #-}
-colored str clr = show clr ++ (str ++ show Reset)
+colored str !clr = show clr ++ (str ++ show Reset)
 
 
 reset :: String -> String

@@ -1,5 +1,3 @@
-{-# LANGUAGE BangPatterns #-}
-
 module SymbolTable.Trie (Trie,
     -- Construction
     empty, singleton, fromList,

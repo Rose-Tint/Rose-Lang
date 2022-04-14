@@ -1,4 +1,5 @@
 {-# LANGUAGE FlexibleInstances #-}
+
 {-# OPTIONS_GHC -Wno-orphans #-}
 
 module SymbolTable.SymbolMap (SymbolMap,
