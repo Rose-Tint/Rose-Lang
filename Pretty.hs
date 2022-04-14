@@ -23,7 +23,6 @@ import Color
 default (Int, Double)
 
 
-
 class Pretty a where
     pretty :: a -> String
     -- |Like pretty, but a more detailed version. Defaults

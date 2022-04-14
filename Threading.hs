@@ -31,13 +31,11 @@ data Status
     | Threw IOException
     deriving (Show)
 
-
 newtype Manager = Mgr (MVar (Map.Map ThreadId (MVar Status)))
 
 
 newManager :: IO Manager
 newManager = Mgr <$!> (newMVar $! Map.empty)
-
 
 fork :: Manager -> IO () -> IO ThreadId
 fork (Mgr mgr) f = modifyMVar mgr $ \m -> do
@@ -47,7 +45,6 @@ fork (Mgr mgr) f = modifyMVar mgr $ \m -> do
         putMVar st (either Threw (const Finished) res)
     return $! (Map.insert thrID st m, thrID)
 
-
 threadStatus :: Manager -> ThreadId -> IO (Maybe Status)
 threadStatus (Mgr mgr) thrID = modifyMVar mgr $ \m ->
     case Map.lookup thrID m of
@@ -56,17 +53,14 @@ threadStatus (Mgr mgr) thrID = modifyMVar mgr $ \m ->
             Nothing -> return $! (m, Just Running)
             Just sth -> return $! (Map.delete thrID m, Just sth)
 
-
 exitSelf :: ExitCode -> IO a
 exitSelf ec = throwIO ec
-
 
 wait :: Manager -> ThreadId -> IO (Maybe Status)
 wait (Mgr mgr) thrID = join $! modifyMVar mgr $ \m -> return $!
     (case Map.updateLookupWithKey (\_ _ -> Nothing) thrID m of
         (Nothing, _) -> (m, return Nothing)
         (Just st, m') -> (m', Just <$!> takeMVar st))
-
 
 waitAll :: Manager -> IO ()
 waitAll (Mgr mgr) = do

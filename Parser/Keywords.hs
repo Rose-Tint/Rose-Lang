@@ -11,7 +11,6 @@ import Parser.Data
 import Parser.LangDef
 
 
-
 purity :: Parser Purity
 {-# INLINABLE purity #-}
 purity = choice [
@@ -20,7 +19,6 @@ purity = choice [
         keyword "unsafe" >> return Unsafe
     ] <?> "purity"
 
-
 visibility' :: Parser Visibility
 {-# INLINABLE visibility' #-}
 visibility' = choice [
@@ -28,11 +26,9 @@ visibility' = choice [
         keyword "intern" >> return Intern
     ] <?> "visibility"
 
-
 visibility :: Parser Visibility
 {-# INLINE visibility #-}
 visibility = option Export visibility'
-
 
 mutability :: Parser Mutability
 {-# INLINABLE mutability #-}

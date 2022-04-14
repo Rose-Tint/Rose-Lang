@@ -13,7 +13,6 @@ import Build (build)
 default (Int, Double)
 
 
-
 main :: IO ()
 main = do
     cmd <- getCmdLine
