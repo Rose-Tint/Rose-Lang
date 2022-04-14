@@ -116,20 +116,21 @@ instance Checker Expr where
         return NoType
     -- TraitDecl vis cons tv fns
     infer (TraitDecl vis _ name _ fns) = define name $! do
-            mDta <- findTrait name
-            case mDta of
-                Nothing -> pushTrait name $ mkSymbolData
-                    name NoType (Just vis) Nothing
-                (Just dta) ->
-                    let nm = varName name
-                        orig = maybe (Prim nm) (Var nm)
-                            (sdPos dta)
-                    in throw $ Redefinition name orig
-            forM_ fns $ \fn -> case fn of
-                FuncTypeDecl _ _ _ _ _ -> infer fn
-                _ -> fail
-                    "non-function-type-declaration \
-                    \as trait-method declaration"
+        mDta <- findTrait name
+        case mDta of
+            Nothing -> pushTrait name $ mkSymbolData
+                name NoType (Just vis) Nothing
+            Just dta ->
+                let nm = varName name
+                    orig = maybe (Prim nm) (Var nm)
+                        (sdPos dta)
+                in throw $ Redefinition name orig
+        forM_ fns $ \fn -> case fn of
+            FuncTypeDecl _ _ _ _ _ -> infer fn
+            Pragma _ -> return NoType
+            _ -> fail
+                "non-function-type-declaration \
+                \as trait-method declaration"
     -- TraitImpl name cons typ defs
     infer (TraitImpl name _ _ defs) = define name $! do
             mDta <- findTrait name

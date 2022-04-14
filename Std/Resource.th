@@ -1,9 +1,9 @@
 module Std.Resource where
 
 
+#[warn_unused(with)]
 trait Resource a {
     impure close => a, Void;
-    #[warn_unused(with)]
     impure with => (a, b), a, b;
 }
 

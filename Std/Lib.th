@@ -4,6 +4,7 @@ module Std.Lib where
 import export Std.Alternative
 import export Std.Bit
 import export Std.Compare
+import export Std.Data.Array
 import export Std.Data.List
 import export Std.Data.Tree
 import export Std.Default

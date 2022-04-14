@@ -384,9 +384,9 @@ traitDecl = (do
     name <- bigIden
     typ <- smallIden
     let thisCon = Constraint name typ
-    fns <- braces $ semiSepEnd
-        (try $ (methodDecl vis thisCon
-            <?> "method declaration"))
+    -- TODO: Pragmas should be allowed here
+    fns <- braces $ semiSepEnd (try $
+        methodDecl vis thisCon)
     return $ TraitDecl vis cons name typ fns
     ) <?> "trait declaration"
 
@@ -397,7 +397,8 @@ traitImpl = (do
         (braces (commaSep1 constraint) <* comma)
     name <- bigIden
     typ <- optionMaybe ttype
-    defs <- braces $ many1 (funcDef <?> "method definition")
+    defs <- braces $ many1
+        (funcDef <?> "method definition")
     return $ TraitImpl name cons typ defs
     ) <?> "trait def"
 
