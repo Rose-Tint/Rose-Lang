@@ -74,6 +74,8 @@ common general
         -Wextra
         -Wcompat
         -Wredundant-constraints
+        -Wmissing-export-lists
+        -Wunused-packages
         -Wno-unused-do-bind
         -Werror
         -Wwarn=unused-imports
