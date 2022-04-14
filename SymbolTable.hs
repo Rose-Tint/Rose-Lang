@@ -17,8 +17,6 @@ import Pretty
 import SymbolTable.SymbolData
 import SymbolTable.SymbolMap
 import SymbolTable.Trie (assocs)
-import qualified SymbolTable.Trie as T
-import Typing.Traits
 import Utils
 
 
