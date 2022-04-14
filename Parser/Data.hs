@@ -99,6 +99,8 @@ data Purity = Pure | Impure | Unsafe
 data Visibility = Export | Intern
     deriving (Show, Eq, Ord)
 
+type Mutability = Purity
+
 data DataCtor = DataCtor {
         ctorVisib :: Visibility,
         ctorName :: !Variable,

@@ -126,13 +126,11 @@ pushExpType :: Type -> Analyzer ()
 pushExpType typ = Analyzer $ \ !s okay _ ->
     okay () (s { stExpType = (typ:stExpType s) })
 
-
 popExpType :: Analyzer Type
 {-# INLINE popExpType #-}
 popExpType = Analyzer $ \ !s okay _ -> case stExpType s of
     [] -> okay NoType s
     (typ:rest) -> okay typ (s { stExpType = rest })
-
 
 peekExpType :: Analyzer Type
 {-# INLINE peekExpType #-}
@@ -214,7 +212,6 @@ instance Functor Analyzer where
         let okay x s' = aok (f x) s' in
         runA a s okay err
 
-
 instance Applicative Analyzer where
     {-# INLINE pure #-}
     pure a = Analyzer $ \ !s okay _ -> okay a s
@@ -224,13 +221,11 @@ instance Applicative Analyzer where
         x <- xa
         return $! f x
 
-
 instance Monad Analyzer where
     {-# INLINE (>>=) #-}
     a >>= f = Analyzer $ \ !s aok err  ->
         let okay x s' = runA (f x) s' aok err
         in runA a s okay err
-
 
 instance MonadFail Analyzer where
     {-# INLINE fail #-}

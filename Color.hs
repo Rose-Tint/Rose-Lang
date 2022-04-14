@@ -46,27 +46,22 @@ color ('$':(ch:rest)) = clrStr ++ color rest
             _   -> ['$', ch]
 color (c:cs) = (c:color cs)
 
-
 colored :: String -> Color -> String
 {-# INLINE colored #-}
 colored str !clr = show clr ++ (str ++ show Reset)
-
 
 reset :: String -> String
 {-# INLINE reset #-}
 reset str = show Reset ++ str
 
-
 printf :: (PrintfType a) => String -> a
 printf = Text.Printf.printf . color
-
 
 uncolor :: String -> String
 uncolor [] = []
 uncolor ('\027':'[':'0':'m':str) = uncolor str
 uncolor ('\027':'[':'3':_:'m':str) = uncolor str
 uncolor (c:cs) = (c:uncolor cs)
-
 
 
 instance Show Color where
@@ -79,7 +74,6 @@ instance Show Color where
     show Cyan   = "\027[36m"
     show White  = "\027[37m"
     show Reset  = "\027[0m"
-
 
 instance PrintfArg Color where
     formatArg clr = formatString (show clr)

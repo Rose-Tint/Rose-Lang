@@ -29,7 +29,6 @@ data CmdLine = CmdLine {
         cmdWarns :: !Warning
     }
 
-
 data Flag
     = Verbosity Int
     | BuildDir FilePath
@@ -37,7 +36,6 @@ data Flag
     | Threaded
     | Flag (Flags -> Flags)
     | Warn Warning
-
 
 
 verbosity :: Maybe String -> IO Flag
@@ -61,7 +59,6 @@ buildDir path = do
     dir <- makeAbsolute path
     return $! BuildDir (dir ++ "/")
 
-
 options :: [OptDescr (IO Flag)]
 options = id $! [
         Option "h" ["help"]              (NoArg help)
@@ -81,7 +78,6 @@ options = id $! [
     ] ++ (fmap (pure . Warn) <$> warningOptions)
       ++ (fmap (pure . Flag) <$> flagOptions)
 
-
 setFlags :: [Flag] -> CmdLine -> CmdLine
 {-# INLINABLE setFlags #-}
 setFlags [] cmd = cmd
@@ -92,7 +88,6 @@ setFlags (flg:flgs) cmd = setFlags flgs $! case flg of
     Threaded -> cmd { cmdThreaded = True }
     Flag f -> cmd { cmdFlags = f (cmdFlags cmd) }
     Warn w -> cmd { cmdWarns = enableWarningFor w (cmdWarns cmd) }
-
 
 mkCmdLine :: IO [Flag] -> [String] -> [String] -> IO CmdLine
 mkCmdLine flgs fnames errs = do
@@ -109,7 +104,6 @@ mkCmdLine flgs fnames errs = do
             cmdWarns = w_default
         }
     return $! setFlags flgs' cmd
-
 
 getCmdLine :: IO CmdLine
 getCmdLine = do

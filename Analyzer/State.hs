@@ -11,7 +11,6 @@ import SymbolTable
 import Typing.Types
 
 
-
 data State
     = State {
         stModule :: Module,
@@ -24,12 +23,10 @@ data State
     }
 
 
-
 newModuleState :: String -> State
 {-# INLINE newModuleState #-}
 newModuleState = State UnknownMod [] []
     emptyTable [] Nothing . newPosition
-
 
 newState :: State
 {-# INLINE newState #-}

@@ -42,8 +42,6 @@ build = do
     forM_ files $ buildFile
     status "Finished building\n"
 
--- buildFromMain = do
-
 buildFile :: FilePath -> BuilderIO ()
 buildFile path = do
     setFilePath path
