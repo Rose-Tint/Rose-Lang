@@ -1,6 +1,15 @@
 {-# LANGUAGE FlexibleInstances #-}
 
-module SymbolTable.SymbolData where
+module SymbolTable.SymbolData (
+    Symbol,
+    SymbolData(..),
+    stitchSD,
+    mkSymbolData,
+    undef,
+    isWellDefined,
+    isUndefined,
+    ifDefined,
+) where
 
 -- import Control.Applicative (Alternative((<|>)))
 import Data.Maybe
@@ -16,7 +25,6 @@ default (Int, Double)
 
 type Symbol = Variable
 
-
 data SymbolData
     = SymbolData {
         sdType :: !Type,
@@ -27,18 +35,15 @@ data SymbolData
     deriving (Show, Eq)
 
 
-
 stitchSD :: SymbolData -> SymbolData -> SymbolData
 {-# INLINE stitchSD #-}
 stitchSD sd1 sd2 = sd1 { sdType = sdType sd1 <~> sdType sd2 }
-
 
 mkSymbolData :: Symbol -> Type -> Maybe Visibility
           -> Maybe Purity -> SymbolData
 {-# INLINE mkSymbolData #-}
 mkSymbolData sym typ vis pur = SymbolData
     typ vis pur (Just (varPos sym))
-
 
 undef :: SymbolData
 {-# INLINE undef #-}
@@ -49,8 +54,6 @@ undef = SymbolData {
     sdPos = Nothing
 }
 
-
-
 isWellDefined :: SymbolData-> Bool
 {-# INLINABLE isWellDefined #-}
 isWellDefined dta = isJust (sdVisib dta)
@@ -59,7 +62,6 @@ isWellDefined dta = isJust (sdVisib dta)
              && (isJust (sdPos dta)
                 && posModule (fromJust $! sdPos dta)
                      /= UnknownMod)
-
 
 isUndefined :: SymbolData-> Bool
 {-# INLINABLE isUndefined #-}
@@ -70,11 +72,9 @@ isUndefined dta = isNothing (sdVisib dta)
                 || posModule (fromJust $! sdPos dta)
                      == UnknownMod)
 
-
 ifDefined :: SymbolData -> Maybe SymbolData
 {-# INLINE ifDefined #-}
 ifDefined dta = if isWellDefined dta then Just dta else Nothing
-
 
 
 instance Pretty (String, SymbolData) where

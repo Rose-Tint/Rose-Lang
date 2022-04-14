@@ -1,4 +1,9 @@
-module Parser.Keywords where
+module Parser.Keywords (
+    purity,
+    visibility,
+    visibility',
+    mutability,
+) where
 
 import Text.Parsec
 

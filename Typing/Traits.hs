@@ -1,4 +1,7 @@
-module Typing.Traits where
+module Typing.Traits (
+    Trait(..),
+    impls,
+) where
 
 import Analyzer.Analyzer
 import Typing.Types

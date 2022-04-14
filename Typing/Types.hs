@@ -1,4 +1,12 @@
-module Typing.Types where
+module Typing.Types (
+    Type(Type, Applied, Param, Delayed, NoType),
+    typeCons, typeName, typeParams,
+    (<~>),
+    fromPDType, fromPDTypes,
+    addCons,
+    normalize,
+    isComplete,
+) where
 
 import Control.Monad ((<$!>))
 import Data.Char (isUpper)
@@ -12,7 +20,6 @@ import Pretty
 
 
 default (Int, Double)
-
 
 
 data Type
@@ -37,7 +44,6 @@ data Type
     deriving (Show)
 
 
-
 infixl 7 <~>
 (<~>) :: Type -> Type -> Type
 t1 <~> t2 = if t2 == NoType then t1 else case t1 of
@@ -55,8 +61,6 @@ t1 <~> t2 = if t2 == NoType then t1 else case t1 of
     Delayed cs -> addCons cs t2
     NoType -> t2
 
-
-
 -- |Creates a `@Type@` from a `Parser.Data.@Type@`
 fromPDType :: PD.Type -> Type
 fromPDType (TerminalType nm ps) =
@@ -68,12 +72,10 @@ fromPDType (TerminalType nm ps) =
 fromPDType (NonTermType t1 ts) =
     Applied (fromPDType t1: toList (fromPDType <$!> ts)) []
 
-
 fromPDTypes :: [PD.Type] -> Type
 fromPDTypes [] = NoType
 fromPDTypes [t] = fromPDType t
 fromPDTypes ts = Applied (fromPDType <$!> ts) []
-
 
 -- |Does not throw an error for `@NoType@`s
 typeCons :: Type -> [Constraint]
@@ -81,19 +83,16 @@ typeCons :: Type -> [Constraint]
 typeCons NoType = []
 typeCons t = typeCons' t
 
-
 typeName :: Type -> Variable
 typeName NoType = Prim "NOTYPE(name)"
 typeName (Delayed _) = Prim "*"
 typeName (Applied _ _) = Prim "**"
 typeName t = typeName' t
 
-
 typeParams :: Type -> [Type]
 typeParams NoType = []
 typeParams (Delayed _) = []
 typeParams t = typeParams' t
-
 
 -- |Adds constraints to the given type
 addCons :: [Constraint] -> Type -> Type
@@ -101,7 +100,6 @@ addCons :: [Constraint] -> Type -> Type
 addCons _ NoType = NoType
 addCons [] t = t
 addCons cs t = t { typeCons' = union (typeCons t) cs }
-
 
 -- |Adds relevant constraints to sub-types
 normalize :: Type -> Type
@@ -111,13 +109,11 @@ normalize t@(Delayed _) = t
 normalize t = t { typeParams' =
     (normalize . addCons (typeCons t)) <$!> (typeParams t) }
 
-
 isComplete :: Type -> Bool
 {-# INLINE isComplete #-}
 isComplete NoType = False
 isComplete (Delayed _) = False
 isComplete t = all isComplete (typeParams t)
-
 
 
 instance Eq Type where
@@ -129,7 +125,6 @@ instance Eq Type where
         typeName t1 == typeName t2 &&
         typeParams t1 == typeParams t2 &&
         typeCons t1 == typeCons t2
-
 
 instance Pretty Type where
     pretty (Applied ts _) = printf

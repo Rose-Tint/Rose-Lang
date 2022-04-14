@@ -1,6 +1,7 @@
-{-# LANGUAGE BangPatterns #-}
-
-module Build where
+module Build (
+    ImportInfo(..),
+    build,
+) where
 
 import Prelude hiding (readFile)
 

@@ -1,6 +1,18 @@
 {-# OPTIONS_GHC -Wno-missing-signatures #-}
 
-module Parser.LangDef where
+module Parser.LangDef (
+    Parser,
+    moduleName, qualifier, iden, bigIden, smallIden,
+    hole,
+    keyword,
+    symbol, operator, resOper,
+    chrLit,strLit, intLit, fltLit,
+    lexeme, wspace,
+    parens, braces, angles, brackets,
+    dot,
+    semi, semiSep, semiSepEnd, semiSep1,
+    comma, commaSep, commaSepEnd, commaSep1,
+) where
 
 import Control.Monad ((<$!>))
 import Data.Text (Text)
@@ -58,7 +70,7 @@ moduleName = bigIden <?> "module name"
 {-# INLINABLE qualifier #-}
 qualifier = (concat <$> many (try $ do
     lookAhead upper
-    name <- T.identifier tokenP 
+    name <- T.identifier tokenP
     dot' <- char '.'
     return $! name ++ [dot'])
     ) <?> "source-module qualifier"

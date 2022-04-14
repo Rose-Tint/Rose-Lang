@@ -1,6 +1,10 @@
-{-# LANGUAGE BangPatterns #-}
-
-module Utils where
+module Utils (
+    pathToDir, pathToModule,
+    modToPath, modToDir,
+    indentAllUsing, indentUsing,
+    ord2,
+    similarity, areSimilar,
+) where
 
 
 default (Int, Double)
@@ -54,16 +58,6 @@ ord2 :: (Ord a) => (a, a) -> (a, a)
 ord2 xy@(x, y)
     | x <= y = xy
     | otherwise = (y, x)
-
-
-clamp :: (Ord a) => a -> a -> a -> a
-{-# INLINE clamp #-}
-clamp a mn mx 
-    | a < mn' = mn'
-    | a > mx' = mx'
-    | otherwise = a
-    where
-        (mn', mx') = ord2 (mn, mx)
 
 
 similarity :: String -> String -> Int

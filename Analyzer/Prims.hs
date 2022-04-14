@@ -1,4 +1,9 @@
-module Analyzer.Prims where
+module Analyzer.Prims (
+    Analyzer.Prims.boolType,
+    integral, floating,
+    intLitType, fltLitType, strLitType, chrLitType,
+    arrLitType, arrayLitOf
+) where
 
 import Parser.Data hiding (Type)
 import Typing.Types

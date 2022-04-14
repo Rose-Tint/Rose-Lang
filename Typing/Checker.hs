@@ -1,4 +1,7 @@
-module Typing.Checker where
+module Typing.Checker (
+    infer_,
+    checkAll,
+) where
 
 import Prelude hiding (fail)
 

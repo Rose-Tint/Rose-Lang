@@ -1,4 +1,9 @@
-module Analyzer.Error where
+module Analyzer.Error (
+    Error(..),
+    Warning(..),
+    ErrorMessage(..),
+    prettyError,
+) where
 
 import Data.Text (Text, unpack)
 
@@ -13,7 +18,6 @@ import Utils
 default (Int, Double)
 
 
-
 data Error
     = TypeMismatch Type Type
     | Undefined Symbol [Symbol]
@@ -22,11 +26,9 @@ data Error
     | FalseError
     deriving (Show, Eq)
 
-
 data Warning
     = ShadowsName Symbol Symbol
     deriving (Show, Eq)
-
 
 data ErrorMessage
     = ErrorMessage {
@@ -37,35 +39,20 @@ data ErrorMessage
     deriving (Show)
 
 
-
-prettyError :: {-CmdLine -> -}[Text] -> ErrorMessage -> String
-prettyError {-cmd-} lns em = printf
+prettyError :: [Text] -> ErrorMessage -> String
+prettyError lns em = printf
     "%s\n%s\n       $R%s$r%s$R\n"
     (pretty em) src caretStart caretRed
     where
         pos = emPosition em
         lno = min (length lns) (max 0 (posLine pos))
         mainLine = unpack $ lns !! (lno - 1)
-        -- "..." + "%5d | " = 11 wide
-        -- width = cmdTermWidth cmd
-        -- width' = width - 8
-        -- width'' = width' - 3
-        -- mainLine = if length str < width' then str else
-        --     if posEnd pos >= width' then
-        --         "..." ++ drop (min
-        --             (width'')
-        --             (posEnd pos - width')
-        --         ) str
-        --     else take width'' str ++ "..."
-        --     where
-        --         str = unpack $! lns !! (lno - 1)
         caretStart = replicate (max 0 (posStart pos)) ' '
         caretRed = replicate (posEnd pos - posStart pos) '^'
         src | lno <= 0 = "   0 | " ++ unpack (head lns)
             | otherwise = printf "$b%5d | $R%s\n$b%5d | $R"
                     (lno - 1) (unpack (lns !! (lno - 2)))
                     lno ++ mainLine
-
 
 
 instance Pretty ErrorMessage where

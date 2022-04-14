@@ -1,4 +1,8 @@
-module Builder.State where
+module Builder.State (
+    Stream,
+    State(..),
+    mkState,
+) where
 
 import Data.Set as S (Set, empty)
 import Data.Text as T (Text, empty)
