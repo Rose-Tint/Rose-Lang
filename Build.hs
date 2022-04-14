@@ -86,7 +86,8 @@ parseFile pos src = do
     debug ("Parsing   ["+|name|+"]\n")
     case parse (roseParser pos) name src of
         Left err -> do
-            fatal $ prettyParseErr err src+\
+            src' <- getSource
+            fatal $ prettyParseErr err src' +\
                 "Failed while parsing module("+|name|+")"
         Right exprs -> do
             trace "Parse-Tree.txt" $
