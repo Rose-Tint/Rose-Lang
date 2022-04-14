@@ -4,9 +4,11 @@ module Std.Memory where
 data Pointer a := intern Ptr => Int
 
 
+#[must_use(malloc)]
 impure malloc => Int, Pointer a;
 malloc := rose_malloc__;
 
+#[must_use(alloc)]
 impure alloc => a, Pointer a;
 alloc a {
     let ptr<Pointer a> := Ptr (malloc (memSizeOf a));

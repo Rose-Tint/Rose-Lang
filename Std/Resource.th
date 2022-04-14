@@ -1,0 +1,16 @@
+module Std.Resource where
+
+
+trait Resource a {
+    impure close => a, Void;
+    #[warn_unused(with)]
+    impure with => (a, b), a, b;
+}
+
+impl Resource {
+    close f rsrc {
+        let res<b> := f rsrc;
+        close rsrc;
+        return res
+    }
+}

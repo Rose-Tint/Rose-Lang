@@ -6,6 +6,7 @@ trait Pretty a {
     pure fmt => a, Fmt, String;
 }
 
+
 data Fmt := Fmt => Int
 
 

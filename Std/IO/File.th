@@ -1,0 +1,28 @@
+module Std.IO.File where
+
+import Std.IO.Handle
+
+
+data FilePath = Path String
+
+data OpenMode
+    := Overwrite
+    |= Append
+    |= Read
+    |= ReadAppend
+    |= ReadWrite
+
+
+impl Resource FilePath {
+    close [Path p] := closeFile p;
+    with [Path p] f {
+        let hdl<Handle> := openFile p ReadWrite;
+        let res<b> := f hdl;
+        close hdl;
+        return res;
+    }
+}
+
+
+#[must_use(openFile)]
+impure openFile => FilePath, OpenMode, Handle;

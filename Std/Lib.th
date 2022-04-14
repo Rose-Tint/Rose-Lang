@@ -12,3 +12,4 @@ import export Std.IO
 import export Std.Maybe
 import export Std.Memory
 import export Std.Pretty
+import export Std.Resource
