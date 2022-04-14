@@ -1,15 +1,11 @@
 module Typing.Checker (
+    Checker(..),
     infer_,
-    checkAll,
 ) where
 
 import Prelude hiding (fail)
 
-import Control.Monad (
-    foldM,
-    unless, when,
-    forM_
-    )
+import Control.Monad (unless, when, forM_)
 import Data.Array ((!), bounds)
 
 import Analyzer.Analyzer
@@ -61,28 +57,28 @@ instance Checker Value where
     infer (ExprVal expr) = infer expr
     infer (Array arr p) = do
         updatePos p
-        if snd (bounds arr) <= (0 :: Int) then
+        if snd (bounds arr) <= 0 then
             throw $ OtherError "Empty array literal"
         else do
-            typ <- infer (arr ! (0 :: Int))
-            forM_ arr $ \t -> expect t typ
+            typ <- infer (arr ! 0)
+            forM_ arr (`expect` typ)
             return typ
     infer (Hole p) = updatePos p >> peekExpType
 
 instance Checker Expr where
     infer (ValueE val) = infer val
-    infer (FuncTypeDecl pur vis name cons typs) =
-        define name $! do
-            -- if this fn-type-decl already exists, then
-            -- check that they are the same (allow dupe-decls
-            -- as long as they are the same) else, create a
-            -- new global
-            mDta <- findGlobal name
-            let typ' = addCons cons $ fromPDTypes typs
-            case mDta of
-                Nothing -> pushGlobal name $ mkSymbolData
-                    name typ' (Just vis) (Just pur)
-                Just dta -> expect typ' (sdType dta)
+    infer (Pragma _) = return NoType
+    infer (FuncTypeDecl p v nm cs ts) = define nm $! do
+        -- if this fn-type-decl already exists, then
+        -- check that they are the same (allow dupe-decls
+        -- as long as they are the same) else, create a
+        -- new global
+        mDta <- findGlobal nm
+        let typ' = addCons cs $ fromPDTypes ts
+        case mDta of
+            Nothing -> pushGlobal nm $ mkSymbolData
+                nm typ' (Just v) (Just p)
+            Just dta -> expect typ' (sdType dta)
     infer (FuncDef name pars bdy) = define name $! do
         mapM_ infer_ bdy
         mDta <- findGlobal name
@@ -239,14 +235,6 @@ apply ft (val:vals) = do
 infer_ :: (Checker a) => a -> Analyzer ()
 {-# INLINE infer_ #-}
 infer_ = optional . infer
-
-checkAll :: (Checker a) => [a] -> Analyzer Bool
-{-# INLINE checkAll #-}
-checkAll [] = return True
-checkAll (x:xs) = do
-    xT <- infer x
-    foldM (\b a -> if not b then return b else do
-        check a xT) True xs
 
 expect :: (Checker a) => a -> Type -> Analyzer ()
 {-# INLINE expect #-}

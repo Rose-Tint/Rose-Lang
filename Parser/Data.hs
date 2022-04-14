@@ -10,6 +10,7 @@ module Parser.Data (
     Value(..),
     Visibility(..),
     DataCtor(..),
+    Pragma(..),
     Expr(..),
     Body,
     boolType,
@@ -116,6 +117,7 @@ data Pragma
     | Cold Variable
     | Deprecated Variable String
     | Test Variable
+    deriving (Show, Eq, Ord)
 
 data Expr
     = ValueE Value
@@ -225,6 +227,7 @@ instance Ord Variable where
 
 instance Pretty Expr where
     pretty (ValueE v) = pretty v
+    pretty (Pragma pr) = "Pragma "+|show pr
     pretty (FuncTypeDecl pur vis name cons ts)
         = printf
         "Function Type Declaration:\n\

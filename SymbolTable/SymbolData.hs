@@ -1,6 +1,7 @@
 {-# LANGUAGE FlexibleInstances #-}
 
 module SymbolTable.SymbolData (
+    module SymbolTable.Attrs,
     Symbol,
     SymbolData(..),
     stitchSD,
@@ -9,6 +10,7 @@ module SymbolTable.SymbolData (
     isWellDefined,
     isUndefined,
     ifDefined,
+    addAttr, addPragma, hasAttr,
 ) where
 
 -- import Control.Applicative (Alternative((<|>)))
@@ -17,6 +19,8 @@ import Data.Maybe
 import Color
 import Parser.Data hiding (Type)
 import Pretty
+import SymbolTable.Attrs hiding (addPragma)
+import qualified SymbolTable.Attrs as A
 import Typing.Types
 
 
@@ -30,7 +34,8 @@ data SymbolData
         sdType :: !Type,
         sdVisib :: Maybe Visibility,
         sdPurity :: Maybe Purity,
-        sdPos :: Maybe Position
+        sdPos :: Maybe Position,
+        sdAttrs :: Attrs
     }
     deriving (Show, Eq)
 
@@ -43,7 +48,19 @@ mkSymbolData :: Symbol -> Type -> Maybe Visibility
           -> Maybe Purity -> SymbolData
 {-# INLINE mkSymbolData #-}
 mkSymbolData sym typ vis pur = SymbolData
-    typ vis pur (Just (varPos sym))
+    typ vis pur (Just (varPos sym)) emptyAttrs
+
+addAttr :: Attrs -> SymbolData -> SymbolData
+{-# INLINE addAttr #-}
+addAttr as sd = sd { sdAttrs = mergeAttrs (sdAttrs sd) as }
+
+addPragma :: Pragma -> SymbolData -> SymbolData
+{-# INLINE addPragma #-}
+addPragma pr sd = sd { sdAttrs = A.addPragma pr (sdAttrs sd) }
+
+hasAttr :: SymbolData -> Attrs -> Bool
+{-# INLINE hasAttr #-}
+hasAttr = testAttrs . sdAttrs
 
 undef :: SymbolData
 {-# INLINE undef #-}
@@ -51,7 +68,8 @@ undef = SymbolData {
     sdType = Delayed [],
     sdVisib = Nothing,
     sdPurity = Nothing,
-    sdPos = Nothing
+    sdPos = Nothing,
+    sdAttrs = emptyAttrs
 }
 
 isWellDefined :: SymbolData-> Bool
@@ -78,7 +96,7 @@ ifDefined dta = if isWellDefined dta then Just dta else Nothing
 
 
 instance Pretty (String, SymbolData) where
-    pretty (sym, SymbolData typ vis pur _) = printf
+    pretty (sym, SymbolData typ vis pur _ _) = printf
         "| %13s | %30s | %6s | %6s |"
         (pretty sym)
         (pretty typ)
@@ -87,7 +105,7 @@ instance Pretty (String, SymbolData) where
         where
             maybe' :: (Pretty a) => Maybe a -> String
             maybe' a = maybe "" pretty a
-    detailed (sym, SymbolData typ vis pur _) = printf
+    detailed (sym, SymbolData typ vis pur _ _) = printf
         "| %18s | %40s | %6s | %6s |"
         (detailed sym)
         (detailed typ)

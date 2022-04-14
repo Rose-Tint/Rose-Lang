@@ -251,11 +251,9 @@ bodyAssignment :: Parser [Expr]
 {-# INLINE bodyAssignment #-}
 bodyAssignment = body <|> (do
     resOper ":="
-    bdy <- Return <$!> choice [
-            try (ExprVal <$!> match),
-            try (ExprVal <$!> ifElse),
-            term'
-        ] <* semi
+    bdy <- Return <$!> (
+        try (ExprVal <$!> (match <|> ifElse))
+        <|> term') <* semi
     return [bdy])
 
 statement :: Parser Expr
