@@ -29,5 +29,8 @@ setPtr a [Ptr p] {
     return Void;
 }
 
+impure addressOf => a, Pointer a;
+addressOf := rose_addres_of__;
+
 pure nullptr => Pointer a;
 nullptr := Ptr 0;
