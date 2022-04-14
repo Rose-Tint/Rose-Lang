@@ -10,18 +10,18 @@ data Tree a
 
 pure insert => { Ord a }, a, Tree a, Tree a;
 insert a [Node v l r] := match (a <=> v) {
-        [LT] := (Node v (insert a l) r);
-        [GT] := (Node v l (insert a r));
-        [EQ] := (Node v l r);
-    };
+    [LT] := (Node v (insert a l) r);
+    [GT] := (Node v l (insert a r));
+    [EQ] := (Node v l r);
+};
 
 pure search => { Ord a }, a, Tree a, Tree a;
 search a [Empty] := Empty;
 search a [Node _ l r] := match (a <=> v) {
-        [LT] := (search a l);
-        [EQ] := (Node v l r);
-        [GT] := (search a r);
-    };
+    [LT] := (search a l);
+    [EQ] := (Node v l r);
+    [GT] := (search a r);
+};
 
 pure height => Tree a, Int;
 height [Empty] := 0;

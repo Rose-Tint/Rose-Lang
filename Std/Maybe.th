@@ -15,6 +15,7 @@ impl Alternative (Maybe a) {
 }
 
 
+#[inline(maybe)]
 pure maybe => (a, b), Maybe a, Maybe b;
 maybe _ [Nothing] := Nothing;
 maybe f [Just a] := Just (f a);
@@ -23,6 +24,7 @@ pure maybeApply => b, Maybe a, (a, b), b;
 maybeApply b [Nothing] f := b;
 maybeApply _ [Just a] f := f a;
 
+#[inline(exists)]
 pure exists => Maybe a, Boolean;
 exists [Nothing] := False;
 exists _ := True;
@@ -31,6 +33,7 @@ pure (:?) => Maybe a, (a, b), Maybe b;
 [Nothing] :? _ := Nothing;
 [Just a] :? f := Just (f a);
 
+#[inline(filterMaybes)]
 pure filterMaybes => List (Maybe a), List a;
 filterMaybes [Null] := Null;
 filterMaybes [List head tail] {

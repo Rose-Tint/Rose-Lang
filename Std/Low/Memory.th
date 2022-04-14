@@ -1,4 +1,4 @@
-module Std.Memory where
+module Std.Low.Memory where
 
 
 data Pointer a := intern Ptr => Int

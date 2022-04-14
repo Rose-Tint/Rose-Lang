@@ -1,9 +1,10 @@
 module Std.IO.File where
 
-import Std.IO.Handle
+import Std.IO.Output
+import Std.IO.Input
 
 
-data FilePath = Path String
+data FilePath := Path => String
 
 data OpenMode
     := Overwrite
@@ -26,3 +27,10 @@ impl Resource FilePath {
 
 #[must_use(openFile)]
 impure openFile => FilePath, OpenMode, Handle;
+
+#[warn_unused(readFile)]
+impure readFile => FilePath, String;
+readFile p := with p hGetContents;
+
+impure appendFile => FilePath, String, Void;
+appendFile p := with p hPutStr;

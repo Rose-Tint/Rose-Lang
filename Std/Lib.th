@@ -10,7 +10,7 @@ import export Std.Data.Tree
 import export Std.Default
 import export Std.Hash
 import export Std.IO
+import export Std.Low.Memory
 import export Std.Maybe
-import export Std.Memory
 import export Std.Pretty
 import export Std.Resource

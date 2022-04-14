@@ -11,6 +11,6 @@ impl Resource {
     close f rsrc {
         let res<b> := f rsrc;
         close rsrc;
-        return res
+        return res;
     }
 }
