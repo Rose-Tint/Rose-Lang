@@ -20,7 +20,6 @@ import Prelude hiding (lookup)
 
 import Control.Monad ((<$!>))
 
-import Color (printf)
 import Parser.Data (Variable(..))
 import Pretty
 import qualified SymbolTable.Trie as T
