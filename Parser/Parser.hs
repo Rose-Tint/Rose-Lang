@@ -10,6 +10,7 @@ import Data.Text (Text)
 import Parser.Data
 import Parser.Keywords
 import Parser.LangDef
+import Parser.Pragmas
 
 
 default (Int, Double)
@@ -17,6 +18,7 @@ default (Int, Double)
 
 roseParser :: SourcePos -> Parser [Expr]
 roseParser pos = setPosition pos >> manyTill (choice [
+        Pragma <$> pragma,
         funcDef,
         try funcTypeDecl,
         try dataDef,

@@ -108,8 +108,18 @@ data DataCtor = DataCtor {
     }
     deriving (Show, Eq, Ord)
 
+data Pragma
+    = MaybeUnused Variable
+    | WarnUnused Variable
+    | MustUse Variable
+    | Inline Variable
+    | Cold Variable
+    | Deprecated Variable String
+    | Test Variable
+
 data Expr
     = ValueE Value
+    | Pragma !Pragma
     | FuncTypeDecl {
         exprPurity :: Purity,
         exprVisib :: Visibility,
