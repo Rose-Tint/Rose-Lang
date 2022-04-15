@@ -8,13 +8,13 @@ module Parser.Pragmas (
     -- deprecated, test,
 ) where
 
-import Text.Parsec (char, choice)
+import Text.Parsec ((<|>), char, choice)
 
 import Parser.Data (Pragma(..), Value(StrLit))
 import Parser.LangDef (
     Parser,
     strLit,
-    iden, smallIden,
+    bigIden, foName,
     brackets, parens,
     keyword,
     comma
@@ -55,7 +55,7 @@ allowUnused :: Parser Pragma
 {-# INLINE allowUnused #-}
 allowUnused = do
     keyword "allow_unused"
-    var <- parens iden
+    var <- parens (foName <|> bigIden)
     return $ MaybeUnused var
 
 -- |Emit a warning if the result of the marked
@@ -64,7 +64,7 @@ warnUnused :: Parser Pragma
 {-# INLINE warnUnused #-}
 warnUnused = do
     keyword "warn_unused"
-    var <- parens smallIden
+    var <- parens foName
     return $ WarnUnused var
 
 -- |Emit an error when the result of the marked function
@@ -73,7 +73,7 @@ mustUse :: Parser Pragma
 {-# INLINE mustUse #-}
 mustUse = do
     keyword "must_use"
-    var <- parens smallIden
+    var <- parens foName
     return $ MustUse var
 
 -- |Strongly encourage the compiler to inline
@@ -82,7 +82,7 @@ inline :: Parser Pragma
 {-# INLINE inline #-}
 inline = do
     keyword "inline"
-    var <- parens smallIden
+    var <- parens foName
     return $ Inline var
 
 -- |When used on a function, hint to the
@@ -97,7 +97,7 @@ cold :: Parser Pragma
 {-# INLINE cold #-}
 cold = do
     keyword "cold"
-    var <- parens smallIden
+    var <- parens foName
     return $ Cold var
 
 -- |Indicates that a function, trait, or datatype is
@@ -107,7 +107,7 @@ deprecated :: Parser Pragma
 deprecated = do
     keyword "deprecated"
     (var, (StrLit msg _)) <- parens $ do
-        var <- iden
+        var <- foName <|> bigIden
         comma
         msg <- strLit
         return (var, msg)
@@ -118,5 +118,5 @@ test :: Parser Pragma
 {-# INLINE test #-}
 test = do
     keyword "test"
-    var <- parens iden
+    var <- parens (foName <|> bigIden)
     return $ Test var
