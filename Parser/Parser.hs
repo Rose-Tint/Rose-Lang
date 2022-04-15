@@ -191,10 +191,6 @@ typeDecl = (do
     return $ (cons, typs)
     ) <?> "type declaration"
 
-foName :: Parser Variable
-{-# INLINE foName #-}
-foName = smallIden <|> parens operator
-
 funcTypeDecl :: Parser Expr
 funcTypeDecl = (do
     vis <- visibility

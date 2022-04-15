@@ -2,7 +2,8 @@
 
 module Parser.LangDef (
     Parser,
-    moduleName, qualifier, iden, bigIden, smallIden,
+    moduleName, qualifier,
+    iden, bigIden, smallIden, foName,
     hole,
     keyword,
     symbol, operator, resOper,
@@ -118,6 +119,10 @@ smallIden = (do
             (sourceColumn pos + length name)
     return $ name' `seq` Var name' pos'
     ) <?> "small identifier"
+
+foName :: Parser Variable
+{-# INLINE foName #-}
+foName = smallIden <|> parens operator
 
 {-# INLINE hole #-}
 hole = do
