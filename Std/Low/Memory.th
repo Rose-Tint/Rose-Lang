@@ -19,15 +19,13 @@ alloc a {
 impure deref => Pointer a, a;
 deref [Ptr p] := rose_ptr_deref__ p;
 
+#[allow_unused((*=))]
+impure (*=) => Pointer a, a, Void;
+[Ptr p] *= a := rose_mem_set__ p a;
+
 impure free => Pointer a, Void;
 free [Ptr p] {
     rose_free__ p;
-    return Void;
-}
-
-impure setPtr => a, Pointer a, Void;
-setPtr a [Ptr p] {
-    rose_mem_set__ p a;
     return Void;
 }
 

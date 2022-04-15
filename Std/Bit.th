@@ -1,17 +1,22 @@
 module Std.Bit where
 
 
+#[inline((<<))]
 pure (<<) => { Integral n }, n, n, n;
 a << b := rose_shiftl__ a b;
 
+#[inline((&))]
 pure (&) => { Integral n }, n, n, n;
 a & b := rose_and__ a b;
 
+#[inline((|))]
 pure (|) => { Integral n }, n, n, n;
 a | b := rose_or__ a b;
 
+#[inline((^))]
 pure (^) => { Integral n }, n, n, n;
 a ^ b := rose_xor__ a b;
 
+#[inline((>>))]
 pure (>>) => { Integral n }, n, n, n;
 a >> b := rose_shiftr__ a b;
