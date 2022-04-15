@@ -1,3 +1,9 @@
 module Std.IO.Handle where
 
+import Std.Resource
+
 data Handle := Handle
+
+impl Resource Handle {
+    close := rose_close_handle__;
+}

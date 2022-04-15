@@ -10,23 +10,28 @@ data Maybe a
 
 
 impl Alternative (Maybe a) {
+    vacant := Nothing;
     [Nothing] <|> m := m;
     m <|> _ := m;
 }
 
 
+#[inline(maybe)]
 pure maybe => (a, b), Maybe a, Maybe b;
 maybe _ [Nothing] := Nothing;
 maybe f [Just a] := Just (f a);
 
+#[inline(maybeApply)]
 pure maybeApply => b, Maybe a, (a, b), b;
 maybeApply b [Nothing] f := b;
 maybeApply _ [Just a] f := f a;
 
+#[inline(exists)]
 pure exists => Maybe a, Boolean;
 exists [Nothing] := False;
 exists _ := True;
 
+#[inline((:?))]
 pure (:?) => Maybe a, (a, b), Maybe b;
 [Nothing] :? _ := Nothing;
 [Just a] :? f := Just (f a);

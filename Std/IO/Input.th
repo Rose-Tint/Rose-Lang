@@ -6,3 +6,4 @@ import Std.IO.Handle
 
 impure hGetChar => Handle, Char;
 impure hGetWord => Handle, String;
+impure hGetContents => Handle, String;

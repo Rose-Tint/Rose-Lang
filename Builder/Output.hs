@@ -8,9 +8,9 @@ import Control.Monad (when, (<$!>))
 import System.Exit
 
 import Builder.Builder
-import Builder.CmdLine
-import CmdLine (
+import Builder.CmdLine(
     CmdLine(cmdTrace, cmdWarns),
+    getVerbosity,
     isWEnabledFor, w_error
     )
 import Color

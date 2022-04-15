@@ -29,6 +29,7 @@ trait Logical a {
 }
 
 
+#[inline(min)]
 pure min => { Ord a }, a, a, a;
 min a b := match (a <=> b) {
         [LT] := a;
@@ -36,6 +37,7 @@ min a b := match (a <=> b) {
         [GT] := b;
     };
 
+#[inline(max)]
 pure max => { Ord a }, a, a, a;
 max a b := match (a <=> b) {
         [LT] := b;
@@ -43,6 +45,7 @@ max a b := match (a <=> b) {
         [GT] := a;
     };
 
+#[inline(clamp)]
 pure clamp => { Ord a }, a, a, a, a;
 clamp mn mx x := min mn (max mx x);
 

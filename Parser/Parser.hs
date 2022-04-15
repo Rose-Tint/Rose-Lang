@@ -10,6 +10,7 @@ import Data.Text (Text)
 import Parser.Data
 import Parser.Keywords
 import Parser.LangDef
+import Parser.Pragmas
 
 
 default (Int, Double)
@@ -17,6 +18,7 @@ default (Int, Double)
 
 roseParser :: SourcePos -> Parser [Expr]
 roseParser pos = setPosition pos >> manyTill (choice [
+        Pragma <$> pragma,
         funcDef,
         try funcTypeDecl,
         try dataDef,
@@ -189,10 +191,6 @@ typeDecl = (do
     return $ (cons, typs)
     ) <?> "type declaration"
 
-foName :: Parser Variable
-{-# INLINE foName #-}
-foName = smallIden <|> parens operator
-
 funcTypeDecl :: Parser Expr
 funcTypeDecl = (do
     vis <- visibility
@@ -249,11 +247,9 @@ bodyAssignment :: Parser [Expr]
 {-# INLINE bodyAssignment #-}
 bodyAssignment = body <|> (do
     resOper ":="
-    bdy <- Return <$!> choice [
-            try (ExprVal <$!> match),
-            try (ExprVal <$!> ifElse),
-            term'
-        ] <* semi
+    bdy <- Return <$!> (
+        try (ExprVal <$!> (match <|> ifElse))
+        <|> term') <* semi
     return [bdy])
 
 statement :: Parser Expr
@@ -384,9 +380,9 @@ traitDecl = (do
     name <- bigIden
     typ <- smallIden
     let thisCon = Constraint name typ
-    fns <- braces $ semiSepEnd
-        (try $ (methodDecl vis thisCon
-            <?> "method declaration"))
+    -- TODO: Pragmas should be allowed here
+    fns <- braces $ semiSepEnd (try $
+        methodDecl vis thisCon)
     return $ TraitDecl vis cons name typ fns
     ) <?> "trait declaration"
 
@@ -397,7 +393,8 @@ traitImpl = (do
         (braces (commaSep1 constraint) <* comma)
     name <- bigIden
     typ <- optionMaybe ttype
-    defs <- braces $ many1 (funcDef <?> "method definition")
+    defs <- braces $ many1
+        (funcDef <?> "method definition")
     return $ TraitImpl name cons typ defs
     ) <?> "trait def"
 
