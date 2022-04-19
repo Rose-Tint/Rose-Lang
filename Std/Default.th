@@ -2,13 +2,13 @@ module Std.Default where
 
 
 trait Default a {
-    pure default => a;
+    pure default <a>;
 }
 
 impl Defaultable Int {
-    default := 0;
+    default = 0;
 }
 
 impl Defaultable Boolean {
-    default := False;
+    default = False;
 }

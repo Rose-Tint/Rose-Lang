@@ -2,8 +2,8 @@ module Std.Hash where
 
 
 trait Hashable a {
-    pure hash => a, Int;
-    pure salted => Int, a, Int;
+    pure hash <a -> Int>
+    pure salted <Int, a, Int>
 }
 
 

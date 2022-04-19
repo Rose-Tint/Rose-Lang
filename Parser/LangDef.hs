@@ -7,12 +7,13 @@ module Parser.LangDef (
     hole,
     keyword,
     symbol, operator, resOper,
-    chrLit,strLit, intLit, fltLit,
+    chrLit, strLit, intLit, fltLit, literal,
     lexeme, wspace,
     parens, braces, angles, brackets,
     dot,
     semi, semiSep, semiSepEnd, semiSep1,
     comma, commaSep, commaSepEnd, commaSep1,
+    typeDelim,
 ) where
 
 import Control.Monad ((<$!>))
@@ -54,9 +55,10 @@ roseDef = emptyDef {
                 "data"
             ],
         T.reservedOpNames = [
-                "=>",
-                ":=",
-                "|="
+                "=",
+                "|",
+                ",",
+                ":"
             ],
         T.caseSensitive = True
     }
@@ -203,6 +205,13 @@ fltLit = (do
     return $ FltLit flt pos')
     <?> "floating literal"
 
+literal :: Parser Value
+{-# INLINE literal #-}
+literal = choice [
+        chrLit, strLit,
+        intLit, fltLit
+    ] <?> "literal"
+
 {-# INLINE symbol #-}
 symbol = T.symbol tokenP
 
@@ -250,3 +259,6 @@ commaSepEnd p = many $ p <* comma
 
 {-# INLINE commaSep1 #-}
 commaSep1 = T.commaSep1 tokenP
+
+{-# INLINE typeDelim #-}
+typeDelim = lexeme (resOper "->")

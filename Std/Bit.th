@@ -2,21 +2,21 @@ module Std.Bit where
 
 
 #[inline((<<))]
-pure (<<) => { Integral n }, n, n, n;
-a << b := rose_shiftl__ a b;
+pure (<<) <Integral n : n -> n -> n>
+(<<) = rose_shiftl__;
 
 #[inline((&))]
-pure (&) => { Integral n }, n, n, n;
-a & b := rose_and__ a b;
+pure (&) <Integral n : n -> n -> n>
+(&) = rose_and__;
 
 #[inline((|))]
-pure (|) => { Integral n }, n, n, n;
-a | b := rose_or__ a b;
+pure (|) <Integral n : n -> n -> n>
+(|) = rose_or__;
 
 #[inline((^))]
-pure (^) => { Integral n }, n, n, n;
-a ^ b := rose_xor__ a b;
+pure (^) <Integral n : n -> n -> n>
+(^) = rose_xor__;
 
 #[inline((>>))]
-pure (>>) => { Integral n }, n, n, n;
-a >> b := rose_shiftr__ a b;
+pure (>>) <Integral n : n -> n -> n>
+(>>) = rose_shiftr__;

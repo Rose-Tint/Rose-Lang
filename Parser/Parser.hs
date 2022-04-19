@@ -15,6 +15,30 @@ import Parser.Pragmas
 
 default (Int, Double)
 
+{-
+PLANS FOR NEW SYNTAX:
+
+- make whitespace and newlines important?
+
+- new function type declaration syntax:
+  - no more commas because they make primitive Tuples
+    impossible.
+  - which seems least convoluted?:
+    - pure foobar<Trait a> :: a -> b -> c;
+      - this would be difficult to maintain consistency
+        with scoped variables
+    - pure foobar<Trait a : a -> b -> c>
+
+- new data declaration syntax:
+  - get rid of the '=' in ":=" and "|=".
+  - constructors need a much better syntax that is
+    more consistant for nullary constructors.
+
+MAYBE:
+- new keywords for operators:
+  - binaryl, binary, binaryr, unaryl, unaryr?
+-}
+
 
 roseParser :: SourcePos -> Parser [Expr]
 roseParser pos = setPosition pos >> manyTill (choice [
@@ -88,13 +112,6 @@ arrayLit = (do
             end
     return $ Array (listArray (0, length arr) arr) pos'
     ) <?> "array"
-
-literal :: Parser Value
-{-# INLINE literal #-}
-literal = choice [
-        chrLit, strLit,
-        intLit, fltLit
-    ] <?> "literal"
 
 term :: Parser Value
 {-# INLINABLE term #-}
@@ -180,27 +197,27 @@ constraint :: Parser Constraint
 constraint = (do
     con <- bigIden
     typ <- smallIden
-    return $ Constraint con typ
+    return (Constraint con typ)
     ) <?> "constraint"
 
 typeDecl :: Parser ([Constraint], [Type])
-typeDecl = (do
-    cons <- option []
-        (braces (commaSep constraint) <* comma)
-    typs <- commaSep1 ttype
-    return $ (cons, typs)
+{-# INLINABLE typeDecl #-}
+typeDecl = angles (do
+    cons <- option [] $
+        braces (commaSep constraint) <*
+        resOper ":"
+    typs <- ttype `sepBy` typeDelim
+    return (cons, typs)
     ) <?> "type declaration"
 
 funcTypeDecl :: Parser Expr
+{-# INLINABLE funcTypeDecl #-}
 funcTypeDecl = (do
     vis <- visibility
     pur <- purity
     name <- foName
-    resOper "=>"
-    typDcl <- typeDecl
-    let (cons, typs) = typDcl
-    semi
-    return $ FuncTypeDecl pur vis name cons typs
+    (cons, typs) <- typeDecl
+    return (FuncTypeDecl pur vis name cons typs)
     ) <?> "func-type-decl"
 
 funcDef :: Parser Expr
@@ -246,7 +263,7 @@ body' = ((:[]) <$!> statement)
 bodyAssignment :: Parser [Expr]
 {-# INLINE bodyAssignment #-}
 bodyAssignment = body <|> (do
-    resOper ":="
+    resOper "="
     bdy <- Return <$!> (
         try (ExprVal <$!> (match <|> ifElse))
         <|> term') <* semi
@@ -279,7 +296,7 @@ newVar = (do
     mut <- mutability
     name <- smallIden
     typ <- angles ttype
-    resOper ":="
+    resOper "="
     val <- term'
     return $ NewVar mut typ name val
     ) <?> "new var"
@@ -346,8 +363,8 @@ dataDef = (do
     vis <- visibility
     keyword "data"
     name <- bigIden
-    tps <- manyTill smallIden (resOper ":=")
-    ctrs <- try (dataCtor vis) `sepBy1` resOper "|="
+    tps <- manyTill smallIden (resOper "=")
+    ctrs <- try (dataCtor vis) `sepBy1` resOper "|"
     return $ DataDef vis name tps ctrs
     ) <?> "data-def"
 
@@ -364,11 +381,8 @@ methodDecl :: Visibility -> Constraint -> Parser Expr
 methodDecl parVis parCon = (do
     pur <- purity
     name <- foName
-    resOper "=>"
-    typDcl <- typeDecl
-    let (cons, typs) = typDcl
-    return $ FuncTypeDecl
-        pur parVis name (parCon:cons) typs
+    (cons, typs) <- typeDecl
+    return (FuncTypeDecl pur parVis name (parCon:cons) typs)
     ) <?> "method declaration"
 
 traitDecl :: Parser Expr
@@ -381,7 +395,7 @@ traitDecl = (do
     typ <- smallIden
     let thisCon = Constraint name typ
     -- TODO: Pragmas should be allowed here
-    fns <- braces $ semiSepEnd (try $
+    fns <- braces $ many (try $
         methodDecl vis thisCon)
     return $ TraitDecl vis cons name typ fns
     ) <?> "trait declaration"

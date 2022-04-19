@@ -2,18 +2,24 @@ module Std.Alternative where
 
 
 trait Alternative a {
-    pure vacant => a;
-    pure (<|>) => a, a, a;
+    pure vacant <a>
+    pure (<|>) <a -> a -> a>
+    pure choose <[a] -> a>
+}
+
+
+impl Alternative {
+    choose = foldl (<|>);
 }
 
 impl Alternative Bool {
-    vacant := False;
-    [False] <|> a := a;
-    a <|> _ := a;
+    vacant = False;
+    [False] <|> a = a;
+    a <|> _ = a;
 }
 
 impl Alternative Int {
-    vacant := 0;
-    [0] <|> n := n;
-    n <|> _ := n;
+    vacant = 0;
+    [0] <|> n = n;
+    n <|> _ = n;
 }
