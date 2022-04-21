@@ -16,7 +16,6 @@ character           = unicode
                     | oct-character
                     | ? REGEX "(\\[\\nrtvf])|.)" ?;
 string              = """, {character}, """;
-array               = "[", {term}, "]";
 literal             = integer | float | char | string | array;
 
 
@@ -100,7 +99,7 @@ trait-impl          = "impl", big-ident, [ type, {type} ],
                         "{", {func-def}, "}";
 
 
-(* TERMS & PATTERNS: *)
+(* TERMS: *)
 infix-call          = term, infix-ident, term
                     | infix-ident, term
                     | term, infix-ident;
@@ -109,6 +108,7 @@ it needing `statement` or `body`, which needs `term`
 (and thus `lambda'), causing a circular import *)
 lambda              = {small-ident}, "=>", term;
 tuple               = "(", term, ",", term, { ",", term }, ")";
+array               = "[", {term}, "]";
 term                = literal
                     | infix-call
                     | small-ident
