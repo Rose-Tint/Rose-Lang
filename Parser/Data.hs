@@ -14,6 +14,7 @@ module Parser.Data (
     prim,
     boolType,
     valPos,
+    srcModule, srcLine, srcStart, srcEnd,
     posModule, posLine, posStart, posEnd,
     newPosition,
 ) where
@@ -39,11 +40,12 @@ data Var = Var {
 
 data Position
     = UnknownPos
-    | SourcePos
-        {-# UNPACK #-} !Var
-        {-# UNPACK #-} !Line
-        {-# UNPACK #-} !Column
-        {-# UNPACK #-} !Column
+    | SourcePos {
+        srcModule :: {-# UNPACK #-} !Var,
+        srcLine :: {-# UNPACK #-} !Line,
+        srcStart :: {-# UNPACK #-} !Column,
+        srcEnd{-# UNPACK #-} !Column
+    }
     deriving (Show, Eq, Ord)
 
 type Body = [Expr]
@@ -144,6 +146,13 @@ data Expr
     | Return Value
     deriving (Show, Eq, Ord)
 
+
+mkPos :: SourcePos -> Position
+mkPos pos = SourcePos
+            (prim $! sourceName pos)
+            (sourceLine pos)
+            (sourceColumn pos)
+            (sourceColumn pos)
 
 prim :: String -> Var
 {-# INLINE prim #-}

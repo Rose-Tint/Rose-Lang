@@ -108,16 +108,22 @@ infix-call          = term, infix-ident, term
 it needing `statement` or `body`, which needs `term`
 (and thus `lambda'), causing a circular import *)
 lambda              = {small-ident}, "=>", term;
+tuple               = "(", term, ",", term, { ",", term }, ")";
 term                = literal
                     | infix-call
                     | small-ident
                     | lambda
                     | "(", term, ")" 
                     | term, {term};
+
+
+(* PATTERNS *)
 ctor-pattern        = big-ident, {pattern};
 tuple-pattern       = "(", pattern, ",",
                         pattern, { ",", pattern }, ")";
-pattern-item        = literal | ctor-pattern;
+pattern-item        = literal
+                    | tuple-pattern
+                    | ctor-pattern;
 pattern             = "_" | small-ident
                     | "[", pattern-item, { ",", pattern-item }, "]";
 

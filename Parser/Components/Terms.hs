@@ -1,7 +1,6 @@
 module Parser.Components.Terms (
     term,
     infixCall, prefixCall, ctorCall,
-    pattern,
 ) where
 
 import Control.Monad ((<$!>))
@@ -64,33 +63,12 @@ lambda = (do
     body <- ExprVal <$> term
     ) <?> "lambda"
 
-hole :: Parser Value
-hole = (do
-    pos <- getPosition
-    keyword "_"
-    let pos' = SourcePos
-            (prim (sourceName pos))
-            (sourceLine pos)
-            (sourceColumn pos)
-            (sourceColumn pos + 1)
-    return (Hole pos')
-    ) <?> "hole"
-
-ctorPattern :: Parser Value
-ctorPattern = do
-    name <- bigIden
-    as <- many pattern
-
 arrLit :: Parser Value
 arrLit = (do
     pos <- getPosition
     arr <- brackets (commaSep term)
-    end <- sourceColumn <$!> getPosition
-    let pos' = SourcePos
-            (prim (sourceName pos))
-            (sourceLine pos)
-            (sourceColumn pos)
-            end
+    end <- sourceColumn <$> getPosition
+    let pos' = (mkPos pos) { srcEnd = end }
     return (Array (listArray (0, length arr) arr) pos')
     ) <?> "array literal"
 
@@ -98,37 +76,7 @@ tupLit :: Parser Value
 tupLit = (do
     pos <- getPosition
     tup <- parens (commaSep1 term)
-    end <- sourceColumn <$!> getPosition
-    let pos' = SourcePos
-            (prim (sourceName pos))
-            (sourceLine pos)
-            (sourceColumn pos)
-            end
+    end <- sourceColumn <$> getPosition
+    let pos' = (mkPos pos) { srcEnd = end }
     return (Tuple (listArray (0, length tup) tup) pos')
     ) <?> "tuple literal"
-
-tuplePattern :: Parser Value
-tuplePattern = (do
-    pos <- getPosition
-    tup <- parens (commaSep1 pattern)
-    end <- sourceColumn <$!> getPosition
-    let pos' = SourcePos
-            (prim $! sourceName pos)
-            (sourceLine pos)
-            (sourceColumn pos)
-            end
-    return (Tuple (listArray (0, length tup) tup) pos')
-    ) <?> "tuple pattern"
-
-pattern :: Parser Value
-pattern = choice [
-        hole,
-        smallIdent,
-        brackets (commaSep1 nonWild)
-    ] <?> "pattern"
-    where
-        nonWild = choice [
-            literal,
-            tuplePattern,
-            ctorPattern
-        ]

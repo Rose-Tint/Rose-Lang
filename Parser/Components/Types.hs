@@ -1,19 +1,18 @@
 module Parser.Components.Types (
+    Type(..),
     ttype,
     typeDecl,
 ) where
 
-import Control.Monad ((<$!>))
-import Data.Array (listArray)
-import Data.List.NonEmpty (NonEmpty((:|)), fromList)
-import Data.Maybe (catMaybes)
 import Text.Parsec
-import Data.Text (Text)
 
-import Parser.Data
-import Parser.Keywords
-import Parser.LangDef (brackets)
-import Parser.Pragmas
+import Parser.Components.Identifiers (
+    identifier,
+    bigIdent,
+    smallIdent
+    )
+import Parser.Data (Parser, Type(..))
+import Parser.LangDef
 
 
 default (Int, Double)
@@ -37,8 +36,8 @@ ttype = choice [
 constraint :: Parser Constraint
 constraint = do
     con <- bigIdent
-    typeArgs <- many1 smallIdent
-    return (Constraint con typeArgs)
+    args <- many1 smallIdent
+    return (Constraint con args)
 
 ctxDeclSeq :: Parser Context
 ctxDeclSeq = commaSep1 constraint <* resOper ":"
