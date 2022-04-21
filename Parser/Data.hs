@@ -1,16 +1,18 @@
 module Parser.Data (
-    Position(..),
     Var(..),
+    Position(..),
     Constraint(..),
+    Type(..),
+    TypeDecl(..),
+    Value(..),
+    Pattern,
     Purity(..),
     Mutability,
-    Type(..),
-    Value(..),
     Visibility(..),
     Ctor(..),
-    Pragma(..),
-    Expr(..),
+    Stmt(..),
     Body,
+    Expr(..),
     prim,
     boolType,
     valPos,
@@ -48,8 +50,6 @@ data Position
     }
     deriving (Show, Eq, Ord)
 
-type Body = [Expr]
-
 data Constraint = Constraint {-# UNPACK #-} !Var [Var]
     deriving (Show, Eq, Ord)
 
@@ -76,7 +76,7 @@ data Value
     | Tuple {-# UNPACK #-} !(Array Int Value) Position
     | Array {-# UNPACK #-} !(Array Int Value) Position
     | Lambda [Var] Expr -- Body
-    | ExprVal Expr
+    | StmtVal Expr
     | Hole Position
     deriving (Show, Eq, Ord)
 
@@ -97,9 +97,28 @@ data Ctor = Ctor {
     }
     deriving (Show, Eq, Ord)
 
+data Stmt
+    = IfElse {
+        stmtClause :: Value,
+        stmtTrue :: Body,
+        stmtFalse :: Body
+    }
+    | Loop {
+        stmtInit :: Maybe Expr,
+        stmtCond :: Value,
+        stmtIter :: Maybe Expr,
+        stmtBody :: Body
+    }
+    | Match Value [(Pattern, Body)]
+    | NewVar Mutability Type {-# UNPACK #-} !Var Value
+    | Reassign {-# UNPACK #-} !Var Value
+    | Return Value
+    | ValueS Value
+
+type Body = [Stmt]
+
 data Expr
-    = ValueE Value
-    | Pragma Pragma
+    = Pragma Pragma
     | FuncDecl {
         exprPurity :: Purity,
         exprVisib :: Visibility,
@@ -117,17 +136,6 @@ data Expr
         exprTypePars :: [Var],
         exprCtors :: [Ctor]
     }
-    | IfElse {
-        exprClause :: Value,
-        exprTrue :: Body,
-        exprFalse :: Body
-    }
-    | Loop {
-        exprInit :: Maybe Expr,
-        exprCond :: Value,
-        exprIter :: Maybe Expr,
-        exprBody :: Body
-    }
     | TraitDecl {
         exprVisib :: Visibility,
         exprCons :: [Constraint],
@@ -140,10 +148,6 @@ data Expr
         exprType :: {-# UNPACK #-} !TypeDecl,
         exprFuncs :: [Expr]
     }
-    | Match Value [(Pattern, Body)]
-    | NewVar Mutability Type {-# UNPACK #-} !Var Value
-    | Reassign {-# UNPACK #-} !Var Value
-    | Return Value
     deriving (Show, Eq, Ord)
 
 
@@ -171,7 +175,7 @@ valPos (StrLit _ p) = p
 valPos (FuncCall var _) = varPos var
 valPos (CtorVal var _) = varPos var
 valPos (Array _ p) = p
-valPos (ExprVal _) = UnknownPos
+valPos (StmtVal _) = UnknownPos
 valPos (Hole p) = p
 
 posModule :: Position -> Module
@@ -242,7 +246,7 @@ instance Pretty Expr where
         (indentAllUsing pretty tvs)
         (indentAllUsing pretty ctrs)
     pretty (IfElse cnd tBdy fBdy) = printf
-        "If Else Statement:\n\
+        "If Else Stmt:\n\
         \    Clause     : \n%s\
         \    True-Body  : \n%s\
         \    False-Body : \n%s"
@@ -336,8 +340,8 @@ instance Pretty Value where
         \    Name :%s\n\
         \    Arguments :\n%s"
         (pretty var) (indentAllUsing pretty args)
-    pretty (ExprVal e)
-        = "ExprVal: " ++ pretty e
+    pretty (StmtVal e)
+        = "StmtVal: " ++ pretty e
     pretty (CtorVal name [])
         = "Nullary Ctor Call: " ++ pretty name
     pretty (CtorVal name as) = printf

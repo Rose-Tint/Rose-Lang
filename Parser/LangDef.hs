@@ -54,7 +54,8 @@ roseDef = emptyDef {
                 "intern", "extern",
                 "module", "import",
                 "return",
-                "if", "else", "match",
+                "if", "unless", "else",
+                "match",
                 "loop",
                 "impl", "trait",
                 "data"

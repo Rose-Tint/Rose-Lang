@@ -135,18 +135,18 @@ statement           = if-else
                     | return
                     | loop
                     | new-var, ";"
-                    | reassignment, ";"
-                    | body;
+                    | reassignment, ";";
 body                = "{", {statement}, "}";
 body-assignment     = "=", statement | body;
-if-else             = "if","(", term, ")", statement,
-                    ["else", statement];
+stmt-body           = statement | body;
+if-else             = "if","(", term, ")", stmt-body,
+                        [ "else", stmt-body ];
 return              = "return", ( term, ";" | match | if-else );
 case                = pattern, body-assignment;
 match               = "match","(", term, ")","{", case, {case}, "}";
-loop-clause         = "(", [ term, ";" ], term, [ ";", term ], ")",
-loop                = "loop", loop-clause, statement;
-var-decl-seq        = "let", mutability, prefix-ident,
-                        [type-decl], {small-idents};
-new-var             = var-decl-seq, "=", term;
-reassignment        = small-ident, "=", term;
+loop-clause         = "(", [ term, ";" ], term, [ ";", term ], ")";
+loop                = "loop", loop-clause, stmt-body;
+var-decl-seq        = "let", mutability, small-ident, [type-decl];
+assignment          = "=", term;
+new-var             = var-decl-seq, assignment;
+reassignment        = small-ident, assignment;
