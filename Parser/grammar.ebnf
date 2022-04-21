@@ -104,12 +104,19 @@ trait-impl          = "impl", big-ident, [ type, {type} ],
 infix-call          = term, infix-ident, term
                     | infix-ident, term
                     | term, infix-ident;
+(* for now, lambas will be extremely limited due to
+it needing `statement` or `body`, which needs `term`
+(and thus `lambda'), causing a circular import *)
+lambda              = {small-ident}, "=>", term;
 term                = literal
                     | infix-call
                     | small-ident
+                    | lambda
                     | "(", term, ")" 
                     | term, {term};
 ctor-pattern        = big-ident, {pattern};
+tuple-pattern       = "(", pattern, ",",
+                        pattern, { ",", pattern }, ")";
 pattern-item        = literal | ctor-pattern;
 pattern             = "_" | small-ident
                     | "[", pattern-item, { ",", pattern-item }, "]";

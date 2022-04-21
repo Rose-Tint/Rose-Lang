@@ -58,7 +58,7 @@ roseDef = emptyDef {
                 "impl", "trait",
                 "data"
             ],
-        T.reservedOpNames = [ "=", "," ],
+        T.reservedOpNames = [ "=", ",", "=>" ],
         T.caseSensitive = True
     }
 
@@ -133,7 +133,7 @@ operator = (do
     pos <- getPosition
     op <- T.operator tokenP
     let pos' = SourcePos
-            (Module Export (Prim $ sourceName pos))
+            (prim (sourceName pos))
             (sourceLine pos)
             (sourceColumn pos)
             (sourceColumn pos + length op)
@@ -148,7 +148,7 @@ chrLit = (do
     pos <- getPosition
     chr <- T.charLiteral tokenP
     let pos' = SourcePos
-            (Module Export (Prim $ sourceName pos))
+            (prim (sourceName pos))
             (sourceLine pos)
             (sourceColumn pos)
             (sourceColumn pos + 2)
@@ -160,7 +160,7 @@ strLit = (do
     pos <- getPosition
     str <- T.stringLiteral tokenP
     let pos' = SourcePos
-            (Module Export (Prim $ sourceName pos))
+            (prim (sourceName pos))
             (sourceLine pos)
             (sourceColumn pos)
             (sourceColumn pos + length str + 2)
@@ -173,7 +173,7 @@ intLit = (do
     int <- fromInteger <$> T.integer tokenP
     end <- sourceColumn <$!> getPosition
     let pos' = SourcePos
-            (Module Export (Prim $ sourceName pos))
+            (prim (sourceName pos))
             (sourceLine pos)
             (sourceColumn pos)
             end
@@ -186,7 +186,7 @@ fltLit = (do
     flt <- T.float tokenP
     end <- sourceColumn <$!> getPosition
     let pos' = SourcePos
-            (Module Export (Prim $ sourceName pos))
+            (prim (sourceName pos))
             (sourceLine pos)
             (sourceColumn pos)
             end

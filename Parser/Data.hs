@@ -71,7 +71,9 @@ data Value
     | StrLit String Position
     | FuncCall {-# UNPACK #-} !Var [Value]
     | CtorVal {-# UNPACK #-} !Var [Value]
+    | Tuple {-# UNPACK #-} !(Array Int Value) Position
     | Array {-# UNPACK #-} !(Array Int Value) Position
+    | Lambda [Var] Expr -- Body
     | ExprVal Expr
     | Hole Position
     deriving (Show, Eq, Ord)

@@ -22,10 +22,13 @@ default (Int, Double)
 
 term :: Parser Value
 term = choice [
-        intLit, fltLit, chrLit, strLit, arrLit,
+        intLit, fltLit, chrLit, strLit,
+        arrLit, try tupLit,
+        try lambda
         try infixCall,
         try prefixCall,
         ctorCall,
+        
         parens term
     ] <?> "term"
 
@@ -40,46 +43,92 @@ infixCall = (do
 
 prefixCall :: Parser Value
 prefixCall = (do
-    name <- funcName
-    args <- arguments
+    name <- smallIden <|> parens operator
+    args <- many term
     return (FuncCall name args)
     ) <?> "function call"
 
 ctorCall :: Parser Value
 ctorCall = (do
-    name <- bigIden
-    args <- arguments
+    name <- bigIdent
+    args <- many term
     return (CtorCall name args)
     ) <?> "constructor call"
 
--- functionCall :: Parser Value
--- functionCall = try infixCall <|> prefixCall
+-- for now, lambdas will be very limited due to
+-- requiring statement
+lambda :: Parser Value
+lambda = (do
+    params <- many smallIdent
+    resOper "=>"
+    body <- ExprVal <$> term
+    ) <?> "lambda"
 
 hole :: Parser Value
-hole = do
+hole = (do
     pos <- getPosition
     keyword "_"
     let pos' = SourcePos
-            (Module Export (Prim $! sourceName pos))
+            (prim (sourceName pos))
             (sourceLine pos)
             (sourceColumn pos)
             (sourceColumn pos + 1)
     return (Hole pos')
+    ) <?> "hole"
 
 ctorPattern :: Parser Value
 ctorPattern = do
     name <- bigIden
     as <- many pattern
 
+arrLit :: Parser Value
+arrLit = (do
+    pos <- getPosition
+    arr <- brackets (commaSep term)
+    end <- sourceColumn <$!> getPosition
+    let pos' = SourcePos
+            (prim (sourceName pos))
+            (sourceLine pos)
+            (sourceColumn pos)
+            end
+    return (Array (listArray (0, length arr) arr) pos')
+    ) <?> "array literal"
+
+tupLit :: Parser Value
+tupLit = (do
+    pos <- getPosition
+    tup <- parens (commaSep1 term)
+    end <- sourceColumn <$!> getPosition
+    let pos' = SourcePos
+            (prim (sourceName pos))
+            (sourceLine pos)
+            (sourceColumn pos)
+            end
+    return (Tuple (listArray (0, length tup) tup) pos')
+    ) <?> "tuple literal"
+
+tuplePattern :: Parser Value
+tuplePattern = (do
+    pos <- getPosition
+    tup <- parens (commaSep1 pattern)
+    end <- sourceColumn <$!> getPosition
+    let pos' = SourcePos
+            (prim $! sourceName pos)
+            (sourceLine pos)
+            (sourceColumn pos)
+            end
+    return (Tuple (listArray (0, length tup) tup) pos')
+    ) <?> "tuple pattern"
+
 pattern :: Parser Value
 pattern = choice [
         hole,
         smallIdent,
-        brackets (literal <|> ctorPattern)
+        brackets (commaSep1 nonWild)
     ] <?> "pattern"
-
-funcName :: Parser Variable
-funcName = smallIden <|> parens operator
-
-arguments :: Parser [Value]
-arguments = many term
+    where
+        nonWild = choice [
+            literal,
+            tuplePattern,
+            ctorPattern
+        ]
