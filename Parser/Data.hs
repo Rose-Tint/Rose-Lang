@@ -1,18 +1,17 @@
 module Parser.Data (
-    ImportIden(..), ImportModule(..),
     Position(..),
-    Module(..),
-    Variable(..),
+    Var(..),
     Constraint(..),
     Purity(..),
     Mutability,
     Type(..),
     Value(..),
     Visibility(..),
-    DataCtor(..),
+    Ctor(..),
     Pragma(..),
     Expr(..),
     Body,
+    prim,
     boolType,
     valPos,
     posModule, posLine, posStart, posEnd,
@@ -20,6 +19,7 @@ module Parser.Data (
 ) where
 
 import Data.Array (Array)
+import Data.Function (on)
 import Data.List.NonEmpty (NonEmpty, toList)
 import Text.Parsec.Pos
 
@@ -31,54 +31,36 @@ import Utils
 default (Int, Double)
 
 
-data ImportIden
-    = ImportedType { impiName :: String }
-    | ImportedTrait { impiName :: String }
-    | ImportedFunc { impiName :: String }
-
-data ImportModule = Import {
-        impModule :: String,
-        impAlias :: String,
-        impVisib :: Visibility,
-        impIdens :: Maybe [ImportIden]
+data Var = Var {
+        varName :: String,
+        varPos :: Position
     }
+    deriving (Show)
 
 data Position
     = UnknownPos
-    | SourcePos Module
+    | SourcePos
+        {-# UNPACK #-} !Var
         {-# UNPACK #-} !Line
         {-# UNPACK #-} !Column
         {-# UNPACK #-} !Column
     deriving (Show, Eq, Ord)
 
-data Module
-    = Module Visibility !Variable
-    | UnknownMod
-    deriving (Show, Eq, Ord)
-
-data Variable
-    = Var {
-        varName :: String,
-        varPos :: Position
-    }
-    | Prim {
-        varName :: String
-    }
-    deriving (Show)
-
 type Body = [Expr]
 
-data Constraint
-    = Constraint {
-        consTraitName :: Variable,
-        consType :: Variable
-    }
+data Constraint = Constraint {-# UNPACK #-} !Var [Var]
     deriving (Show, Eq, Ord)
 
 data Type
-    = NonTermType Type {-# UNPACK #-} !(NonEmpty Type)
-    | TerminalType Variable [Type]
-    deriving (Show, Eq, Ord)
+    = Type {-# UNPACK #-} !Var [Type]
+    | Applied [Type]
+    -- | Param {-# UNPACK #-} !Var [Type]
+    | Delayed
+    | NoType
+    deriving (Show, Eq)
+
+data TypeDecl = TypeDecl [Constraint] Type
+    deriving (Show, Eq)
 
 data Value
     -- strictness is because it would not be evaluated
@@ -87,96 +69,87 @@ data Value
     | FltLit {-# UNPACK #-} !Double Position
     | ChrLit {-# UNPACK #-} !Char Position
     | StrLit String Position
-    | FuncCall !Variable [Value]
-    | CtorVal !Variable [Value]
+    | FuncCall {-# UNPACK #-} !Var [Value]
+    | CtorVal {-# UNPACK #-} !Var [Value]
     | Array {-# UNPACK #-} !(Array Int Value) Position
-    | ExprVal !Expr
+    | ExprVal Expr
     | Hole Position
     deriving (Show, Eq, Ord)
+
+type Pattern = [Value]
 
 data Purity = Pure | Impure | Unsafe
     deriving (Show, Eq, Ord)
 
+type Mutability = Purity
+
 data Visibility = Export | Intern
     deriving (Show, Eq, Ord)
 
-type Mutability = Purity
-
-data DataCtor = DataCtor {
+data Ctor = Ctor {
         ctorVisib :: Visibility,
-        ctorName :: !Variable,
+        ctorName :: {-# UNPACK #-} !Var,
         ctorTypes :: [Type]
     }
     deriving (Show, Eq, Ord)
 
-data Pragma
-    = MaybeUnused Variable
-    | WarnUnused Variable
-    | MustUse Variable
-    | Inline Variable
-    | Cold Variable
-    | Deprecated Variable String
-    | Test Variable
-    deriving (Show, Eq, Ord)
-
 data Expr
     = ValueE Value
-    | Pragma !Pragma
-    | FuncTypeDecl {
+    | Pragma Pragma
+    | FuncDecl {
         exprPurity :: Purity,
         exprVisib :: Visibility,
-        exprName :: !Variable,
-        exprCons :: [Constraint],
-        exprType :: [Type]
+        exprName :: {-# UNPACK #-} !Var,
+        exprType :: {-# UNPACK #-} !TypeDecl
     }
     | FuncDef {
-        exprName :: !Variable,
+        exprName :: {-# UNPACK #-} !Var,
         exprPars :: [Value],
         exprBody :: Body
     }
     | DataDef {
         exprVisib :: Visibility,
-        exprName :: !Variable,
-        exprTypePars :: [Variable],
-        exprCtors :: [DataCtor]
+        exprName :: {-# UNPACK #-} !Var,
+        exprTypePars :: [Var],
+        exprCtors :: [Ctor]
     }
     | IfElse {
-        exprClause :: !Value,
+        exprClause :: Value,
         exprTrue :: Body,
         exprFalse :: Body
     }
-    | Pattern {
-        exprValue :: !Value,
-        exprCases :: [(Value, Body)]
-    }
     | Loop {
         exprInit :: Maybe Expr,
-        exprCond :: !Value,
+        exprCond :: Value,
         exprIter :: Maybe Expr,
         exprBody :: Body
     }
     | TraitDecl {
         exprVisib :: Visibility,
         exprCons :: [Constraint],
-        exprName :: !Variable,
-        exprTypeVar :: Variable,
+        exprName :: {-# UNPACK #-} !Var,
+        exprTypeVar :: {-# UNPACK #-} !Var,
         exprFuncs :: [Expr]
     }
     | TraitImpl {
-        exprName :: !Variable,
-        exprCons :: [Constraint],
-        exprTraitType :: Maybe Type,
-        exprDefs :: [Expr]
+        exprName :: {-# UNPACK #-} !Var,
+        exprType :: {-# UNPACK #-} !TypeDecl,
+        exprFuncs :: [Expr]
     }
-    | NewVar Mutability !Type Variable !Value
-    | Reassign !Variable !Value
-    | Return !Value
+    | Match Value [(Pattern, Body)]
+    | NewVar Mutability Type {-# UNPACK #-} !Var Value
+    | Reassign {-# UNPACK #-} !Var Value
+    | Return Value
     deriving (Show, Eq, Ord)
 
 
+prim :: String -> Var
+{-# INLINE prim #-}
+prim s = Var s UnknownPos
+
 boolType :: Type
 {-# INLINE boolType #-}
-boolType = TerminalType (Prim "Boolean") []
+boolType = TerminalType (prim "Boolean") []
 
 valPos :: Value -> Position
 {-# INLINE valPos #-}
@@ -213,22 +186,23 @@ posEnd (SourcePos _ _ _ end) = end
 newPosition :: String -> Position
 {-# INLINE newPosition #-}
 newPosition modName = SourcePos
-    (Module Export (Prim modName)) 0 0 0
+    (Module Export (prim modName)) 0 0 0
 
 
-instance Eq Variable where
-    v1 == v2 = varName v1 == varName v2
+instance Eq Var where
+    (==) = (==) `on` varName
 
-instance Ord Variable where
-    v1 <= v2 = varName v1 <= varName v2
-    v1 >= v2 = varName v1 >= varName v2
-    v1 < v2 = varName v1 < varName v2
-    v1 > v2 = varName v1 > varName v2
+instance Ord Var where
+    (<=) = (<=) `on` varName
+    (>=) = (>=) `on` varName
+    (<) = (<) `on` varName
+    (>) = (>) `on` varName
+    compare = comparing varName
 
 instance Pretty Expr where
     pretty (ValueE v) = pretty v
     pretty (Pragma pr) = "Pragma "+|show pr
-    pretty (FuncTypeDecl pur vis name cons ts)
+    pretty (FuncDecl pur vis name cons ts)
         = printf
         "Function Type Declaration:\n\
         \    Visibility  : %s\n\
@@ -309,7 +283,7 @@ instance Pretty Expr where
         (pretty t)
         (indentAllUsing pretty ms)
     pretty (NewVar mut typ name val) = printf
-        "New Variable Definition:\n\
+        "New Var Definition:\n\
         \    Mutability : %s\n\
         \    Type       : %s\n\
         \    Name       : %s\n\
@@ -317,7 +291,7 @@ instance Pretty Expr where
         (show mut) (pretty typ) (pretty name)
         (indentUsing pretty val)
     pretty (Reassign name val) = printf
-        "Variable Reassignment:\n\
+        "Var Reassignment:\n\
         \    Name  : %s\n\
         \    Value : \n%s"
         (pretty name) (indentUsing pretty val)
@@ -325,10 +299,10 @@ instance Pretty Expr where
         "Return: %s"
         (pretty val)
 
-instance Pretty DataCtor where
-    pretty (DataCtor vis name []) = printf
+instance Pretty Ctor where
+    pretty (Ctor vis name []) = printf
         "%s %s" (show vis) (pretty name)
-    pretty (DataCtor vis name ts) = printf
+    pretty (Ctor vis name ts) = printf
         "%s %s => %s"
         (show vis) (pretty name)
         (", " `seps` ts)
@@ -336,6 +310,14 @@ instance Pretty DataCtor where
 instance Pretty Constraint where
     pretty (Constraint con typ) = printf "%s %s"
         (pretty con) (pretty typ)
+
+instance Pretty TypeDecl where
+    pretty (TypeDecl cons typ) = printf
+        "Type Declaration:\n\
+        \    Constraints :\n%s\
+        \    Type(s) : %s"
+        (indentAllUsing pretty cons)
+        (pretty typ)
 
 instance Pretty Value where
     pretty (FuncCall var args) = printf
@@ -395,8 +377,8 @@ instance Pretty Module where
     exhaustive (Module Export name) = pretty name ++ "[export]"
     exhaustive (Module Intern name) = pretty name ++ "[intern]"
 
-instance Pretty Variable where
+instance Pretty Var where
     pretty = varName
+    detailed (Var name UnknownPos) = name ++ detailed pos
     detailed (Var name pos) = name ++ detailed pos
-    detailed (Prim name) = name
 

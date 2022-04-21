@@ -41,12 +41,16 @@ roseDef = emptyDef {
         T.nestedComments = True,
         T.identStart = letter,
         T.identLetter = alphaNum <|> oneOf "_'",
-        T.opStart = T.opLetter roseDef,
-        T.opLetter = oneOf ":!#$%&*+./<=>?@\\^|-~",
+        T.opStart = T.opLetter roseDef
+        T.opLetter = oneOf "~!@#$%^&*_-+=\\|:<>.?/",
+        -- T.opStart = oneOf "~!@#$%^&*_-+=\\|:<>.?/",
+        -- T.opLetter = between
+        --     (T.opStart roseDef) (T.opStart roseDef)
+        --     (letter <|> (T.opStart roseDef)),
         T.reservedNames = [
                 "pure", "impure", "unsafe",
-                "let", "mut", "imut",
-                "intern", "export",
+                "mut", "imut",
+                "intern", "extern",
                 "module", "import",
                 "return",
                 "if", "else", "match",
@@ -54,12 +58,7 @@ roseDef = emptyDef {
                 "impl", "trait",
                 "data"
             ],
-        T.reservedOpNames = [
-                "=",
-                "|",
-                ",",
-                ":"
-            ],
+        T.reservedOpNames = [ "=", "," ],
         T.caseSensitive = True
     }
 
@@ -125,17 +124,6 @@ smallIden = (do
 foName :: Parser Variable
 {-# INLINE foName #-}
 foName = smallIden <|> parens operator
-
-{-# INLINE hole #-}
-hole = do
-    pos <- getPosition
-    keyword "_"
-    let pos' = SourcePos
-            (Module Export (Prim $! sourceName pos))
-            (sourceLine pos)
-            (sourceColumn pos)
-            (sourceColumn pos + 1)
-    return $ Hole pos'
 
 {-# INLINE keyword #-}
 keyword = T.reserved tokenP

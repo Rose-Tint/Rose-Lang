@@ -1,0 +1,138 @@
+(* LITERALS: *)
+bin                 = ? REGEX "0[bB][01]+" ?;
+oct                 = ? REGEX "0[oO]\O+" ?;
+hex                 = ? REGEX "0[xX]\x+" ?;
+b36                 = ? REGEX "0[aA][a-zA-Z0-9]+" ?;
+dec                 = ? REGEX "\d+" ?;
+unsigned            = bin | oct | hex | b36 | dec;
+integer             = ["-"], unsigned;
+float               = integer, [ ".", unsigned ];
+char                = "'", character, "'";
+unicode             = ? REGEX "\\[uU][0-9a-fA-F]{4}";
+hex-character       = ? REGEX "\\[xX][0-9a-fA-F]{2}";
+oct-character       = ? REGEX "\\[xX][0-8]{3}";
+character           = unicode
+                    | hex-character
+                    | oct-character
+                    | ? REGEX "(\\[\\nrtvf])|.)" ?;
+string              = """, {character}, """;
+array               = "[", {term}, "]";
+literal             = integer | float | char | string | array;
+
+
+(* IMPORTING: *)
+(* ignore import lists for now *)
+func-import-list    = prefix-ident, [ ",", func-import-list ], [","];
+ctor-import-list    = big-ident, [ ",", ctor-import-list ], [","];
+import-item         = "trait", big-ident, [ "{", [func-imp-list], "}" ];
+                    | "data", big-ident, [ "{", [ctor-imp-list], "}" ];
+                    | prefix-ident
+module-import       = "import", visibility, big-ident,
+                        [ "as", big-ident ],
+                        [ "using", "{", {import-item}, "}" ];
+
+
+(* IDENTIFIERS: *)
+qualifier           = ? REGEX "([A-Z][a-zA-Z0-9]*\.)*" ?;
+big-ident           = qualifier, ? REGEX "[A-Z][a-zA-Z0-9_]*" ?;
+small-ident         = qualifier, ? REGEX "[a-z_][a-zA-Z0-9_]*" ?;
+symbol              = ? REGEX "(~!@#\$%^&\*-\+=\\\|:<>\.\?/)+" ?;
+operator            = qualifer, symbol - "=", [small-ident], [symbol];
+infix-ident         = operator
+                    | "`", small-ident, "`";
+prefix-ident        = small-ident
+                    | "(", operator, ")";
+identifier          = small-ident
+                    | big-ident;
+                    | "(", operator, ")"
+
+
+(* PRAGMAS: *)
+allow-unused        = "#["allow_unused","(", identifier, ")]";
+warn-unused         = "#["warn_unused","(", prefix-ident, ")]";
+must-use            = "#["must_use","(", prefix-ident, ")]";
+inline              = "#["inline","(", prefix-ident, ")]";
+cold                = "#["cold","(", prefix-ident, ")]";
+deprecated          = "#["deprecated","(", identifier, [ ",", string ] ")]";
+test                = "#["test","(", identifier, ")]";
+
+
+(* ATTRIBUTES: (NOT YET READY) *)
+
+
+(* DECLARATION SPECIFIERS: *)
+visibility          = ["extern"] | ["intern"];
+purity              = "pure" | "unsafe" | "impure";
+mutability          = "mut" | "imut";
+
+
+(* TYPE DECLARATION: *)
+(* ignore mutability for now *)
+type                = [mutability], "[", type, "]"
+                    | [mutability], big-ident, {type}
+                    | [mutability], small-ident, {type}
+                    | [mutability], "(", type, ",", type, { ",", type } ")"
+                    | "(", type, { "->", type }, ")";
+constraint          = big-ident, small-ident, {small-ident};
+ctx-decl-seq        = constraint, { ",", constraint }, ":";
+type-decl           = "<", [ctx-decl-seq], type, { "->", type }, ">";
+
+
+(* FUNCTION DEFINITION: *)
+func-decl           = visibility, purity, prefix-ident, type-decl;
+func-param-seq      = pattern, operator, pattern
+                    | prefix-ident, {pattern};
+func-def            = func-param-seq, body-assignment;
+
+
+(* DATA DEFINITION: *)
+ctor-def            = big-ident, [type-decl];
+data-decl           = visibility, "data", big-ident;
+data-def            = data-decl, "=", ctor-def, { "|", ctor-def };
+type-decl-name      = [mutability], big-ident, {type};
+type-alias          = visibility, "using", type-decl-name, "=", type;
+
+
+(* TRAIT DEFINITION: *)
+trait-decl-seq      = visibility, big-ident, small-ident, {small-ident}
+trait-decl          = trait-decl-seq, "{", {func-decl}, "}";
+trait-impl          = "impl", big-ident, [ type, {type} ],
+                        "{", {func-def}, "}";
+
+
+(* TERMS & PATTERNS: *)
+infix-call          = term, infix-ident, term
+                    | infix-ident, term
+                    | term, infix-ident;
+term                = literal
+                    | infix-call
+                    | small-ident
+                    | "(", term, ")" 
+                    | term, {term};
+ctor-pattern        = big-ident, {pattern};
+pattern-item        = literal | ctor-pattern;
+pattern             = "_" | small-ident
+                    | "[", pattern-item, { ",", pattern-item }, "]";
+
+
+(* STATEMENTS: *)
+statement           = if-else
+                    | match
+                    | return
+                    | loop
+                    | new-var, ";"
+                    | reassignment, ";"
+                    | body;
+body                = "{", {statement}, "}";
+body-assignment     = "=", statement | body;
+if-else             = "if","(", term, ")", statement,
+                    ["else", statement];
+return              = "return", ( term, ";" | match | if-else );
+case                = pattern, body-assignment;
+match               = "match","(", term, ")","{", case, {case}, "}";
+loop-clause         = "(", [ term, ";" ], term, [ ";", term ], ")",
+loop                = "loop", loop-clause, statement;
+var-decl-seq        = "mut", prefix-ident, [type-decl]
+                    | "imut", prefix-ident, [type-decl];
+new-var             = var-decl-seq, "=", term;
+reassignment        = small-ident, "=", term;
