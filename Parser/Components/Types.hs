@@ -18,6 +18,12 @@ import Parser.LangDef
 default (Int, Double)
 
 
+-- (ignore mutability for now)
+-- = [mutability], "[", type, "]"
+-- | [mutability], big-ident, {type}
+-- | [mutability], small-ident, {type}
+-- | [mutability], "(", type, ",", type, { ",", type } ")"
+-- | "(", type, { "->", type }, ")";
 ttype :: Parser Type
 ttype = choice [
         namedType,
@@ -33,15 +39,18 @@ ttype = choice [
         -- unitType = resOper "()" >> TerminalType (Prim "()") []
         funcType = Applied <$> parens (ttype `sepBy1` resOper "->")
 
+-- = big-ident, small-ident, {small-ident};
 constraint :: Parser Constraint
 constraint = do
     con <- bigIdent
     args <- many1 smallIdent
     return (Constraint con args)
 
+-- = constraint, { ",", constraint }, ":";
 ctxDeclSeq :: Parser Context
 ctxDeclSeq = commaSep1 constraint <* resOper ":"
 
+-- = "<", [ctx-decl-seq], type, { "->", type }, ">";
 typeDecl :: Parser TypeDecl
 typeDecl = angles $ do
     ctx <- option [] ctxDeclSeq

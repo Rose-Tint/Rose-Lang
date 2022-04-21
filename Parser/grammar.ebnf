@@ -79,12 +79,13 @@ type-decl           = "<", [ctx-decl-seq], type, { "->", type }, ">";
 
 (* FUNCTION DEFINITION: *)
 func-decl           = visibility, purity, prefix-ident, type-decl;
-func-param-seq      = pattern, operator, pattern
-                    | prefix-ident, {pattern};
+infix-param-seq     = pattern, infix-ident, pattern;
+prefix-param-seq    = prefix-ident, {pattern};
+func-param-seq      = infix-param-seq | prefix-param-seq;
 func-def            = func-param-seq, body-assignment;
 
 
-(* DATA DEFINITION: *)
+(* DATATYPE DEFINITION: *)
 ctor-def            = big-ident, [type-decl];
 data-decl           = visibility, "data", big-ident;
 data-def            = data-decl, "=", ctor-def, { "|", ctor-def };
@@ -145,7 +146,7 @@ case                = pattern, body-assignment;
 match               = "match","(", term, ")","{", case, {case}, "}";
 loop-clause         = "(", [ term, ";" ], term, [ ";", term ], ")",
 loop                = "loop", loop-clause, statement;
-var-decl-seq        = "mut", prefix-ident, [type-decl]
-                    | "imut", prefix-ident, [type-decl];
+var-decl-seq        = "let", mutability, prefix-ident,
+                        [type-decl], {small-idents};
 new-var             = var-decl-seq, "=", term;
 reassignment        = small-ident, "=", term;

@@ -33,7 +33,15 @@ data Module
     | UnknownMod
     deriving (Show, Eq, Ord)
 
+{- 
+func-import-list = prefix-ident, [ ",", func-import-list ], [","];
+ctor-import-list = big-ident, [ ",", ctor-import-list ], [","];
+-}
 
+-- (ignore `func-imp-list` and `ctor-imp-list` for now)
+-- = "trait", big-ident
+-- | "data", big-ident
+-- | prefix-ident
 item :: Parser ImportItem
 item = choice [
         (do
@@ -47,12 +55,20 @@ item = choice [
         ImpFunc <$> prefixIdent
     ] <?> "import item"
 
+-- = "import", visibility, big-ident,
+--     [ "as", big-ident ],
+--     [ "using", "{", {import-item}, "}" ];
 moduleImport :: Parser ModuleImport
 moduleImport = (do
     keyword "import"
     vis <- visibility
-    name <- bigIdent
-    alias <- option name (keyword "as" >> bigIdent)
-    items <- commaSepEnd item
-    return (ModuleImport name, alias, items)
+    name <- bigIdent <?> "module name"
+    alias <- option name (do
+        keyword "as"
+        bigIdent <?> "module alias")
+    items <- option Nothing (do
+        keyword "using"
+        braces (commaSepEnd item)
+            <?> "import item list")
+    return (ModuleImport name alias items)
     ) <?> "import statement"

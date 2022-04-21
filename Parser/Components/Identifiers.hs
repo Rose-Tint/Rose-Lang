@@ -19,7 +19,11 @@ import Parser.LangDef
 
 default (Int, Double)
 
+{- MISSING FROM THIS MODULE:
+symbol = ? REGEX "(~!@#\$%^&\*-\+=\\\|:<>\.\?/)+" ?;
+-}
 
+-- = ? REGEX "([A-Z][a-zA-Z0-9]*\.)*" ?;
 qualifier :: Parser String
 qualifier = concat <$> many $ try $ do
     lookAhead upper
@@ -27,6 +31,7 @@ qualifier = concat <$> many $ try $ do
     resOper "."
     return $! qual ++ "."
 
+-- = qualifier, ? REGEX "[A-Z][a-zA-Z0-9_]*" ?;
 bigIdent :: Parser Variable
 bigIdent = (do
     pos <- getPosition
@@ -42,6 +47,7 @@ bigIdent = (do
     return (Var name' pos')
     ) <?> "big identifier"
 
+-- = qualifier, ? REGEX "[a-z_][a-zA-Z0-9_]*" ?;
 smallIdent :: Parser Variable
 smallIdent = (do
     pos <- getPosition
@@ -57,6 +63,7 @@ smallIdent = (do
     return (Var name' pos')
     ) <?> "small identifier"
 
+-- = qualifer, symbol - "=", [small-ident], [symbol];
 operator :: Parser Variable
 operator = (do
     pos <- getPosition
@@ -71,14 +78,17 @@ operator = (do
     return (Var op' pos'))
     <?> "operator"
 
+-- = operator | "`", small-ident, "`";
 infixIdent :: Parser Variable
 infixIdent = operator <|> (resOper "`" *> smallIdent <* resOper "`")
     <?> "infix identifier"
 
+-- = small-ident | "(", operator, ")";
 prefixIdent :: Parser Variable
 prefixIdent = smallIdent <|> parens infixIdent
     <?> "prefix identifier"
 
+-- = small-ident | big-ident | "(", operator, ")";
 identifier :: Parser Variable
 identifier = smallIdent <|> bigIdent <|> parens operator
     <?> "identifier"

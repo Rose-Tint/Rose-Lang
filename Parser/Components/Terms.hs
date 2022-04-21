@@ -1,6 +1,5 @@
 module Parser.Components.Terms (
     term,
-    infixCall, prefixCall, ctorCall,
 ) where
 
 import Control.Monad ((<$!>))
@@ -18,19 +17,26 @@ import Parser.Pragmas
 
 default (Int, Double)
 
-
+-- = literal
+-- | infix-call
+-- | small-ident
+-- | lambda
+-- | "(", term, ")" 
+-- | term, {term};
 term :: Parser Value
 term = choice [
         intLit, fltLit, chrLit, strLit,
         arrLit, try tupLit,
-        try lambda
+        try lambda,
         try infixCall,
         try prefixCall,
         ctorCall,
-        
         parens term
-    ] <?> "term"
+    ] <?> "term"]
 
+-- = term, infix-ident, term
+-- | infix-ident, term
+-- | term, infix-ident;
 infixCall :: Parser Value
 infixCall = (do
     lhs <- term
@@ -38,14 +44,7 @@ infixCall = (do
         between (resOper "`") (resOper "`") smallIden
     rhs <- term
     return (FuncCall op [lhs, rhs])
-    ) <?> "operator call"
-
-prefixCall :: Parser Value
-prefixCall = (do
-    name <- smallIden <|> parens operator
-    args <- many term
-    return (FuncCall name args)
-    ) <?> "function call"
+    ) <?> "infix call"
 
 ctorCall :: Parser Value
 ctorCall = (do
@@ -54,8 +53,9 @@ ctorCall = (do
     return (CtorCall name args)
     ) <?> "constructor call"
 
--- for now, lambdas will be very limited due to
--- requiring statement
+-- (for now, lambdas will be very limited due to
+-- requiring statement)
+-- = {small-ident}, "=>", term;
 lambda :: Parser Value
 lambda = (do
     params <- many smallIdent
@@ -63,6 +63,7 @@ lambda = (do
     body <- ExprVal <$> term
     ) <?> "lambda"
 
+-- = "[", {term}, "]";
 arrLit :: Parser Value
 arrLit = (do
     pos <- getPosition
@@ -72,6 +73,7 @@ arrLit = (do
     return (Array (listArray (0, length arr) arr) pos')
     ) <?> "array literal"
 
+-- = "(", term, ",", term, { ",", term }, ")";
 tupLit :: Parser Value
 tupLit = (do
     pos <- getPosition
