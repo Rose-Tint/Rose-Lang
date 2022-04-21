@@ -133,19 +133,20 @@ data Expr
     | DataDef {
         exprVisib :: Visibility,
         exprName :: {-# UNPACK #-} !Var,
-        exprTypePars :: [Var],
+        exprParams :: [Var],
         exprCtors :: [Ctor]
     }
     | TraitDecl {
         exprVisib :: Visibility,
-        exprCons :: [Constraint],
+        exprCtx :: Context,
         exprName :: {-# UNPACK #-} !Var,
-        exprTypeVar :: {-# UNPACK #-} !Var,
+        exprParams :: {-# UNPACK #-} !Var,
         exprFuncs :: [Expr]
     }
     | TraitImpl {
+        exprCtx :: Context,
         exprName :: {-# UNPACK #-} !Var,
-        exprType :: {-# UNPACK #-} !TypeDecl,
+        exprTypes :: [Type],
         exprFuncs :: [Expr]
     }
     deriving (Show, Eq, Ord)

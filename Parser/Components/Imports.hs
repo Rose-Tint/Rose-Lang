@@ -4,17 +4,6 @@ module Parser.Components.Imports (
     moduleImport,
 ) where
 
-import Text.Parsec
-import Data.Text (Text)
-
-import Parser.Data
-import Parser.LangDef (commaSepEnd, keyword)
-import Parser.Components.Identifiers (prefixIdent, bigIdent)
-import Parser.Components.Specifers (visibility)
-
-
-default (Int, Double)
-
 
 data ImportItem
     = ImpTrait { impName :: Variable }

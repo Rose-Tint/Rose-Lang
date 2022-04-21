@@ -3,12 +3,8 @@ module Parser.Components.Specifers (
     visibility,
     visibility',
     mutability,
+    mutability',
 ) where
-
-import Text.Parsec
-
-import Parser.Data
-import Parser.LangDef (keyword)
 
 
 purity :: Parser Purity
@@ -24,14 +20,14 @@ visibility' = choice [
         keyword "intern" >> return Intern
     ] <?> "visibility"
 
-visibility :: Parser Visibility
-visibility = option Export visibility'
-
-mutability :: Parser Mutability
-mutability = option Pure mutability'
-
 mutability' :: Parser Mutability
 mutability' = choice [
         keyword "mut"  >> return Pure,
         keyword "imut" >> return Impure
     ] <?> "mutability"
+
+visibility :: Parser Visibility
+visibility = option Export visibility'
+
+mutability :: Parser Mutability
+mutability = option Pure mutability'

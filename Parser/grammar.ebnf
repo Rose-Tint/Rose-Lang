@@ -11,24 +11,20 @@ char                = "'", character, "'";
 unicode             = ? REGEX "\\[uU][0-9a-fA-F]{4}";
 hex-character       = ? REGEX "\\[xX][0-9a-fA-F]{2}";
 oct-character       = ? REGEX "\\[xX][0-8]{3}";
-character           = unicode
-                    | hex-character
-                    | oct-character
-                    | ? REGEX "(\\[\\nrtvf])|.)" ?;
+character           = unicode | hex-character | oct-character | ? REGEX "(\\[\\nrtvf])|.)" ?;
 string              = """, {character}, """;
 literal             = integer | float | char | string | array;
 
 
 (* IMPORTING: *)
 (* ignore import lists for now *)
-func-import-list    = prefix-ident, [ ",", func-import-list ], [","];
-ctor-import-list    = big-ident, [ ",", ctor-import-list ], [","];
+(* func-import-list    = prefix-ident, [ ",", func-import-list ], [","]; *)
+(* ctor-import-list    = big-ident, [ ",", ctor-import-list ], [","]; *)
 import-item         = "trait", big-ident, [ "{", [func-imp-list], "}" ];
                     | "data", big-ident, [ "{", [ctor-imp-list], "}" ];
                     | prefix-ident
-module-import       = "import", visibility, big-ident,
-                        [ "as", big-ident ],
-                        [ "using", "{", {import-item}, "}" ];
+module-import       = "import", visib, big-ident, [ "as", big-ident ], [ "using",
+                        "{", {import-item}, "}" ];
 
 
 (* IDENTIFIERS: *)
@@ -37,13 +33,9 @@ big-ident           = qualifier, ? REGEX "[A-Z][a-zA-Z0-9_]*" ?;
 small-ident         = qualifier, ? REGEX "[a-z_][a-zA-Z0-9_]*" ?;
 symbol              = ? REGEX "(~!@#\$%^&\*-\+=\\\|:<>\.\?/)+" ?;
 operator            = qualifer, symbol - "=", [small-ident], [symbol];
-infix-ident         = operator
-                    | "`", small-ident, "`";
-prefix-ident        = small-ident
-                    | "(", operator, ")";
-identifier          = small-ident
-                    | big-ident;
-                    | "(", operator, ")"
+infix-ident         = operator | "`", small-ident, "`";
+prefix-ident        = small-ident | "(", operator, ")";
+identifier          = small-ident | big-ident | "(", operator, ")"
 
 
 (* PRAGMAS: *)
@@ -60,17 +52,17 @@ test                = "#["test","(", identifier, ")]";
 
 
 (* DECLARATION SPECIFIERS: *)
-visibility          = ["extern"] | ["intern"];
+visib               = ["extern"] | ["intern"];
 purity              = "pure" | "unsafe" | "impure";
-mutability          = "mut" | "imut";
+mutab               = ["mut"] | ["imut"];
 
 
 (* TYPE DECLARATION: *)
-(* ignore mutability for now *)
-type                = [mutability], "[", type, "]"
-                    | [mutability], big-ident, {type}
-                    | [mutability], small-ident, {type}
-                    | [mutability], "(", type, ",", type, { ",", type } ")"
+(* ignore mutab for now *)
+type                = [mutab], "[", type, "]"
+                    | [mutab], big-ident, {type}
+                    | [mutab], small-ident, {type}
+                    | [mutab], "(", type, ",", type, { ",", type } ")"
                     | "(", type, { "->", type }, ")";
 constraint          = big-ident, small-ident, {small-ident};
 ctx-decl-seq        = constraint, { ",", constraint }, ":";
@@ -78,7 +70,7 @@ type-decl           = "<", [ctx-decl-seq], type, { "->", type }, ">";
 
 
 (* FUNCTION DEFINITION: *)
-func-decl           = visibility, purity, prefix-ident, type-decl;
+func-decl           = visib, purity, prefix-ident, type-decl;
 infix-param-seq     = pattern, infix-ident, pattern;
 prefix-param-seq    = prefix-ident, {pattern};
 func-param-seq      = infix-param-seq | prefix-param-seq;
@@ -87,66 +79,50 @@ func-def            = func-param-seq, body-assignment;
 
 (* DATATYPE DEFINITION: *)
 ctor-def            = big-ident, [type-decl];
-data-decl           = visibility, "data", big-ident;
+data-decl           = visib, "data", big-ident;
 data-def            = data-decl, "=", ctor-def, { "|", ctor-def };
-type-decl-name      = [mutability], big-ident, {type};
-type-alias          = visibility, "using", type-decl-name, "=", type;
+type-decl-name      = [mutab], big-ident, {type};
+type-alias          = visib, "using", type-decl-name, "=", type;
 
 
 (* TRAIT DEFINITION: *)
-trait-decl-seq      = visibility, big-ident, small-ident, {small-ident}
-trait-decl          = trait-decl-seq, "{", {func-decl}, "}";
-trait-impl          = "impl", big-ident, [ type, {type} ],
-                        "{", {func-def}, "}";
+trait-ctx           = "<", constraint, { ",", constraint }, ">";
+trait-decl          = visib, "trait", [trait-ctx], big-ident, small-ident, {small-ident},
+                        "{", {(func-decl | func-def)}, "}";
+trait-impl          = "impl", [trait-ctx], big-ident, type, {type},
+                        "{", {func-decl}, "}";
 
 
 (* TERMS: *)
-infix-call          = term, infix-ident, term
-                    | infix-ident, term
-                    | term, infix-ident;
+infix-call          = term, infix-ident, term | infix-ident, term | term, infix-ident;
 (* for now, lambas will be extremely limited due to
 it needing `statement` or `body`, which needs `term`
 (and thus `lambda'), causing a circular import *)
 lambda              = {small-ident}, "=>", term;
 tuple               = "(", term, ",", term, { ",", term }, ")";
 array               = "[", {term}, "]";
-term                = literal
-                    | infix-call
-                    | small-ident
-                    | lambda
-                    | "(", term, ")" 
-                    | term, {term};
+term                = literal | infix-call | small-ident | lambda | "(", term, ")" | term, {term};
 
 
 (* PATTERNS *)
 ctor-pattern        = big-ident, {pattern};
-tuple-pattern       = "(", pattern, ",",
-                        pattern, { ",", pattern }, ")";
-pattern-item        = literal
-                    | tuple-pattern
-                    | ctor-pattern;
-pattern             = "_" | small-ident
-                    | "[", pattern-item, { ",", pattern-item }, "]";
+tuple-pattern       = "(", pattern, ",", pattern, { ",", pattern }, ")";
+pattern-item        = literal | tuple-pattern | ctor-pattern;
+pattern             = "_" | small-ident | "[", pattern-item, { ",", pattern-item }, "]";
 
 
 (* STATEMENTS: *)
-statement           = if-else
-                    | match
-                    | return
-                    | loop
-                    | new-var, ";"
-                    | reassignment, ";";
+statement           = if-else | match | return | loop | new-var, ";" | reassignment, ";";
 body                = "{", {statement}, "}";
 body-assignment     = "=", statement | body;
 stmt-body           = statement | body;
-if-else             = "if","(", term, ")", stmt-body,
-                        [ "else", stmt-body ];
+if-else             = "if","(", term, ")", stmt-body, [ "else", stmt-body ];
 return              = "return", ( term, ";" | match | if-else );
 case                = pattern, body-assignment;
 match               = "match","(", term, ")","{", case, {case}, "}";
 loop-clause         = "(", [ term, ";" ], term, [ ";", term ], ")";
 loop                = "loop", loop-clause, stmt-body;
-var-decl-seq        = "let", mutability, small-ident, [type-decl];
+var-decl-seq        = "let", mutab, small-ident, [type-decl];
 assignment          = "=", term;
 new-var             = var-decl-seq, assignment;
 reassignment        = small-ident, assignment;

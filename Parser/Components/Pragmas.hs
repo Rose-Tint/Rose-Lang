@@ -2,18 +2,6 @@ module Parser.Pragmas (
     pragma,
 ) where
 
-import Text.Parsec ((<|>), char, choice)
-
-import Parser.Data (Pragma(..), Value(StrLit))
-import Parser.LangDef (
-    Parser,
-    strLit,
-    brackets, parens,
-    keyword,
-    comma
-    )
-import Parser.Components.Identifers (identifier, prefixIdent)
-
 
 data Pragma
     = MaybeUnused {-# UNPACK #-} !Var

@@ -5,20 +5,6 @@ module Parser.Components.Identifiers (
     identifier
 ) where
 
-import Data.Function (on)
-import Data.Ord (comparing)
-import Text.Parsec
-import qualified Text.Parsec.Token as T (
-    identifier,
-    operator
-    )
-
-import Parser.Data
-import Parser.LangDef
-
-
-default (Int, Double)
-
 {- MISSING FROM THIS MODULE:
 symbol = ? REGEX "(~!@#\$%^&\*-\+=\\\|:<>\.\?/)+" ?;
 -}

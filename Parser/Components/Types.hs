@@ -1,21 +1,7 @@
 module Parser.Components.Types (
-    Type(..),
     ttype,
     typeDecl,
 ) where
-
-import Text.Parsec
-
-import Parser.Components.Identifiers (
-    identifier,
-    bigIdent,
-    smallIdent
-    )
-import Parser.Data (Parser, Type(..))
-import Parser.LangDef
-
-
-default (Int, Double)
 
 
 -- (ignore mutability for now)
