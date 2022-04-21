@@ -2,23 +2,23 @@ module Std.IO.File where
 
 import Std.IO.Output
 import Std.IO.Input
+import Std.Resource
 
 
-data FilePath := Path => String
+using data FilePath = String;
 
 data OpenMode
-    := Overwrite
-    |= Append
-    |= Read
-    |= ReadAppend
-    |= ReadWrite
+    = Write
+    | Append
+    | Read
+    | ReadWrite
 
 
 impl Resource FilePath {
-    close [Path p] := closeFile p;
+    close [Path p] = closeFile p;
     with [Path p] f {
-        let hdl<Handle> := openFile p ReadWrite;
-        let res<b> := f hdl;
+        let hdl<Handle> = openFile p ReadWrite;
+        let res<b> = f hdl;
         close hdl;
         return res;
     }
@@ -26,11 +26,11 @@ impl Resource FilePath {
 
 
 #[must_use(openFile)]
-impure openFile => FilePath, OpenMode, Handle;
+impure openFile<FilePath -> OpenMode -> Handle>
 
 #[warn_unused(readFile)]
-impure readFile => FilePath, String;
-readFile p := with p hGetContents;
+impure readFile<FilePath -> String>
+readFile p = with p hGetContents;
 
-impure appendFile => FilePath, String, Void;
-appendFile p := with p hPutStr;
+impure appendFile<FilePath -> String -> Void>
+appendFile p = with p hPutStr;

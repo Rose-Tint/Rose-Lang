@@ -1,57 +1,60 @@
 module Std.Pretty where
 
-
-#[inline(pretty)]
-trait Pretty a {
-    pure pretty => a, String;
-    pure fmt => a, Fmt, String;
+import Std.Function using {
+    id,
+    (..),
 }
 
 
-data Fmt := Fmt => Int
+trait Pretty a {
+    pure pretty<a -> String>
+    pure fmt<a -> Fmt -> String>
+}
+
+
+data Fmt = Fmt<Int>
 
 
 #[inline((+|))]
-pure (+|) => { Pretty a }, String, a, String;
-str +| a := str + pretty a;
+pure (+|)<Pretty a : String -> a -> String>
+str +| a = str ++ pretty a;
 
 #[inline((|+))]
-pure (|+) => { Pretty a }, a, String, String;
-a |+ str := pretty a + str;
+pure (|+)<Pretty a : a -> String -> String>
+a |+ str = pretty a ++ str;
 
 #[inline((|+|))]
-pure (|+|) => { Pretty a, Pretty b }, a, b, String;
-a |+| b := pretty a + pretty b;
+pure (|+|)<Pretty a, Pretty b : a -> b -> String>
+(|+|) = (++) .. pretty;
 
 #[inline((.|))]
-pure (.|) => { Pretty a }, Int, a, String;
-n .| a := fmt (Fmt n) a;
+pure (.|)<Pretty a : Int -> a -> String>
+n .| a = fmt (Fmt n) a;
 
 
 impl Pretty {
-    fmt _ := pretty;
+    fmt _ = pretty;
 }
 
 impl Pretty Char {
-    pretty := charToString;
+    pretty = charToString;
 }
 
 impl Pretty String {
-    pretty s := a;
-    fmt [Fmt p] s := take p s;
+    pretty = id;
+    fmt [Fmt p] s = take p s;
 }
 
 impl Pretty Int {
-    pretty n := fmt (Fmt n) n;
+    pretty n = fmt (Fmt n) n;
     fmt [Fmt p] n {
-        let mut x<Int> := n % (10 * p);
-        let mut str<String> := default;
-        loop (True) {
-            rem = x % 10;
+        let mut x<Int> = n % (10 * p);
+        let mut str = "";
+        loop (x < 10) {
+            let mut rem = x % 10;
             x = x / 10;
-            let ch<Char> := '0' + rem;
-            str = append ch str;
-            if (x < 10) { return str; };
-        };
+            str = append (intToChar (x % 10)) str;
+        }
+        return str;
     }
 }

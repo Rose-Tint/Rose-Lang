@@ -9,7 +9,7 @@ trait Eq a {
     pure (==) <a -> a -> Boolean>
 }
 
-trait<Eq a> Ord a {
+trait Ord a {
     pure (<) <a -> a -> Boolean>
     pure (<=) <a -> a -> Boolean>
     pure (>) <a -> a -> Boolean>
@@ -31,24 +31,24 @@ pure min <Ord a : a -> a -> a>
 min a b = match (a <=> b) {
     [LT, EQ] = a;
     [GT] = b;
-};
+}
 
 #[inline(max)]
 pure max <Ord a : a -> a -> a>
 max a b = match (a <=> b) {
-        [LT, EQ] = b;
-        [GT] = a;
-    };
+    [LT, EQ] = b;
+    [GT] = a;
+}
 
 #[inline(clamp)]
 pure clamp <Ord a : a -> a -> a -> a>
-clamp mn mx x = min mn (max mx x);
+clamp lo hi = min hi . max lo;
 
 
 impl Ord {
-    (<) = (not . (>=));
+    (<) = not . (>=);
     a <= b = (a < b) || (a == b);
-    (>) = (not . (<=));
+    (>) = not . (<=);
     a >= b = (a > b) || (a == b);
 }
 

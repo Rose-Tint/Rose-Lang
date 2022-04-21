@@ -4,33 +4,40 @@ import Std.Compare
 
 
 data Tree a
-    := Empty
-    |= Node => a, Tree a, Tree a
+    = Empty
+    | Node<a -> Tree a -> Tree a>
 
 
-pure insert => { Ord a }, a, Tree a, Tree a;
-insert a [Node v l r] := match (a <=> v) {
-    [LT] := (Node v (insert a l) r);
-    [GT] := (Node v l (insert a r));
-    [EQ] := (Node v l r);
-};
+pure insert<Ord a : a -> Tree a -> Tree a>
+insert a [Node v l r] = match (a <=> v) {
+    [LT] = Node v (insert a l) r;
+    [EQ] = Node v l r;
+    [GT] = Node v l (insert a r);
+}
 
-pure search => { Ord a }, a, Tree a, Tree a;
-search a [Empty] := Empty;
-search a [Node _ l r] := match (a <=> v) {
-    [LT] := (search a l);
-    [EQ] := (Node v l r);
-    [GT] := (search a r);
-};
+pure search<Ord a : a -> Tree a -> Tree a>
+search a [Empty] = Empty;
+search a [Node _ l r] = match (a <=> v) {
+    [LT] = search a l;
+    [EQ] = Node v l r;
+    [GT] = search a r;
+}
 
-pure height => Tree a, Int;
-height [Empty] := 0;
-height [Node _ l r] := (max (height l) (height r)) + 1;
+#[inline(lookup)]
+pure lookup<Ord a : a -> Tree a -> Maybe a>
+lookup a tree = match (search a tree) {
+    [Empty] = Nothing;
+    [Node v _ _] = Just v;
+}
 
-pure size => Trea a, Int;
-size [Empty] := 0;
-size [Node _ l r] := (size l + size r) + 1;
+pure height<Tree a -> Int>
+height [Empty] = 0;
+height [Node _ l r] = max (height l) (height r) + 1;
 
-pure invert => Tree a, Tree a;
-invert [Empty] := Empty;
-invert [Node v l r] := Node v (invert r) (invert l);
+pure size<Tree a -> Int>
+size [Empty] = 0;
+size [Node _ l r] = (size l + size r) + 1;
+
+pure invert<Tree a -> Tree a>
+invert [Empty] = Empty;
+invert [Node v l r] = Node v (invert r) (invert l);

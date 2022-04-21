@@ -4,6 +4,6 @@ module Std.IO.Output where
 import Std.IO.Handle
 
 
-impure hPutChar => Char, Void;
-impure hPrint => String, Void;
-impure println => String, Void;
+impure hPutChar<Char -> Void>
+impure hPrint<String -> Void>
+impure hPrintLn<String -> Void>

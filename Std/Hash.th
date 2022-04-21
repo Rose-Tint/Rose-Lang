@@ -8,12 +8,7 @@ trait Hashable a {
 
 
 pure combine => Int, Int, Int;
-combine a b {
-    let mut result <Int> := b;
-    result = result + (a << 6);
-    result = result + (a >> 2);
-    return a ^ result;
-}
+combine a b = a ^ ((b + (a << 6)) + (a >> 2));
 
 
 impl Hashable {

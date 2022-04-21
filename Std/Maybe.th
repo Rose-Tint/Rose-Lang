@@ -5,8 +5,8 @@ import Std.Alternative
 
 
 data Maybe a
-    := Nothing
-    |= Just => a
+    = Nothing
+    | Just<a>
 
 
 impl Alternative (Maybe a) {

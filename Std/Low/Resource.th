@@ -1,0 +1,17 @@
+module Std.Resource where
+
+
+trait Resource a {
+    impure open<a -> Void>
+    impure close<a -> Void>
+    impure with<(a -> b) -> a -> b>
+}
+
+impl Resource {
+    with f resource {
+        open resource;
+        let result = f resource;
+        close resource;
+        return result;
+    }
+}

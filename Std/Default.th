@@ -2,7 +2,7 @@ module Std.Default where
 
 
 trait Default a {
-    pure default <a>;
+    pure default <a>
 }
 
 impl Defaultable Int {

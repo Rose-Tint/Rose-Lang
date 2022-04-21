@@ -1,0 +1,23 @@
+module Std.Function where
+
+
+pure curry<((a,b) -> c) -> a -> b -> c>
+curry f a b = f (a, b);
+
+pure uncurry<(a -> b -> c) -> (a,b) -> c>
+uncurry f [(a, b)] = f a b;
+
+pure (.)<(b -> c) -> (a -> b) -> (a -> c)>
+f1 . f2 = a => f1 (f2 a);
+
+pure (..)<(a -> a -> c) -> (a -> b) -> (b -> b -> c)>
+bf .. uf = a b => bf (uf a) (uf b);
+
+pure id<a -> a>
+id a = a;
+
+pure const<a -> b -> a>
+const a _ = a;
+
+pure flip<(a -> b -> c) -> b -> a -> c>
+flip f a b = f b a;
