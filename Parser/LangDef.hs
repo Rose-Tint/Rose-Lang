@@ -71,64 +71,8 @@ tokenP = T.makeTokenParser roseDef
 {-# INLINE keyword #-}
 keyword = T.reserved tokenP
 
-{-# INLINABLE operator #-}
-operator = (do
-    pos <- getPosition
-    qual <- qualifier
-    op <- T.operator tokenP
-    let !op' = qual ++ name
-        end = sourceColumn pos + length op' 
-        pos' = (mkPos pos) { srcEnd = end }
-    return (Var op' pos')
-    ) <?> "operator"
-
 {-# INLINE resOper #-}
 resOper = T.reservedOp tokenP
-
-{-# INLINE chrLit #-}
-chrLit = (do
-    pos <- getPosition
-    chr <- T.charLiteral tokenP
-    let name' = qual ++ name
-        end = sourceColumn pos + 3
-        pos' = (mkPos pos) { srcEnd = end }
-    return (ChrLit chr pos')
-    ) <?> "char literal"
-
-{-# INLINABLE strLit #-}
-strLit = (do
-    pos <- getPosition
-    str <- T.stringLiteral tokenP
-    let name' = qual ++ name
-        end = sourceColumn pos + length name' + 2
-        pos' = (mkPos pos) { srcEnd = end }
-    return (StrLit str pos')
-    ) <?> "string literal"
-
-{-# INLINABLE intLit #-}
-intLit = (do
-    pos <- getPosition
-    int <- fromInteger <$> T.integer tokenP
-    end <- sourceColumn <$> getPosition
-    let pos' = (mkPos pos) { srcEnd = end }
-    return (IntLit int pos')
-    ) <?> "integer literal"
-
-{-# INLINABLE fltLit #-}
-fltLit = (do
-    pos <- getPosition
-    flt <- T.float tokenP
-    end <- sourceColumn <$> getPosition
-    let pos' = (mkPos pos) { srcEnd = end }
-    return (FltLit flt pos')
-    ) <?> "floating literal"
-
-literal :: Parser Value
-{-# INLINE literal #-}
-literal = choice [
-        chrLit, strLit,
-        intLit, fltLit
-    ] <?> "literal"
 
 {-# INLINE symbol #-}
 symbol = T.symbol tokenP

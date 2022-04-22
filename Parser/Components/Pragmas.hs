@@ -1,4 +1,4 @@
-module Parser.Pragmas (
+module Parser.Components.Pragmas (
     pragma,
 ) where
 

@@ -46,7 +46,7 @@ data Position
         srcModule :: {-# UNPACK #-} !Var,
         srcLine :: {-# UNPACK #-} !Line,
         srcStart :: {-# UNPACK #-} !Column,
-        srcEnd{-# UNPACK #-} !Column
+        srcEnd :: {-# UNPACK #-} !Column
     }
     deriving (Show, Eq, Ord)
 
@@ -65,16 +65,15 @@ data TypeDecl = TypeDecl [Constraint] Type
     deriving (Show, Eq)
 
 data Value
-    -- strictness is because it would not be evaluated
-    -- for a long time
-    = IntLit {-# UNPACK #-} !Int Position
-    | FltLit {-# UNPACK #-} !Double Position
-    | ChrLit {-# UNPACK #-} !Char Position
-    | StrLit String Position
-    | FuncCall {-# UNPACK #-} !Var [Value]
-    | CtorVal {-# UNPACK #-} !Var [Value]
-    | Tuple {-# UNPACK #-} !(Array Int Value) Position
-    | Array {-# UNPACK #-} !(Array Int Value) Position
+    = IntLit !Integer Position
+    | FloatLit {-# UNPACK #-} !Double Position
+    | CharLit {-# UNPACK #-} !Char Position
+    | StringLit String Position
+    | VarVal {-# UNPACK #-} !Var
+    | Application Value [Value]
+    | CtorCall {-# UNPACK #-} !Var [Value]
+    | Tuple {-# UNPACK #-} !(Array Int Value)-- Position
+    | Array {-# UNPACK #-} !(Array Int Value)-- Position
     | Lambda [Var] Expr -- Body
     | StmtVal Expr
     | Hole Position

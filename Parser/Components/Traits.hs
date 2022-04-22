@@ -1,11 +1,7 @@
-module Parser.Components. () where
-
-{-
-trait-decl          = visib, "trait", [trait-ctx], big-ident, small-ident, {small-ident},
-                        "{", {func-decl}, "}";
-trait-impl          = "impl", [trait-ctx], big-ident, type, {type},
-                        "{", {func-decl}, "}";
--}
+module Parser.Components.Traits (
+    traitDecl,
+    traitImpl,
+) where
 
 
 -- = "<", constraint, { ",", constraint }, ">";
@@ -35,6 +31,3 @@ traitImpl = do
     tVars <- many1 ttype
     fns <- braces (many funcDef)
     return (TraitImpl ctx name tVars fns)
-
-
-

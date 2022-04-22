@@ -1,17 +1,23 @@
 (* LITERALS: *)
-bin                 = ? REGEX "0[bB][01]+" ?;
-oct                 = ? REGEX "0[oO]\O+" ?;
-hex                 = ? REGEX "0[xX]\x+" ?;
-b36                 = ? REGEX "0[aA][a-zA-Z0-9]+" ?;
-dec                 = ? REGEX "\d+" ?;
-unsigned            = bin | oct | hex | b36 | dec;
-integer             = ["-"], unsigned;
-float               = integer, [ ".", unsigned ];
+oct-digit           = ? REGEX "[0-8]" ?;
+digit               = ? REGEX "[0-9]" ?;
+hex-digit           = ? REGEX "[0-9a-fA-F]" ?;
+binary              = ("b"|"B"), ("0"|"1"), {("0"|"1")};
+octal               = ("o"|"O"), oct-digit, {oct-digit};
+hexa                = ("x"|"X"), hex-digit, {hex-digit};
+decimal             = digit, {digit};
+sign                = "-" | "+";
+integer             = [sign], decimal
+                    | [sign], "0", (binary | octal | hexa);
+exponent            = ["."], ("e"|"E"), [sign], decimal;
+hex-exponent        = ["."], ("p"|"P"), [sign], decimal;
+float               = [sign], decimal, exponent, ["f"]
+                    | [sign], decimal, exponent, ["f"]
+                    | [sign], decimal, ".", decimal, ["f"]
+                    | [sign], hexa, hex-exponent, ["f"]
 char                = "'", character, "'";
-unicode             = ? REGEX "\\[uU][0-9a-fA-F]{4}";
-hex-character       = ? REGEX "\\[xX][0-9a-fA-F]{2}";
-oct-character       = ? REGEX "\\[xX][0-8]{3}";
-character           = unicode | hex-character | oct-character | ? REGEX "(\\[\\nrtvf])|.)" ?;
+special             = ? REGEX "[\\abfnrtv'\"]" ?;
+character           = "//", (hexa | octal | special) | ? ANY CHAR ?;
 string              = """, {character}, """;
 literal             = integer | float | char | string | array;
 
@@ -97,11 +103,16 @@ trait-impl          = "impl", [trait-ctx], big-ident, type, {type},
 infix-call          = term, infix-ident, term | infix-ident, term | term, infix-ident;
 (* for now, lambas will be extremely limited due to
 it needing `statement` or `body`, which needs `term`
-(and thus `lambda'), causing a circular import *)
+(and thus `lambda'), causing a circular import. Also,
+maybe it should have a unique-ish prefix for efficiency? *)
 lambda              = {small-ident}, "=>", term;
 tuple               = "(", term, ",", term, { ",", term }, ")";
 array               = "[", {term}, "]";
-term                = literal | infix-call | small-ident | lambda | "(", term, ")" | term, {term};
+prefix-caller       = prefix-ident | ("(", lambda, func-app ")");
+func-app            = prefix-caller, {term},
+                    | big-ident, {term}
+                    | infix-call
+term                = literal | func-app | lambda | "(", term, ")";
 
 
 (* PATTERNS *)
