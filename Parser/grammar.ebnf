@@ -1,3 +1,9 @@
+(* TODO: update parser for:
+    pragmas,
+    if-else,
+    case,
+*)
+
 (* LITERALS: *)
 oct-digit           = ? REGEX "[0-8]" ?;
 digit               = ? REGEX "[0-9]" ?;
@@ -43,16 +49,20 @@ identifier          = small-ident | big-ident | "(", operator, ")"
 
 
 (* PRAGMAS: *)
-allow-unused        = "#["allow_unused","(", identifier, ")]";
-warn-unused         = "#["warn_unused","(", prefix-ident, ")]";
-must-use            = "#["must_use","(", prefix-ident, ")]";
-inline              = "#["inline","(", prefix-ident, ")]";
-cold                = "#["cold","(", prefix-ident, ")]";
-deprecated          = "#["deprecated","(", identifier, [ ",", string ] ")]";
-test                = "#["test","(", identifier, ")]";
-
-
-(* ATTRIBUTES: (NOT YET READY) *)
+allow-unused        = "allow_unused","(", identifier, ")";
+warn-unused         = "warn_unused","(", prefix-ident, ")";
+inline              = "inline","(", prefix-ident, ")";
+deprecated          = "deprecated","(", identifier, [ ",", string ] ")";
+test                = "test","(", identifier, ")";
+pragma              = "#","[", directive, "]";
+pragma-seq          = "#","[", directive, { ",", directive }, "]";
+directive           = allow-unused
+                    | warn-unused
+                    | inline
+                    | cold
+                    | deprecated
+                    | test;
+heat-pragma         = "#","[", ("cold"|"warm"), "]";
 
 
 (* DECLARATION SPECIFIERS: *)
@@ -125,9 +135,10 @@ statement           = if-else | match | return | loop | new-var, ";" | reassignm
 body                = "{", {statement}, "}";
 body-assignment     = "=", statement | body;
 stmt-body           = statement | body;
-if-else             = "if","(", term, ")", stmt-body, [ "else", stmt-body ];
+if-else             = "if", [heat-pragma], "(", term, ")", stmt-body,
+                        [ "else", [heat-pragma], stmt-body ];
 return              = "return", ( term, ";" | match | if-else );
-case                = pattern, body-assignment;
+case                = [heat-pragma], pattern, body-assignment;
 match               = "match","(", term, ")","{", case, {case}, "}";
 loop-clause         = "(", [ term, ";" ], term, [ ";", term ], ")";
 loop                = "loop", loop-clause, stmt-body;
