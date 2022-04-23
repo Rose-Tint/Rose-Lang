@@ -1,7 +1,29 @@
 module Parser.Components.Types (
+    constraint,
     ttype,
     typeDecl,
 ) where
+
+import Text.Parsec (
+    many, many1, sepBy1,
+    option, choice, (<|>),
+    try, (<?>),
+    )
+
+import Parser.Components.Identifiers
+import Parser.Components.Internal.LangDef (
+    angles, brackets, parens,
+    commaSep1,
+    resOper,
+    )
+import Parser.Data (
+    Parser,
+    Type(..),
+    TypeDecl(..),
+    Constraint(..),
+    Context,
+    prim,
+    )
 
 
 -- (ignore mutability for now)
@@ -19,9 +41,9 @@ ttype = choice [
         funcType
     ] <?> "type"
     where
-        arrayType = Type (Prim "[]") <$> (:[]) <$> brackets ttype
-        tupleType = Type (Prim ",") <$> parens (commaSep1 ttype)
-        namedType = Type <$> identifier <*> many ttype
+        arrayType = Type (prim "[]") <$> (:[]) <$> brackets ttype
+        tupleType = Type (prim ",") <$> parens (commaSep1 ttype)
+        namedType = Type <$> (bigIdent <|> smallIdent) <*> many ttype
         -- unitType = resOper "()" >> TerminalType (Prim "()") []
         funcType = Applied <$> parens (ttype `sepBy1` resOper "->")
 
@@ -40,5 +62,5 @@ ctxDeclSeq = commaSep1 constraint <* resOper ":"
 typeDecl :: Parser TypeDecl
 typeDecl = angles $ do
     ctx <- option [] ctxDeclSeq
-    typ <- ttype `sepBy1` resOper "->"
+    typ <- Applied <$> ttype `sepBy1` resOper "->"
     return (TypeDecl ctx typ)

@@ -3,9 +3,23 @@ module Parser.Components.Terms.Literals (
     floatLit,
     charLit,
     stringLit,
-)
+) where
 
-import Parser.Components.Literals.Terms.Numeric
+import Data.Char (chr)
+import Text.Parsec (
+    many, between, (<|>),
+    char, anyChar, oneOf,
+    (<?>), getPosition, sourceColumn,
+    )
+
+import Parser.Components.Terms.Literals.Numeric
+import Parser.Data (
+    Parser,
+    Value(CharLit, StringLit),
+    mkPos,
+    )
+import Parser.Components.Internal.LangDef (lexeme)
+
 
 
 -- = "//", (hexa | octal | special) | ? ANY CHAR ?;
@@ -14,9 +28,9 @@ character = (char '\\' >> (hex' <|> octal' <|> special))
     <|> anyChar <?> "character"
     where
         -- = ? REGEX "\\[xX][0-9a-fA-F]{2}";
-        hex' = chr <$> hex
+        hex' = chr . fromEnum <$> hex
         -- = ? REGEX "\\[xX][0-8]{3}";
-        octal' = chr <$> octal
+        octal' = chr . fromEnum <$> octal
         -- = ? REGEX "[\\abfnrtv'\"]" ?;
         special = do
             ch <- oneOf "\\abfnrtv'\""
@@ -34,10 +48,9 @@ character = (char '\\' >> (hex' <|> octal' <|> special))
 charLit :: Parser Value
 charLit = lexeme (do
     pos <- getPosition
-    chr <- between (char '\'') (char '\'') character
+    ch <- between (char '\'') (char '\'') character
     end <- sourceColumn <$> getPosition
-    let pos' = (mkPos pos) { srcEnd = end }
-    return (CharLit chr pos')
+    return (CharLit ch (mkPos pos end))
     ) <?> "char literal"
 
 -- = """, {character}, """;
@@ -47,6 +60,5 @@ stringLit = lexeme (do
     str <- between (char '"') (char '"')
         (many character)
     end <- sourceColumn <$> getPosition
-    let pos' = (mkPos pos) { srcEnd = end }
-    return (StringLit str pos')
+    return (StringLit str (mkPos pos end))
     ) <?> "string literal"

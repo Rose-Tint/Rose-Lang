@@ -23,9 +23,7 @@ literal             = integer | float | char | string | array;
 
 
 (* IMPORTING: *)
-(* ignore import lists for now *)
-(* func-import-list    = prefix-ident, [ ",", func-import-list ], [","]; *)
-(* ctor-import-list    = big-ident, [ ",", ctor-import-list ], [","]; *)
+(* TODO: add a "hiding" option *)
 import-item         = "trait", big-ident, [ "{", [func-imp-list], "}" ];
                     | "data", big-ident, [ "{", [ctor-imp-list], "}" ];
                     | prefix-ident

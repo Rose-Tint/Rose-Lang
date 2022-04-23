@@ -1,46 +1,56 @@
 module Parser.Components.Pragmas (
+    Pragma(..),
     pragma,
 ) where
 
+import Text.Parsec (choice, char, (<?>))
+
+import Parser.Components.Terms.Literals
+import Parser.Components.Identifiers (prefixIdent)
+import Parser.Components.Internal.Item
+import Parser.Components.Internal.LangDef (
+    brackets, parens,
+    lexeme,
+    keyword,
+    comma,
+    )
+import Parser.Data (
+    Parser,
+    Value(StringLit),
+    Var,
+    )
 
 data Pragma
-    = MaybeUnused {-# UNPACK #-} !Var
-    | WarnUnused {-# UNPACK #-} !Var
+    = WarnUnused {-# UNPACK #-} !Var
+    -- | AllowUnused {-# UNPACK #-} !Var
     | MustUse {-# UNPACK #-} !Var
     | Inline {-# UNPACK #-} !Var
-    | Cold {-# UNPACK #-} !Var
-    | Deprecated {-# UNPACK #-} !Var String
-    | Test {-# UNPACK #-} !Var
-    deriving (Show, Eq, Ord)
+    -- | Cold {-# UNPACK #-} !Var
+    | Deprecated !Item String
+    | Test !Item
+    deriving (Eq)
 
 
 pragmaWrap :: Parser Pragma -> Parser Pragma
-pragmaWrap p = resOper "#" >> brackets p
+pragmaWrap p = char '#' >> brackets p
 
 -- | Pragmas that can be used on functions
 pragma :: Parser Pragma
-pragma = pragmaWrap $ choice [
-        allowUnused,
+pragma = (lexeme $ pragmaWrap $ choice [
         warnUnused,
+        -- allowUnused,
         mustUse,
         inline,
-        cold,
+        -- cold,
         deprecated,
         test
-    ]
+    ]) <?> "pragma"
 
--- |When used on a variable or function, omit
--- any warnings about the variable or function being
--- unused
---
--- Not yet implemented:
--- When used on a function call whose function was
--- marked with `#[warn_unused(...)]`, omit that warning
-allowUnused :: Parser Pragma
-allowUnused = do
-    keyword "allow_unused"
-    var <- parens identifier
-    return $ MaybeUnused var
+-- allowUnused :: Parser Pragma
+-- allowUnused = do
+--     keyword "allow_unused"
+--     var <- parens _____
+--     return $ MaybeUnused var
 
 -- |Emit a warning if the result of the marked
 -- function is ignored
@@ -56,35 +66,30 @@ mustUse = do
     keyword "must_use"
     MustUse <$> parens prefixIdent
 
--- |Strongly encourage the compiler to inline
--- the marked function
+-- |Strongly encourage the compiler to inline the marked
+-- function
 inline :: Parser Pragma
 inline = do
     keyword "inline"
     Inline <$> parens prefixIdent
 
--- |When used on a function, hint to the
--- compiler that this function will not be
--- called very often.
---
--- Not yet implemented:
--- When used on an if/else or match pattern,
--- hint to the compiler that this branch or pattern
--- will less likely than the others.
-cold :: Parser Pragma
-cold = do
-    keyword "cold"
-    Cold <$> parens prefixIdent
+-- -- |When used on a function, hint to the
+-- -- compiler that this function will not be
+-- -- called very often.
+-- cold :: Parser Pragma
+-- cold = do
+--     keyword "cold"
+--     Cold <$> parens prefixIdent
 
 -- |Indicates that a function, trait, or datatype is
 -- deprecated, with an optional message.
 deprecated :: Parser Pragma
 deprecated = do
     keyword "deprecated"
-    (var, (StrLit msg _)) <- parens $ do
-        var <- identifier
+    (var, (StringLit msg _)) <- parens $ do
+        var <- item
         comma
-        msg <- strLit
+        msg <- stringLit
         return (var, msg)
     return (Deprecated var msg)
 
@@ -92,4 +97,4 @@ deprecated = do
 test :: Parser Pragma
 test = do
     keyword "test"
-    Test <$> parens identifier
+    Test <$> parens item

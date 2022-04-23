@@ -10,7 +10,7 @@ module SymbolTable.Attrs (
 import Data.Bits
 import Data.Word (Word8)
 
-import Parser.Data (Pragma(..))
+import Parser.Components.Pragmas (Pragma(..))
 
 
 default (Word8)

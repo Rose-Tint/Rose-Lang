@@ -1,7 +1,7 @@
 {-# LANGUAGE FlexibleInstances #-}
 
 module SymbolTable.SymbolData (
-    module SymbolTable.Attrs,
+    -- module SymbolTable.Attrs,
     Symbol,
     SymbolData(..),
     stitchSD,
@@ -13,14 +13,13 @@ module SymbolTable.SymbolData (
     addAttr, addPragma, hasAttr,
 ) where
 
--- import Control.Applicative (Alternative((<|>)))
 import Data.Maybe
 
 import Color
 import Parser.Data hiding (Type)
 import Pretty
-import SymbolTable.Attrs hiding (addPragma)
-import qualified SymbolTable.Attrs as A
+-- import SymbolTable.Attrs hiding (addPragma)
+-- import qualified SymbolTable.Attrs as A
 import Typing.Types
 
 
@@ -34,8 +33,8 @@ data SymbolData
         sdType :: !Type,
         sdVisib :: Maybe Visibility,
         sdPurity :: Maybe Purity,
-        sdPos :: Maybe Position,
-        sdAttrs :: Attrs
+        sdPos :: Maybe Position
+        -- sdAttrs :: Attrs
     }
     deriving (Show, Eq)
 
@@ -48,19 +47,19 @@ mkSymbolData :: Symbol -> Type -> Maybe Visibility
           -> Maybe Purity -> SymbolData
 {-# INLINE mkSymbolData #-}
 mkSymbolData sym typ vis pur = SymbolData
-    typ vis pur (Just (varPos sym)) emptyAttrs
+    typ vis pur (Just (varPos sym))-- emptyAttrs
 
-addAttr :: Attrs -> SymbolData -> SymbolData
-{-# INLINE addAttr #-}
-addAttr as sd = sd { sdAttrs = mergeAttrs (sdAttrs sd) as }
+-- addAttr :: Attrs -> SymbolData -> SymbolData
+-- {-# INLINE addAttr #-}
+-- addAttr as sd = sd { sdAttrs = mergeAttrs (sdAttrs sd) as }
 
-addPragma :: Pragma -> SymbolData -> SymbolData
-{-# INLINE addPragma #-}
-addPragma pr sd = sd { sdAttrs = A.addPragma pr (sdAttrs sd) }
+-- addPragma :: Pragma -> SymbolData -> SymbolData
+-- {-# INLINE addPragma #-}
+-- addPragma pr sd = sd { sdAttrs = A.addPragma pr (sdAttrs sd) }
 
-hasAttr :: SymbolData -> Attrs -> Bool
-{-# INLINE hasAttr #-}
-hasAttr = testAttrs . sdAttrs
+-- hasAttr :: SymbolData -> Attrs -> Bool
+-- {-# INLINE hasAttr #-}
+-- hasAttr = testAttrs . sdAttrs
 
 undef :: SymbolData
 {-# INLINE undef #-}

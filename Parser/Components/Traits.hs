@@ -3,6 +3,25 @@ module Parser.Components.Traits (
     traitImpl,
 ) where
 
+import Text.Parsec (
+    option, many, many1, (<|>),
+    )
+
+import Parser.Components.Functions
+import Parser.Components.Identifiers
+import Parser.Components.Internal.LangDef (
+    keyword,
+    angles, braces,
+    commaSep1,
+    )
+import Parser.Components.Specifiers
+import Parser.Components.Types
+import Parser.Data (
+    Parser,
+    Context,
+    Expr(TraitDecl,TraitImpl),
+    )
+
 
 -- = "<", constraint, { ",", constraint }, ">";
 traitCtx :: Parser Context

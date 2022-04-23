@@ -1,26 +1,33 @@
 module Parser.Components.Imports (
-    ImportItem(..),
-    ImportModule(..),
+    Item(..),
+    Import(..),
     moduleImport,
 ) where
 
+import Text.Parsec (
+    (<?>),
+    option, optionMaybe,
+    )
 
-data ImportItem
-    = ImpTrait { impName :: Variable }
-    | ImpData { impName :: Variable }
-    | ImpFunc { impName :: Variable }
+import Parser.Components.Identifiers
+import Parser.Components.Internal.Item
+import Parser.Components.Internal.LangDef (
+    keyword,
+    braces,
+    commaSepEnd,
+    )
+import Parser.Components.Specifiers
+import Parser.Data (
+    Parser,
+    Var,
+    Visibility,
+    )
 
-data ModuleImport = ModuleImport {
-        miModule :: Module,
-        miAlias :: String,
-        miVisib :: Visibility,
-        miItems :: Maybe [ImportIden]
-    }
-
-data Module
-    = Module Visibility {-# UNPACK #-} !Var
-    | UnknownMod
-    deriving (Show, Eq, Ord)
+data Import = Import
+    {-# UNPACK #-} !Var
+    {-# UNPACK #-} !Var
+    !Visibility
+    (Maybe [(Item)])
 
 {- 
 func-import-list = prefix-ident, [ ",", func-import-list ], [","];
@@ -31,33 +38,30 @@ ctor-import-list = big-ident, [ ",", ctor-import-list ], [","];
 -- = "trait", big-ident
 -- | "data", big-ident
 -- | prefix-ident
-item :: Parser ImportItem
-item = choice [
-        (do
-            keyword "trait"
-            name <- bigIdent
-            return (ImpTrait name)),
-        (do
-            keyword "data"
-            name <- bigIdent
-            return (ImpData name)),
-        ImpFunc <$> prefixIdent
-    ] <?> "import item"
+-- item :: Parser Item
+-- item = choice [
+--         do  keyword "trait"
+--             name <- bigIdent
+--             return (TraitItem name),
+--         do  keyword "data"
+--             name <- bigIdent
+--             return (DataItem name),
+--         FuncItem <$> prefixIdent
+--     ] <?> "import item"
 
 -- = "import", visibility, big-ident,
 --     [ "as", big-ident ],
 --     [ "using", "{", {import-item}, "}" ];
-moduleImport :: Parser ModuleImport
+moduleImport :: Parser Import
 moduleImport = (do
     keyword "import"
     vis <- visibility
     name <- bigIdent <?> "module name"
-    alias <- option name (do
+    alias <- option name $ do
         keyword "as"
-        bigIdent <?> "module alias")
-    items <- option Nothing (do
+        bigIdent <?> "module alias"
+    items <- optionMaybe $ do
         keyword "using"
         braces (commaSepEnd item)
-            <?> "import item list")
-    return (ModuleImport name alias items)
+    return (Import name alias vis items)
     ) <?> "import statement"

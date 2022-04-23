@@ -3,6 +3,20 @@ module Parser.Components.Functions (
     funcDef,
 ) where
 
+import Text.Parsec (many, try, (<|>), (<?>))
+
+import Parser.Components.Identifiers
+import Parser.Components.Patterns
+import Parser.Components.Specifiers
+import Parser.Components.Statements
+import Parser.Components.Types
+import Parser.Data (
+    Parser,
+    Expr(FuncDecl, FuncDef),
+    Var,
+    Value,
+    )
+
 
 -- = visibility, purity, prefix-ident, type-decl;
 funcDecl :: Parser Expr
@@ -11,11 +25,11 @@ funcDecl = (do
     pur <- purity
     name <- prefixIdent
     typ <- typeDecl
-    return (FuncTypeDecl vis pur name typ)
+    return (FuncDecl vis pur name typ)
     ) <?> "function declaration"
 
 -- = pattern, infix-ident, pattern;
-infixParamSeq :: Parser (Variable, [Value])
+infixParamSeq :: Parser (Var, [Value])
 infixParamSeq = do
     lhs <- pattern
     op <- infixIdent
@@ -23,14 +37,14 @@ infixParamSeq = do
     return (op, [lhs, rhs])
 
 -- = prefix-ident, {pattern};
-prefixParamSeq :: Parser (Variable, [Value])
+prefixParamSeq :: Parser (Var, [Value])
 prefixParamSeq = do
     func <- prefixIdent
     args <- many pattern
     return (func, args)
 
 -- = infix-param-seq | prefix-param-seq
-funcParamSeq :: Parser (Variable, [Value])
+funcParamSeq :: Parser (Var, [Value])
 funcParamSeq = try infixParamSeq <|> prefixParamSeq
 
 -- = func-param-seq, body-assignment;

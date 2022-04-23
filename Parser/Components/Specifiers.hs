@@ -1,10 +1,20 @@
-module Parser.Components.Specifers (
+module Parser.Components.Specifiers (
     purity,
     visibility,
     visibility',
     mutability,
     mutability',
 ) where
+
+import Text.Parsec (choice, option, (<?>))
+
+import Parser.Components.Internal.LangDef (keyword)
+import Parser.Data (
+    Parser,
+    Purity(..),
+    Visibility(..),
+    Mutability,
+    )
 
 
 purity :: Parser Purity

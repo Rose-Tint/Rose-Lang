@@ -1,6 +1,22 @@
 module Parser.Components.Terms (
     term,
+    literal,
 ) where
+
+import Data.Array (listArray)
+import Text.Parsec (
+    many, choice, try, (<|>),
+    (<?>),
+    )
+
+import Parser.Components.Identifiers
+import Parser.Components.Terms.Literals
+import Parser.Components.Internal.LangDef (
+    parens, brackets,
+    resOper,
+    commaSep, commaSep1,
+    )
+import Parser.Data (Parser, Value(..))
 
 
 -- = literal | func-app | lambda | "(", term, ")";
@@ -13,16 +29,26 @@ term = choice [
         parens term
     ]
 
+literal :: Parser Value
+literal = choice [
+    intLit,
+    floatLit,
+    charLit,
+    stringLit,
+    arrayLit
+    -- `tupleLit` is excluded bc of the
+    -- parentheses. find it in `term`.
+    ] <?> "literal"
+
 -- = term, infix-ident, term
 -- | infix-ident, term
 -- | term, infix-ident;
 infixCall :: Parser Value
 infixCall = (do
     lhs <- term
-    op <- operator <|>
-        between (resOper "`") (resOper "`") smallIden
+    op <- VarVal <$> infixIdent
     rhs <- term
-    return (FuncCall op [lhs, rhs])
+    return (Application op [lhs, rhs])
     ) <?> "infix call"
 
 -- (for now, lambdas will be very limited due to
@@ -32,7 +58,8 @@ lambda :: Parser Value
 lambda = (do
     params <- many smallIdent
     resOper "=>"
-    body <- StmtVal <$> term
+    body <- term
+    return (Lambda params body)
     ) <?> "lambda"
 
 -- = prefix-ident | ("(", lambda, func-app ")");
@@ -69,30 +96,13 @@ module because they require @term@.
 -- = "[", {term}, "]";
 arrayLit :: Parser Value
 arrayLit = (do
-    -- pos <- getPosition
     arr <- brackets (commaSep term)
-    -- end <- sourceColumn <$> getPosition
-    -- let pos' = (mkPos pos) { srcEnd = end }
     return (Array (listArray (0, length arr) arr))
     ) <?> "array literal"
 
 -- = "(", term, ",", term, { ",", term }, ")";
 tupleLit :: Parser Value
 tupleLit = (do
-    -- pos <- getPosition
     tup <- parens (commaSep1 term)
-    -- end <- sourceColumn <$> getPosition
-    -- let pos' = (mkPos pos) { srcEnd = end }
     return (Tuple (listArray (0, length tup) tup))
     ) <?> "tuple literal"
-
-literal :: Parser Value
-literal = choice [
-    intLit,
-    floatLit,
-    charLit,
-    stringLit,
-    arrayLit
-    -- `tupleLit` is excluded bc of the
-    -- parentheses. find it in `term`.
-    ] <?> "literal"
