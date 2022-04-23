@@ -5,9 +5,10 @@ module Parser.Components.Pragmas (
 
 import Text.Parsec (choice, char, (<?>))
 
+import Common.Item
+import Common.Var
 import Parser.Components.Terms.Literals
-import Parser.Components.Identifiers (prefixIdent)
-import Parser.Components.Internal.Item
+import Parser.Components.Identifiers
 import Parser.Components.Internal.LangDef (
     brackets, parens,
     lexeme,
@@ -17,7 +18,6 @@ import Parser.Components.Internal.LangDef (
 import Parser.Data (
     Parser,
     Value(StringLit),
-    Var,
     )
 
 data Pragma

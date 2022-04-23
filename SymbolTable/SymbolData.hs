@@ -13,6 +13,9 @@ module SymbolTable.SymbolData (
     -- addAttr, addPragma, hasAttr,
 ) where
 
+import Common.SrcPos
+import Common.Typing.Type
+import Common.Var
 import Parser.Data
 -- import SymbolTable.Attrs hiding (addPragma)
 -- import qualified SymbolTable.Attrs as A
@@ -28,7 +31,7 @@ data SymbolData
         sdType :: !Type,
         sdVisib :: Maybe Visibility,
         sdPurity :: Maybe Purity,
-        sdPos :: Maybe Position
+        sdPos :: Maybe SrcPos
         -- sdAttrs :: Attrs
     }
     deriving (Eq)
@@ -36,7 +39,7 @@ data SymbolData
 
 stitchSD :: SymbolData -> SymbolData -> SymbolData
 {-# INLINE stitchSD #-}
-stitchSD sd1 sd2 = sd1 { sdType = sdType sd1 <~> sdType sd2 }
+stitchSD sd1 sd2 = sd1 { sdType = sdType sd1 <:> sdType sd2 }
 
 mkSymbolData :: Symbol -> Type -> Maybe Visibility
           -> Maybe Purity -> SymbolData

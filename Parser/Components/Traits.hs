@@ -7,6 +7,7 @@ import Text.Parsec (
     option, many, many1, (<|>),
     )
 
+import Common.Typing.Constraint
 import Parser.Components.Functions
 import Parser.Components.Identifiers
 import Parser.Components.Internal.LangDef (
@@ -18,7 +19,6 @@ import Parser.Components.Specifiers
 import Parser.Components.Types
 import Parser.Data (
     Parser,
-    Context,
     Expr(TraitDecl,TraitImpl),
     )
 

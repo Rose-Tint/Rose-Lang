@@ -2,15 +2,15 @@ module Analyzer.Error (
     Error(..),
     Warning(..),
     ErrorMessage(..),
-    -- prettyError,
+    prettyError,
 ) where
 
--- import Data.Text (Text, unpack)
+import Data.Text (Text)
 
--- import Color
--- import Pretty
-import Parser.Data
-import SymbolTable.SymbolData
+import Common.SrcPos
+import Common.Typing
+import Common.Var
+import Pretty
 -- import Utils
 
 
@@ -21,30 +21,31 @@ data Error
     = TypeMismatch
         Type -- expected
         Type -- found
-    | Undefined Symbol [Symbol]
-    | Redefinition Symbol Symbol
+    | Undefined Var [Var]
+    | Redefinition Var Var
     | OtherError String
     | FalseError
     deriving (Eq)
 
 data Warning
-    = ShadowsName Symbol Symbol
+    = ShadowsName Var Var
     deriving (Eq)
 
 data ErrorMessage
     = ErrorMessage {
-        emPosition :: Position,
-        emDefName :: Maybe Symbol,
+        emPos :: SrcPos,
+        emDefName :: Maybe Var,
         emError :: Either Warning Error
     }
 
 
--- prettyError :: [Text] -> ErrorMessage -> String
+prettyError :: [Text] -> ErrorMessage -> String
+prettyError _ _ = ""
 -- prettyError lns em = printf
 --     "%s\n%s\n       $R%s$r%s$R\n"
 --     (pretty em) src caretStart caretRed
 --     where
---         pos = emPosition em
+--         pos = emPos em
 --         lno = min (length lns) (max 0 (posLine pos))
 --         mainLine = unpack $ lns !! (lno - 1)
 --         caretStart = replicate (max 0 (posStart pos)) ' '
@@ -55,7 +56,8 @@ data ErrorMessage
 --                     lno ++ mainLine
 
 
--- instance Pretty ErrorMessage where
+instance Pretty ErrorMessage where
+    pretty _ = ""
 --     pretty em = printf
 --         -- "%s\n    Position: %s\n    Location: %s\n"
 --         -- err pos def
@@ -63,7 +65,7 @@ data ErrorMessage
 --             (pretty $! posModule pos) err (posLine pos)
 --             (posStart pos) (posEnd pos)
 --         where
---             pos = emPosition em
+--             pos = emPos em
 --             -- def = case emDefName em of
 --             --     Nothing -> "most likely at the top level"
 --             --     Just name -> "in the definition of " ++ detailed name

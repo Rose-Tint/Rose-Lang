@@ -9,8 +9,9 @@ import Text.Parsec (
     option, optionMaybe,
     )
 
+import Common.Item
+import Common.Var
 import Parser.Components.Identifiers
-import Parser.Components.Internal.Item
 import Parser.Components.Internal.LangDef (
     keyword,
     braces,
@@ -19,7 +20,6 @@ import Parser.Components.Internal.LangDef (
 import Parser.Components.Specifiers
 import Parser.Data (
     Parser,
-    Var,
     Visibility,
     )
 

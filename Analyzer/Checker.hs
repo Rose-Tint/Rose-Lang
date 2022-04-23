@@ -5,8 +5,13 @@ module Analyzer.Checker (
 
 import Prelude hiding (fail)
 
+import Control.Monad (foldM)
+import Data.Array (elems)
+
 import Analyzer.Analyzer
-import Analyzer.Prims
+import Analyzer.Error
+import Analyzer.SymbolTable
+import Common.Typing
 import Parser.Data
 import SymbolTable
 
@@ -16,65 +21,64 @@ default (Int, Double)
 
 class Checker a where
     infer :: a -> Analyzer Type
-    check :: a -> Type -> Analyzer Bool
-    check a expected = do
+    -- |Checks that something is infered to be
+    -- compatable with the given type
+    isOfType :: a -> Type -> Analyzer Bool
+    isOfType a expected = do
         typ <- infer a
         return (typ == expected)
 
 
 instance Checker Type where
     infer Delayed = peekExpType
-    infer t = t
-    check t = return . (t ==)
+    infer t = return t
+    isOfType t = return . (t ==)
 
 instance Checker Value where
     infer (IntLit _ p) = updatePos p >>
-        return intLitType
-    infer (FltLit _ p) = updatePos p >>
-        return floatLitType
-    infer (ChrLit _ p) = updatePos p >>
-        return charLitType
-    infer (StrLit _ p) = updatePos p >>
-        return stringLitType
+        return intType
+    infer (FloatLit _ p) = updatePos p >>
+        return floatType
+    infer (CharLit _ p) = updatePos p >>
+        return charType
+    infer (StringLit _ p) = updatePos p >>
+        return stringType
     infer (VarVal var) = do
         updatePosVar var
         sdType <$> searchScopeds var
     infer (Application val vals) =
         Applied <$> mapM infer (val:vals)
-    infer (CtorCall name vals) = do
+    infer (CtorCall name args) = do
         updatePosVar name
-        dta <- searchGlobals name
+        typ <- sdType <$> searchGlobals name
         expect typ (apply typ args)
     infer (Tuple arr) = do
-        typs <- mapM infer arr
+        typs <- elems <$> mapM infer arr
         return $! tupleOf typs
     infer (Array arr) = do
         eT <- peekExpType
         typ <- foldM (\bT val -> do
             vT <- infer val
-            typ <- bT <~> vT
-            case typ of
-                NoType -> throw $
-                    TypeMismatch bT vT
-                _ -> return typ
+            case bT <:> vT of
+                NoType -> throw $ TypeMismatch bT vT
+                typ -> return typ
             ) eT arr
         return $! arrayOf typ
     infer (Lambda params val) = do
-        let pTs = Delayed <$ params
-            apT = Applied (pTs:Delayed)
-        vT <- expect apT (infer val))
-        return (Applied (pTs:vT))
+        let pTs = (Delayed:(Delayed <$ params))
+            apT = Applied pTs
+        vT <- expect apT (infer val)
+        return (Applied (tail pTs ++ [vT]))
     infer (StmtVal stmt) = infer stmt
     infer (Hole p) = updatePos p >> peekExpType
 
 instance Checker Stmt where
-    infer _ = return NoType
     infer (IfElse cls trueBody falseBody) = do
         expectCheck_ boolType cls
         tT <- inferBody trueBody
         fT <- inferBody falseBody
-        check tT fT
-        return NoType
+        return (tT <::> fT)
+    infer _ = return NoType
 --     infer (Pattern val cases) = do
 --         valT <- infer val
 --         forM_ cases $ \(case', bdy) -> do
@@ -115,7 +119,7 @@ instance Checker Stmt where
 --         let typ' = fromPDType typ
 --         (valT, chk) <- expectIn typ' $ do
 --             valT <- infer val
---             chk <- check valT typ'
+--             chk <- isOfType valT typ'
 --             return (valT, chk)
 --         if chk then do
 --             pushScoped var $ mkSymbolData
@@ -131,6 +135,9 @@ instance Checker Stmt where
 --                 expect val (sdType dta)
 --                 return NoType
 --     infer (Return val) = infer val
+
+instance Checker Expr where
+    infer _ = return NoType
 
 {-
 ModImport -- WIP
@@ -174,7 +181,7 @@ instance Checker SymbolData where
 --                     Delayed -> dta { sdType = eT }
 --                     _ -> dta
 --             -- dTyp <- sdType <$!> searchGlobals name
---             -- let dTyp' = dTyp <~> eT
+--             -- let dTyp' = dTyp <:> eT
 --             -- expectIn dTyp' $! pushParams dTyp' vals
 --             return ()
 --         Hole pos -> do
@@ -192,20 +199,19 @@ instance Checker SymbolData where
 --             "unavoidable `Delayed` in pushParams"
 --         _ -> expectIn typ' $ pushParams typ' ps
 
--- apply :: Type -> [Value] -> Analyzer Type
--- apply ft [] = return ft
--- apply ft (val:vals) = do
---     updatePos $ valPos val
---     valT <- infer val
---     expT <- peekExpType
---     areSame <- check valT expT
---     if areSame then
---         apply ft vals
---     else 
---         throw $ TypeMismatch valT expT
+apply :: Type -> [Value] -> Analyzer Type
+apply ft [] = return ft
+apply ft (val:vals) = do
+    updatePos (valPos val)
+    vT <- infer val
+    eT <- peekExpType
+    areSame <- isOfType vT eT
+    if areSame then
+        apply ft vals
+    else 
+        throw $ TypeMismatch vT eT
 
 infer_ :: Checker a => a -> Analyzer ()
-{-# INLINE infer_ #-}
 infer_ = optional . infer
 
 inferBody :: Body -> Analyzer Type
@@ -213,16 +219,20 @@ inferBody body = do
     eT <- peekExpType
     foldM expectCheck eT body
 
-expectCheck_ :: Checker a -> Type -> Analyzer a -> Analyzer ()
-expectCheck_ typ an = do
-    expect typ an
-    check typ an
+expectCheck_ :: Checker a => Type -> a -> Analyzer ()
+expectCheck_ typ a = do
+    aT <- expect typ (infer a)
+    isOfType typ aT
+    return ()
 
-expectCheck :: Checker a -> Type -> Analyzer a -> Analyzer Type
-expectCheck typ an = do
-    aT <- expect typ an
+expectCheck :: Checker a => Type -> a -> Analyzer Type
+expectCheck typ a = do
+    aT <- expect typ (infer a)
     if typ == NoType then
         return aT
     else do
-        chk <- check an typ
-        if chk then
+        same <- isOfType aT typ
+        if same then
+            return (typ <:> aT)
+        else
+            throw $ TypeMismatch typ aT

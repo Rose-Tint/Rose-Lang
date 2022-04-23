@@ -19,7 +19,7 @@ module SymbolTable.SymbolMap (SymbolMap,
 
 import Prelude hiding (lookup)
 
-import Parser.Data (Var(..))
+import Common.Var
 import qualified SymbolTable.Trie as T
 import SymbolTable.SymbolData
 

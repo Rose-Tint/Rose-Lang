@@ -15,7 +15,7 @@ import Text.Parsec
 import Text.Parsec.Language (emptyDef)
 import qualified Text.Parsec.Token as T
 
-import Parser.Data
+import Parser.Data (Parser)
 
 
 default (Int, Double)

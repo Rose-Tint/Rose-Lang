@@ -1,6 +1,5 @@
 module SymbolTable (
-    module SymbolTable.SymbolData,
-    module SymbolTable.SymbolMap,
+    module S,
     SymbolTable(..),
     insertType,
     insertTrait,
@@ -11,9 +10,10 @@ module SymbolTable (
 ) where
 
 import Data.Maybe (mapMaybe)
-import Parser.Data (Var(..), prim)
-import SymbolTable.SymbolData
-import SymbolTable.SymbolMap
+
+import Common.Var
+import SymbolTable.SymbolData as S
+import SymbolTable.SymbolMap as S
 import SymbolTable.Trie (assocs)
 import Utils
 

@@ -10,7 +10,7 @@ import Prelude hiding (lookup)
 import Control.Monad ((<$!>))
 
 import Analyzer.Analyzer
-import Parser.Data (Type(..))
+import Common.Typing.Type (Type(..))
 import SymbolTable
 
 

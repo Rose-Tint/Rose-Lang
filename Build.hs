@@ -7,20 +7,21 @@ import Prelude hiding (readFile)
 
 import Control.Monad ((<$!>), when, forM_)
 import Data.Text (Text)
--- import qualified Data.Text as T (lines)
+import qualified Data.Text as T (lines)
 import Data.Text.IO (readFile)
 import System.Directory
 import Text.Parsec (parse, SourcePos)
 
 import CmdLine.Flags
+import Common.Var
 import Analyzer.Analyzer (Analysis(..), analyze_)
 import Analyzer.Checker (infer_)
--- import Analyzer.Error (prettyError)
+import Analyzer.Error (prettyError)
 import Builder.Builder
 import Builder.CmdLine
 import Builder.Output
 import Parser.Components.Imports
-import Parser.Data (Expr, Var(Var))
+import Parser.Data (Expr)
 import Parser.Error (prettyParseErr)
 import Parser.Parser (importsParser, roseParser)
 import Pretty
@@ -105,9 +106,9 @@ analyzeFile es = do
     if null $ arErrors res then
         return res
     else do
-        -- lns <- T.lines <$> getSource
-        forM_ (arErrors res) $ \_ -> return ()-- \em -> do
-            -- message (prettyError lns em)
+        lns <- T.lines <$> getSource
+        forM_ (arErrors res) $ \em -> do
+            message (prettyError lns em)
         flgs <- cmdFlags <$!> getCmdLine
         if f_fatal_errors `isFEnabled` flgs then fatal
             ("Failed while analyzing module ("+|

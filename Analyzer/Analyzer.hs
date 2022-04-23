@@ -21,8 +21,10 @@ import Control.Monad.Fail
 
 import Analyzer.Error
 import Analyzer.State
+import Common.SrcPos
+import Common.Typing
+import Common.Var
 import Parser.Components.Imports (Import)
-import Parser.Data (Type(..), Var(..))
 import SymbolTable
 
 
@@ -146,9 +148,9 @@ define !name analyzer = do
     exitDef
     return NoType
 
-updatePos :: Position -> Analyzer ()
+updatePos :: SrcPos -> Analyzer ()
 updatePos UnknownPos = return ()
-updatePos p = modifyState_ $ \s -> s { stPosition = p }
+updatePos p = modifyState_ $ \s -> s { stPos = p }
 
 updatePosVar :: Var -> Analyzer ()
 updatePosVar (Var _ p) = updatePos p
@@ -168,7 +170,7 @@ throw FalseError = Analyzer $ \ !s _ err -> err FalseError s
 throw e = Analyzer $ \ s _ err ->
     let es = stErrors s
         em = ErrorMessage {
-                emPosition = stPosition s,
+                emPos = stPos s,
                 emDefName = stDefName s,
                 emError = Right e
             }
@@ -176,7 +178,7 @@ throw e = Analyzer $ \ s _ err ->
 
 warn :: Warning -> Analyzer ()
 warn w = modifyState_ $ \s -> s { stErrors = ((ErrorMessage {
-        emPosition = stPosition s,
+        emPos = stPos s,
         emDefName = stDefName s,
         emError = Left w
     }):stErrors s) }
@@ -192,12 +194,12 @@ throwUndefined sym = do
 
 
 instance Functor Analyzer where
-        fmap f a = Analyzer $ \ !s aok err ->
+    fmap f a = Analyzer $ \ !s aok err ->
         let okay x s' = aok (f x) s' in
         runA a s okay err
 
 instance Applicative Analyzer where
-        pure a = Analyzer $ \ !s okay _ -> okay a s
+    pure a = Analyzer $ \ !s okay _ -> okay a s
     fa <*> xa = do
         f <- fa
         x <- xa
@@ -209,4 +211,4 @@ instance Monad Analyzer where
         in runA a s okay err
 
 instance MonadFail Analyzer where
-        fail = throw . OtherError
+    fail = throw . OtherError

@@ -2,9 +2,10 @@ module Parser.Components.Patterns (
     pattern,
 ) where
 
+import Common.SrcPos
 import Data.Array (listArray)
 import Text.Parsec (
-    (<?>), getPosition, sourceColumn,
+    (<?>), getPosition,
     char,
     many, choice, (<|>),
     notFollowedBy,
@@ -20,16 +21,16 @@ import Parser.Components.Terms
 import Parser.Data (
     Parser,
     Value(Hole, Tuple, CtorCall, VarVal),
-    mkPos,
     )
 
 
 hole :: Parser Value
 hole = (do
-    pos <- getPosition
+    start <- getPosition
     char '_'
     notFollowedBy validIdLetter
-    return (Hole (mkPos pos (sourceColumn pos + 1)))
+    end <- getPosition
+    return (Hole (fromParsecPos start end))
     ) <?> "hole"
 
 -- = big-ident, {pattern};

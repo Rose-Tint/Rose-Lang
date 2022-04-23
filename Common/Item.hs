@@ -1,16 +1,14 @@
-module Parser.Components.Internal.Item (
+module Common.Item (
     Item(..),
     item,
 ) where
 
 import Text.Parsec (choice)
 
-import Parser.Components.Identifiers (
-    bigIdent,
-    prefixIdent,
-    )
+import Common.Var
+import Parser.Components.Identifiers
 import Parser.Components.Internal.LangDef (keyword)
-import Parser.Data (Parser, Var)
+import Parser.Data (Parser)
 
 
 data Item

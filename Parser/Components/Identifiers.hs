@@ -10,9 +10,11 @@ module Parser.Components.Identifiers (
 import Text.Parsec (
     many, (<|>), endBy1,
     upper, lower, char,
-    (<?>), getPosition, sourceColumn,
+    (<?>), getPosition,
     )
 
+import Common.SrcPos
+import Common.Var
 import Parser.Components.Internal.LangDef (
     lexeme,
     validIdLetter,
@@ -20,8 +22,6 @@ import Parser.Components.Internal.LangDef (
     )
 import Parser.Data (
     Parser,
-    Var(Var),
-    mkPos,
     )
 
 
@@ -39,19 +39,19 @@ qualifier = concat <$> (dotQualIden `endBy1` char '.')
 -- = qualifier, ? REGEX "[A-Z][a-zA-Z0-9_]*" ?;
 bigIdent :: Parser Var
 bigIdent = lexeme (do
-    pos <- getPosition
+    start <- getPosition
     name <- (++) <$> qualifier <*> upperIdent
-    end <- sourceColumn <$> getPosition
-    return (Var name (mkPos pos end))
+    end <- getPosition
+    return (Var name (fromParsecPos start end))
     ) <?> "big identifier"
 
 -- = qualifier, ? REGEX "[a-z_][a-zA-Z0-9_]*" ?;
 smallIdent :: Parser Var
 smallIdent = lexeme (do
-    pos <- getPosition
+    start <- getPosition
     name <- (++) <$> qualifier <*> lowerIdent
-    end <- sourceColumn <$> getPosition
-    return (Var name (mkPos pos end))
+    end <- getPosition
+    return (Var name (fromParsecPos start end))
     ) <?> "small identifier"
 
 oper :: Parser String
@@ -64,10 +64,10 @@ oper = (:) <$> symbol <*> many symbol
 -- = qualifer, symbol - "=", [small-ident], [symbol];
 operator :: Parser Var
 operator = lexeme (do
-    pos <- getPosition
+    start <- getPosition
     op <- (++) <$> qualifier <*> oper
-    end <- sourceColumn <$> getPosition
-    return (Var op (mkPos pos end))
+    end <- getPosition
+    return (Var op (fromParsecPos start end))
     ) <?> "operator"
     where
 
@@ -79,8 +79,8 @@ infixIdent = operator <|> (char '`' *> smallIdent <* char '`')
 -- = small-ident | "(", operator, ")";
 prefixIdent :: Parser Var
 prefixIdent = lexeme (do
-    pos <- getPosition
+    start <- getPosition
     name <- (++) <$> qualifier <*> (lowerIdent <|> oper)
-    end <- sourceColumn <$> getPosition
-    return (Var name (mkPos pos end))
+    end <- getPosition
+    return (Var name (fromParsecPos start end))
     ) <?> "prefix identifier"

@@ -11,16 +11,16 @@ import Data.List (foldl')
 import Text.Parsec (
     many1, count, choice, (<|>),
     optional,
-    (<?>), getPosition, sourceColumn,
+    (<?>), getPosition,
     octDigit, hexDigit, digit,
     char, oneOf,
     )
 
+import Common.SrcPos
 import Parser.Components.Internal.LangDef (lexeme)
 import Parser.Data (
     Parser,
     Value(IntLit, FloatLit),
-    mkPos,
     )
 
 -- |@`number` cnt base digitP@ parses a number in base
@@ -46,10 +46,10 @@ sign = choice [
 -- = [sign], (binary | octal | hexa | decimal);
 intLit :: Parser Value
 intLit = lexeme (do
-    pos <- getPosition
+    start <- getPosition
     int <- integer
-    end <- sourceColumn <$> getPosition
-    return (IntLit int (mkPos pos end))
+    end <- getPosition
+    return (IntLit int (fromParsecPos start end))
     ) <?> "integer literal"
     where
         -- = [sign], (binary | octal | hexa | decimal);
@@ -80,10 +80,10 @@ decimal = number 0 10 digit
 -- | [sign], hexa, ".", hexa, ["f"]
 floatLit :: Parser Value
 floatLit = lexeme (do
-    pos <- getPosition
+    start <- getPosition
     flt <- float
-    end <- sourceColumn <$> getPosition
-    return (FloatLit flt (mkPos pos end))
+    end <- getPosition
+    return (FloatLit flt (fromParsecPos start end))
     ) <?> "float literal"
     where
         -- -- = ("e"|"E"), [sign], decimal;

@@ -5,6 +5,7 @@ module Parser.Components.Functions (
 
 import Text.Parsec (many, try, (<|>), (<?>))
 
+import Common.Var
 import Parser.Components.Identifiers
 import Parser.Components.Patterns
 import Parser.Components.Specifiers
@@ -13,7 +14,6 @@ import Parser.Components.Types
 import Parser.Data (
     Parser,
     Expr(FuncDecl, FuncDef),
-    Var,
     Value,
     )
 

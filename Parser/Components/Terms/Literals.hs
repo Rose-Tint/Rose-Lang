@@ -9,14 +9,14 @@ import Data.Char (chr)
 import Text.Parsec (
     many, between, (<|>),
     char, anyChar, oneOf,
-    (<?>), getPosition, sourceColumn,
+    (<?>), getPosition,
     )
 
+import Common.SrcPos
 import Parser.Components.Terms.Literals.Numeric
 import Parser.Data (
     Parser,
     Value(CharLit, StringLit),
-    mkPos,
     )
 import Parser.Components.Internal.LangDef (lexeme)
 
@@ -47,10 +47,10 @@ character = (char '\\' >> (hex' <|> octal' <|> special))
 -- = "'", character, "'";
 charLit :: Parser Value
 charLit = lexeme (do
-    pos <- getPosition
+    start <- getPosition
     ch <- between (char '\'') (char '\'') character
-    end <- sourceColumn <$> getPosition
-    return (CharLit ch (mkPos pos end))
+    end <- getPosition
+    return (CharLit ch (fromParsecPos start end))
     ) <?> "char literal"
 
 -- = """, {character}, """;
@@ -59,6 +59,6 @@ stringLit = lexeme (do
     pos <- getPosition
     str <- between (char '"') (char '"')
         (many character)
-    end <- sourceColumn <$> getPosition
-    return (StringLit str (mkPos pos end))
+    end <- getPosition
+    return (StringLit str (fromParsecPos pos end))
     ) <?> "string literal"

@@ -1,13 +1,14 @@
 module Analyzer.State (
-    Position(..),
     State(..),
     newModuleState,
     newState,
 ) where
 
 import Analyzer.Error
+import Common.SrcPos
+import Common.Typing
+import Common.Var
 import Parser.Components.Imports (Import)
-import Parser.Data
 import SymbolTable
 
 
@@ -19,14 +20,14 @@ data State
         stTable :: SymbolTable,
         stImports :: [Import],
         stDefName :: Maybe Symbol,
-        stPosition :: Position
+        stPos :: SrcPos
     }
 
 
 newModuleState :: String -> State
 {-# INLINE newModuleState #-}
 newModuleState name = State (prim name) [] []
-    emptyTable [] Nothing (newPosition name)
+    emptyTable [] Nothing (newModulePos name)
 
 newState :: State
 {-# INLINE newState #-}

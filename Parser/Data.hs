@@ -1,11 +1,5 @@
 module Parser.Data (
     Parser,
-    Var(..),
-    Position(..),
-    Constraint(..),
-    Context,
-    Type(..),
-    TypeDecl(..),
     Value(..),
     Pattern,
     Purity(..),
@@ -15,23 +9,18 @@ module Parser.Data (
     Stmt(..),
     Body,
     Expr(..),
-    (<~>),
-    normalize,
-    prim,
-    boolType,
     valPos,
-    mkPos,
-    newPosition,
 ) where
 
 import Data.Array (Array)
-import Data.Function (on)
 import Data.Functor.Identity (Identity)
 import Data.Int (Int64)
-import Data.Ord (comparing)
 import Data.Text (Text)
 import Text.Parsec.Prim (ParsecT)
-import Text.Parsec.Pos
+
+import Common.SrcPos
+import Common.Typing
+import Common.Var
 
 
 default (Int, Double)
@@ -39,48 +28,19 @@ default (Int, Double)
 
 type Parser a = ParsecT Text () Identity a
 
-data Var = Var {
-        varName :: !String,
-        varPos :: Position
-    }
-
-data Position
-    = UnknownPos
-    | SourcePos
-        {-# UNPACK #-} !Var
-        {-# UNPACK #-} !Line
-        {-# UNPACK #-} !Column
-        {-# UNPACK #-} !Column
-    deriving (Eq, Ord)
-
-data Constraint = Constraint {-# UNPACK #-} !Var [Var]
-    deriving (Eq)
-
-type Context = [Constraint]
-
-data Type
-    = Type {-# UNPACK #-} !Var [Type]
-    | Applied [Type]
-    -- | Param {-# UNPACK #-} !Var [Type]
-    | Delayed
-    | NoType
-
-data TypeDecl = TypeDecl Context Type
-    deriving (Eq)
-
 data Value
-    = IntLit {-# UNPACK #-} !Int64 Position
-    | FloatLit {-# UNPACK #-} !Double Position
-    | CharLit {-# UNPACK #-} !Char Position
-    | StringLit String Position
+    = IntLit {-# UNPACK #-} !Int64 SrcPos
+    | FloatLit {-# UNPACK #-} !Double SrcPos
+    | CharLit {-# UNPACK #-} !Char SrcPos
+    | StringLit String SrcPos
     | VarVal {-# UNPACK #-} !Var
     | Application Value [Value]
     | CtorCall {-# UNPACK #-} !Var [Value]
-    | Tuple {-# UNPACK #-} !(Array Int Value)-- Position
-    | Array {-# UNPACK #-} !(Array Int Value)-- Position
+    | Tuple {-# UNPACK #-} !(Array Int Value)-- SrcPos
+    | Array {-# UNPACK #-} !(Array Int Value)-- SrcPos
     | Lambda [Var] Value -- Body
     | StmtVal Stmt
-    | Hole Position
+    | Hole SrcPos
     deriving (Eq)
 
 -- type Pattern = [Value]
@@ -146,38 +106,7 @@ data Expr
     }
     deriving (Eq)
 
-
-infixl 7 <~>
-(<~>) :: Type -> Type -> Type
-typ <~> Delayed = normalize typ
-Delayed <~> typ = normalize typ
-t1 <~> t2 = if t1 == t2 then normalize t1 else NoType
-
--- |Turns `Applied` types with only one type-argument
--- into just that type
-normalize :: Type -> Type
-normalize (Applied []) = NoType
-normalize (Applied [t]) = normalize t
-normalize (Applied ts) = Applied (normalize <$> ts)
-normalize (Type nm ts) = Type nm (normalize <$> ts)
-normalize typ = typ
-
--- |Creates a `Position` from a
--- `Text.Parsec.Pos.SourcePos` and a new end-column
-mkPos :: SourcePos -> Column -> Position
-mkPos pos end = SourcePos
-    (prim (sourceName pos))
-    (sourceLine pos)
-    (sourceColumn pos)
-    end
-
-prim :: String -> Var
-prim s = Var s UnknownPos
-
-boolType :: Type
-boolType = Type (prim "Boolean") []
-
-valPos :: Value -> Position
+valPos :: Value -> SrcPos
 valPos (IntLit _ p) = p
 valPos (FloatLit _ p) = p
 valPos (CharLit _ p) = p
@@ -186,43 +115,20 @@ valPos (VarVal var) = varPos var
 valPos (Application _ _) = UnknownPos -- ERROR
 -- valPos (Application val vals) = case valPos val of
 --     UnknownPos -> UnknownPos
---     SourcePos m ln st _ -> case valPos (tail vals) of
+--     SrcPos m ln st _ -> case valPos (tail vals) of
 --         UnknownPos -> UnknownPos
---         SourcePos _ _ _ end -> SourcePos m ln st end
+--         SrcPos _ _ _ end -> SrcPos m ln st end
 valPos (Lambda (par:_) val) = case varPos par of
     UnknownPos -> UnknownPos
-    SourcePos m ln st _ -> case valPos val of
+    SrcPos m ls _ cs _ -> case valPos val of
         UnknownPos -> UnknownPos
-        SourcePos _ _ _ end -> SourcePos m ln st end
+        SrcPos _ _ le _ ce -> SrcPos m ls le cs ce
 valPos (Lambda _ _) = UnknownPos
 valPos (CtorCall var _) = varPos var
 valPos (Array _) = UnknownPos
 valPos (Tuple _) = UnknownPos
 valPos (StmtVal _) = UnknownPos
 valPos (Hole p) = p
-
-newPosition :: String -> Position
-newPosition modName =
-    SourcePos (prim modName) 0 0 0
-
-
-instance Eq Var where
-    (==) = (==) `on` varName
-
-instance Ord Var where
-    (<=) = (<=) `on` varName
-    (>=) = (>=) `on` varName
-    (<) = (<) `on` varName
-    (>) = (>) `on` varName
-    compare = comparing varName
-
-instance Eq Type where
-    Delayed == _ = True
-    _ == Delayed = True
-    (Applied ts1) == (Applied ts2) = ts1 == ts2
-    (Type name1 tps1) == (Type name2 tps2) =
-        name1 == name2 && tps1 == tps2
-    _ == _ = False
 
 -- instance Pretty Expr where
 --     pretty (ValueE v) = pretty v
@@ -380,15 +286,15 @@ instance Eq Type where
 --         "(%s, %s)" (pretty t1)
 --         (", " `seps` toList ts)
 
--- instance Pretty Position where
+-- instance Pretty SrcPos where
 --     pretty UnknownPos = "[?]"
---     pretty (SourcePos _ ln st _) =
+--     pretty (SrcPos _ ln st _) =
 --         printf "[%d,%d]" ln st
 --     detailed UnknownPos = "[?]"
---     detailed (SourcePos _ ln st end) = printf
+--     detailed (SrcPos _ ln st end) = printf
 --         "[%d,%d:%d]" ln st end
 --     exhaustive UnknownPos = "[?]"
---     exhaustive (SourcePos name ln st _) = printf
+--     exhaustive (SrcPos name ln st _) = printf
 --         "in %s: line %d, col %d"
 --         (exhaustive name) ln st
 

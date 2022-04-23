@@ -10,20 +10,15 @@ import Text.Parsec (
     try, (<?>),
     )
 
+import Common.Typing
+import Common.Var
 import Parser.Components.Identifiers
 import Parser.Components.Internal.LangDef (
     angles, brackets, parens,
     commaSep1,
     resOper,
     )
-import Parser.Data (
-    Parser,
-    Type(..),
-    TypeDecl(..),
-    Constraint(..),
-    Context,
-    prim,
-    )
+import Parser.Data (Parser)
 
 
 -- (ignore mutability for now)
@@ -35,13 +30,13 @@ import Parser.Data (
 ttype :: Parser Type
 ttype = choice [
         namedType,
-        arrayType,
+        arrayType',
         try tupleType,
         -- try unitType,
         funcType
     ] <?> "type"
     where
-        arrayType = Type (prim "[]") <$> (:[]) <$> brackets ttype
+        arrayType' = arrayOf <$> brackets ttype
         tupleType = Type (prim ",") <$> parens (commaSep1 ttype)
         namedType = Type <$> (bigIdent <|> smallIdent) <*> many ttype
         -- unitType = resOper "()" >> TerminalType (Prim "()") []

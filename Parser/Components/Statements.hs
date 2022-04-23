@@ -9,6 +9,8 @@ import Text.Parsec (
     (<?>),
     )
 
+import Common.Typing.Type (Type(NoType))
+import Common.Var
 import Parser.Components.Identifiers
 import Parser.Components.Internal.LangDef (
     braces, parens, angles,
@@ -25,8 +27,6 @@ import Parser.Data (
     Body,
     Value(StmtVal),
     Pattern,
-    Var,
-    Type(NoType),
     Mutability,
     )
 
