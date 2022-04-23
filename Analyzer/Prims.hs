@@ -1,31 +1,30 @@
 module Analyzer.Prims (
     boolType,
-    intLitType, fltLitType, strLitType, chrLitType,
-    arrLitType, arrayLitOf
+    intLitType, fltLitType,
+    strLitType, charType,
+    arrayType, arrayOf,
+    tupleOf
 ) where
 
 import Parser.Data
 
 intLitType :: Type
-{-# INLINE intLitType #-}
 intLitType = Type (prim "Int") []
 
 fltLitType :: Type
-{-# INLINE fltLitType #-}
 fltLitType = Type (prim "Float") []
 
 strLitType :: Type
-{-# INLINE strLitType #-}
-strLitType = Type (prim "Array") [chrLitType]
+strLitType = Type (prim "Array") [charType]
 
-chrLitType :: Type
-{-# INLINE chrLitType #-}
-chrLitType = Type (prim "Char") []
+charType :: Type
+charType = Type (prim "Char") []
 
-arrLitType :: Type
-{-# INLINE arrLitType #-}
-arrLitType = Type (prim "Array") [Delayed]
+arrayType :: Type
+arrayType = Type (prim "[]") [Delayed]
 
-arrayLitOf :: Type -> Type
-{-# INLINE arrayLitOf #-}
-arrayLitOf t = Type (prim "Array") [t]
+arrayOf :: Type -> Type
+arrayOf t = Type (prim "[]") [t]
+
+tupleOf :: [Type] -> Type
+tupleOf = Type (prim "(,)")

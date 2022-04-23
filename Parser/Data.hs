@@ -149,37 +149,35 @@ data Expr
 
 infixl 7 <~>
 (<~>) :: Type -> Type -> Type
-typ <~> Delayed = typ
-Delayed <~> typ = typ
-t1 <~> t2 = if t1 == t2 then t1 else NoType
+typ <~> Delayed = normalize typ
+Delayed <~> typ = normalize typ
+t1 <~> t2 = if t1 == t2 then normalize t1 else NoType
 
--- |Adds relevant constraints to sub-types
+-- |Turns `Applied` types with only one type-argument
+-- into just that type
 normalize :: Type -> Type
-{-# INLINE normalize #-}
 normalize (Applied []) = NoType
 normalize (Applied [t]) = normalize t
 normalize (Applied ts) = Applied (normalize <$> ts)
-normalize (Type name tps) =
-    Type name (normalize <$> tps)
+normalize (Type nm ts) = Type nm (normalize <$> ts)
 normalize typ = typ
 
+-- |Creates a `Position` from a
+-- `Text.Parsec.Pos.SourcePos` and a new end-column
 mkPos :: SourcePos -> Column -> Position
 mkPos pos end = SourcePos
-            (prim $! sourceName pos)
-            (sourceLine pos)
-            (sourceColumn pos)
-            end
+    (prim (sourceName pos))
+    (sourceLine pos)
+    (sourceColumn pos)
+    end
 
 prim :: String -> Var
-{-# INLINE prim #-}
 prim s = Var s UnknownPos
 
 boolType :: Type
-{-# INLINE boolType #-}
 boolType = Type (prim "Boolean") []
 
 valPos :: Value -> Position
-{-# INLINE valPos #-}
 valPos (IntLit _ p) = p
 valPos (FloatLit _ p) = p
 valPos (CharLit _ p) = p
@@ -204,7 +202,6 @@ valPos (StmtVal _) = UnknownPos
 valPos (Hole p) = p
 
 newPosition :: String -> Position
-{-# INLINE newPosition #-}
 newPosition modName =
     SourcePos (prim modName) 0 0 0
 

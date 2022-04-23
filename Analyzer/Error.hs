@@ -18,7 +18,9 @@ default (Int, Double)
 
 
 data Error
-    = TypeMismatch Type Type
+    = TypeMismatch
+        Type -- expected
+        Type -- found
     | Undefined Symbol [Symbol]
     | Redefinition Symbol Symbol
     | OtherError String

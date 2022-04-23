@@ -6,6 +6,7 @@ module Analyzer.Checker (
 import Prelude hiding (fail)
 
 import Analyzer.Analyzer
+import Analyzer.Prims
 import Parser.Data
 import SymbolTable
 
@@ -18,86 +19,62 @@ class Checker a where
     check :: a -> Type -> Analyzer Bool
     check a expected = do
         typ <- infer a
-        return $! (typ == expected)
+        return (typ == expected)
 
 
 instance Checker Type where
-    infer _ = return NoType
---     infer t@(Delayed _) = do
---         typ <- peekExpType
---         return $! t <~> typ
---     infer t = return t
---     check t = return . (t ==)
+    infer Delayed = peekExpType
+    infer t = t
+    check t = return . (t ==)
 
 instance Checker Value where
-    infer _ = return NoType
---     infer (IntLit _ p) = updatePos p >>
---         return intLitType
---     infer (FltLit _ p) = updatePos p >>
---         return fltLitType
---     infer (ChrLit _ p) = updatePos p >>
---         return chrLitType
---     infer (StrLit _ p) = updatePos p >>
---         return strLitType
---     infer (FuncCall name args) = do
---         updatePos $ varPos name
---         dta <- searchScopeds name
---         expectIn (sdType dta) $
---             apply (sdType dta) args
---     infer (CtorVal name args) = do
---         updatePos $ varPos name
---         dta <- searchGlobals name
---         expectIn (sdType dta) $
---             apply (sdType dta) args
---     infer (ExprVal expr) = infer expr
---     infer (Array arr p) = do
---         updatePos p
---         if snd (bounds arr) <= 0 then
---             throw $ OtherError "Empty array literal"
---         else do
---             typ <- infer (arr ! 0)
---             forM_ arr (`expect` typ)
---             return typ
---     infer (Hole p) = updatePos p >> peekExpType
+    infer (IntLit _ p) = updatePos p >>
+        return intLitType
+    infer (FltLit _ p) = updatePos p >>
+        return floatLitType
+    infer (ChrLit _ p) = updatePos p >>
+        return charLitType
+    infer (StrLit _ p) = updatePos p >>
+        return stringLitType
+    infer (VarVal var) = do
+        updatePosVar var
+        sdType <$> searchScopeds var
+    infer (Application val vals) =
+        Applied <$> mapM infer (val:vals)
+    infer (CtorCall name vals) = do
+        updatePosVar name
+        dta <- searchGlobals name
+        expect typ (apply typ args)
+    infer (Tuple arr) = do
+        typs <- mapM infer arr
+        return $! tupleOf typs
+    infer (Array arr) = do
+        eT <- peekExpType
+        typ <- foldM (\bT val -> do
+            vT <- infer val
+            typ <- bT <~> vT
+            case typ of
+                NoType -> throw $
+                    TypeMismatch bT vT
+                _ -> return typ
+            ) eT arr
+        return $! arrayOf typ
+    infer (Lambda params val) = do
+        let pTs = Delayed <$ params
+            apT = Applied (pTs:Delayed)
+        vT <- expect apT (infer val))
+        return (Applied (pTs:vT))
+    infer (StmtVal stmt) = infer stmt
+    infer (Hole p) = updatePos p >> peekExpType
 
-instance Checker Expr where
+instance Checker Stmt where
     infer _ = return NoType
---     infer (ValueE val) = infer val
---     infer (Pragma _) = return NoType
---     infer (FuncTypeDecl p v nm cs ts) = define nm $! do
---         -- if this fn-type-decl already exists, then
---         -- check that they are the same (allow dupe-decls
---         -- as long as they are the same) else, create a
---         -- new global
---         mDta <- findGlobal nm
---         let typ' = addCons cs $ fromPDTypes ts
---         case mDta of
---             Nothing -> pushGlobal nm $ mkSymbolData
---                 nm typ' (Just v) (Just p)
---             Just dta -> expect typ' (sdType dta)
---     infer (FuncDef name pars bdy) = define name $! do
---         mapM_ infer_ bdy
---         mDta <- findGlobal name
---         case mDta of
---             Nothing -> throwUndefined name
---             Just dta -> expectIn (sdType dta) $
---                 pushParams (sdType dta) pars
---     infer (DataDef vis name tps ctrs) = define name $! do
---         let dta = mkSymbolData name
---                 (Type name (fmap
---                     (\tp -> Param tp [] []) tps) [])
---                 (Just vis) (Just Pure)
---         pushType name dta
---         forM_ ctrs $ \(DataCtor vis' name' ts) ->
---             let tps' = (fromPDType <$> ts) ++ [sdType dta]
---                 typ = Applied tps' []
---             in pushGlobal name' $ mkSymbolData
---                 name' typ (Just vis') (Just Pure)
---     infer (IfElse cls tb fb) = do
---         expect cls boolType
---         mapM_ infer tb
---         mapM_ infer fb
---         return NoType
+    infer (IfElse cls trueBody falseBody) = do
+        expectCheck_ boolType cls
+        tT <- inferBody trueBody
+        fT <- inferBody falseBody
+        check tT fT
+        return NoType
 --     infer (Pattern val cases) = do
 --         valT <- infer val
 --         forM_ cases $ \(case', bdy) -> do
@@ -227,14 +204,25 @@ instance Checker SymbolData where
 --     else 
 --         throw $ TypeMismatch valT expT
 
-infer_ :: (Checker a) => a -> Analyzer ()
+infer_ :: Checker a => a -> Analyzer ()
 {-# INLINE infer_ #-}
 infer_ = optional . infer
 
--- expect :: (Checker a) => a -> Type -> Analyzer ()
--- {-# INLINE expect #-}
--- expect a t = expectIn t $ do
---     typ <- infer a
---     chk <- check typ t
---     unless chk $ throw $
---         TypeMismatch typ t
+inferBody :: Body -> Analyzer Type
+inferBody body = do
+    eT <- peekExpType
+    foldM expectCheck eT body
+
+expectCheck_ :: Checker a -> Type -> Analyzer a -> Analyzer ()
+expectCheck_ typ an = do
+    expect typ an
+    check typ an
+
+expectCheck :: Checker a -> Type -> Analyzer a -> Analyzer Type
+expectCheck typ an = do
+    aT <- expect typ an
+    if typ == NoType then
+        return aT
+    else do
+        chk <- check an typ
+        if chk then
