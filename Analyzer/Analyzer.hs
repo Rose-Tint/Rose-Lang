@@ -21,9 +21,9 @@ import Control.Monad.Fail
 
 import Analyzer.Error
 import Analyzer.State
-import Parser.Data (Module(..), Visibility, Variable(..))
+import Parser.Components.Imports (Import)
+import Parser.Data (Type(..), Var(..))
 import SymbolTable
-import Typing.Types
 
 
 default (Int, Double)
@@ -41,9 +41,8 @@ data Analysis
     = Analysis {
         arErrors :: ![ErrorMessage],
         arTable :: !SymbolTable,
-        arImports :: ![Module]
+        arImports :: ![Import]
     }
-    deriving (Show)
 
 
 analyze_ :: Analyzer a -> Analysis
@@ -96,7 +95,7 @@ modifyTable_ f = do
     modifyState (\s -> s { stTable = tbl })
     return ()
 
-getModuleName :: Analyzer Module
+getModuleName :: Analyzer Var
 {-# INLINE getModuleName #-}
 getModuleName = stModule <$!> getState
 
@@ -161,10 +160,10 @@ updatePos :: Position -> Analyzer ()
 {-# INLINE updatePos #-}
 updatePos p = modifyState_ $ \s -> s { stPosition = p }
 
-addImport :: Visibility -> Variable -> Analyzer ()
+addImport :: Import -> Analyzer ()
 {-# INLINE addImport #-}
-addImport vis var = modifyState_ $ \s ->
-    s { stImports = (Module vis var:stImports s) }
+addImport imp = modifyState_ $ \s ->
+    s { stImports = (imp:stImports s) }
 
 option :: a -> Analyzer a -> Analyzer a
 {-# INLINE option #-}

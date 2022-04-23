@@ -10,10 +10,8 @@ module SymbolTable (
     getSimilarSymbols
 ) where
 
-import Color
 import Data.Maybe (mapMaybe)
-import Parser.Data (Variable(..))
-import Pretty
+import Parser.Data (Var(..), prim)
 import SymbolTable.SymbolData
 import SymbolTable.SymbolMap
 import SymbolTable.Trie (assocs)
@@ -30,7 +28,7 @@ data SymbolTable
         tblGlobals :: !SymbolMap,
         tblScopeds :: ![SymbolMap]
     }
-    deriving (Show, Eq)
+    deriving (Eq)
 
 
 emptyTable :: SymbolTable
@@ -62,16 +60,16 @@ getSimilarSymbols sym (SymbolTable typs trts glbs scps) =
     let var = varName sym
         filt = mapMaybe (\(key, dta) ->
             if areSimilar var key then
-                Just $! maybe (Prim key) (Var key) (sdPos dta)
+                Just $! maybe (prim key) (Var key) (sdPos dta)
             else
                 Nothing) . assocs
         scpKeys = concatMap filt scps
     in concatMap filt [typs, trts, glbs] ++ scpKeys
 
 
-instance Pretty SymbolTable where
-    pretty (SymbolTable typs trts glbs _) = printf
-        "Type Table:\n%s\n\n\n\
-        \Trait Table:\n%s\n\n\n\
-        \Top-Level Table:\n%s"
-        (pretty typs) (pretty trts) (pretty glbs)
+-- instance Pretty SymbolTable where
+--     pretty (SymbolTable typs trts glbs _) = printf
+--         "Type Table:\n%s\n\n\n\
+--         \Trait Table:\n%s\n\n\n\
+--         \Top-Level Table:\n%s"
+--         (pretty typs) (pretty trts) (pretty glbs)

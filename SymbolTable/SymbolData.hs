@@ -7,26 +7,21 @@ module SymbolTable.SymbolData (
     stitchSD,
     mkSymbolData,
     undef,
-    isWellDefined,
-    isUndefined,
+    -- isWellDefined,
+    -- isUndefined,
     ifDefined,
-    addAttr, addPragma, hasAttr,
+    -- addAttr, addPragma, hasAttr,
 ) where
 
-import Data.Maybe
-
-import Color
-import Parser.Data hiding (Type)
-import Pretty
+import Parser.Data
 -- import SymbolTable.Attrs hiding (addPragma)
 -- import qualified SymbolTable.Attrs as A
-import Typing.Types
 
 
 default (Int, Double)
 
 
-type Symbol = Variable
+type Symbol = Var
 
 data SymbolData
     = SymbolData {
@@ -36,7 +31,7 @@ data SymbolData
         sdPos :: Maybe Position
         -- sdAttrs :: Attrs
     }
-    deriving (Show, Eq)
+    deriving (Eq)
 
 
 stitchSD :: SymbolData -> SymbolData -> SymbolData
@@ -64,52 +59,54 @@ mkSymbolData sym typ vis pur = SymbolData
 undef :: SymbolData
 {-# INLINE undef #-}
 undef = SymbolData {
-    sdType = Delayed [],
+    sdType = Delayed,
     sdVisib = Nothing,
     sdPurity = Nothing,
-    sdPos = Nothing,
-    sdAttrs = emptyAttrs
+    sdPos = Nothing
+    -- sdAttrs = emptyAttrs
 }
 
-isWellDefined :: SymbolData-> Bool
-{-# INLINABLE isWellDefined #-}
-isWellDefined dta = isJust (sdVisib dta)
-             && isJust (sdPurity dta)
-             && isComplete (sdType dta)
-             && (isJust (sdPos dta)
-                && posModule (fromJust $! sdPos dta)
-                     /= UnknownMod)
+-- isWellDefined :: SymbolData-> Bool
+-- {-# INLINABLE isWellDefined #-}
+-- isWellDefined dta = isJust (sdVisib dta)
+--              && isJust (sdPurity dta)
+--              && isComplete (sdType dta)
+--              && (isJust (sdPos dta)
+--                 && posModule (fromJust $! sdPos dta)
+--                      /= UnknownMod)
 
-isUndefined :: SymbolData-> Bool
-{-# INLINABLE isUndefined #-}
-isUndefined dta = isNothing (sdVisib dta)
-               && isNothing (sdPurity dta)
-               && sdType dta == NoType
-               && (isNothing (sdPos dta)
-                || posModule (fromJust $! sdPos dta)
-                     == UnknownMod)
+-- isUndefined :: SymbolData-> Bool
+-- {-# INLINABLE isUndefined #-}
+-- isUndefined dta = isNothing (sdVisib dta)
+--                && isNothing (sdPurity dta)
+--                && sdType dta == NoType
+--                && (isNothing (sdPos dta)
+--                 || posModule (fromJust $! sdPos dta)
+--                      == UnknownMod)
 
+-- TEMPORARY
 ifDefined :: SymbolData -> Maybe SymbolData
-{-# INLINE ifDefined #-}
-ifDefined dta = if isWellDefined dta then Just dta else Nothing
+ifDefined = Just
+-- {-# INLINE ifDefined #-}
+-- ifDefined dta = if isWellDefined dta then Just dta else Nothing
 
 
-instance Pretty (String, SymbolData) where
-    pretty (sym, SymbolData typ vis pur _ _) = printf
-        "| %13s | %30s | %6s | %6s |"
-        (pretty sym)
-        (pretty typ)
-        (maybe' vis)
-        (maybe' pur)
-        where
-            maybe' :: (Pretty a) => Maybe a -> String
-            maybe' a = maybe "" pretty a
-    detailed (sym, SymbolData typ vis pur _ _) = printf
-        "| %18s | %40s | %6s | %6s |"
-        (detailed sym)
-        (detailed typ)
-        (maybe' vis)
-        (maybe' pur)
-        where
-            maybe' :: (Pretty a) => Maybe a -> String
-            maybe' a = maybe "" detailed a
+-- instance Pretty (String, SymbolData) where
+--     pretty (sym, SymbolData typ vis pur _ _) = printf
+--         "| %13s | %30s | %6s | %6s |"
+--         (pretty sym)
+--         (pretty typ)
+--         (maybe' vis)
+--         (maybe' pur)
+--         where
+--             maybe' :: (Pretty a) => Maybe a -> String
+--             maybe' a = maybe "" pretty a
+--     detailed (sym, SymbolData typ vis pur _ _) = printf
+--         "| %18s | %40s | %6s | %6s |"
+--         (detailed sym)
+--         (detailed typ)
+--         (maybe' vis)
+--         (maybe' pur)
+--         where
+--             maybe' :: (Pretty a) => Maybe a -> String
+--             maybe' a = maybe "" detailed a

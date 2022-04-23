@@ -19,10 +19,7 @@ module SymbolTable.SymbolMap (SymbolMap,
 
 import Prelude hiding (lookup)
 
-import Control.Monad ((<$!>))
-
-import Parser.Data (Variable(..))
-import Pretty
+import Parser.Data (Var(..))
 import qualified SymbolTable.Trie as T
 import SymbolTable.SymbolData
 
@@ -66,16 +63,16 @@ isMemberOf :: Symbol -> SymbolMap -> Bool
 isMemberOf = T.isMemberOf . varName
 
 
-instance Pretty SymbolMap where
-    pretty sm = printf
-        "\
-\+-Symbol--------+-Type---------------------------+-Visib.-+-Purity-+\n\
-\%s\
-\+---------------+--------------------------------+--------+--------+"
-        (unlines $! pretty <$!> T.assocs sm)
-    detailed sm = printf
-        "\
-\+-Symbol-------------+-Type--------------------------------+-Visib.-+-Purity-+\n\
-\%s\
-\+--------------------+-------------------------------------+--------+--------+"
-        (unlines $! detailed <$!> T.assocs sm)
+-- instance Pretty SymbolMap where
+--     pretty sm = printf
+--         "\
+-- \+-Symbol--------+-Type---------------------------+-Visib.-+-Purity-+\n\
+-- \%s\
+-- \+---------------+--------------------------------+--------+--------+"
+--         (unlines $! pretty <$!> T.assocs sm)
+--     detailed sm = printf
+--         "\
+-- \+-Symbol-------------+-Type--------------------------------+-Visib.-+-Purity-+\n\
+-- \%s\
+-- \+--------------------+-------------------------------------+--------+--------+"
+--         (unlines $! detailed <$!> T.assocs sm)

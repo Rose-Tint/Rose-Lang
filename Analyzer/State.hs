@@ -6,18 +6,18 @@ module Analyzer.State (
 ) where
 
 import Analyzer.Error
-import Parser.Data (Module(..), Position(..), newPosition)
+import Parser.Components.Imports (Import)
+import Parser.Data
 import SymbolTable
-import Typing.Types
 
 
 data State
     = State {
-        stModule :: Module,
+        stModule :: {-# UNPACK #-} !Var,
         stExpType :: [Type],
         stErrors :: [ErrorMessage],
         stTable :: SymbolTable,
-        stImports :: [Module],
+        stImports :: [Import],
         stDefName :: Maybe Symbol,
         stPosition :: Position
     }
@@ -25,8 +25,8 @@ data State
 
 newModuleState :: String -> State
 {-# INLINE newModuleState #-}
-newModuleState = State UnknownMod [] []
-    emptyTable [] Nothing . newPosition
+newModuleState name = State (prim name) [] []
+    emptyTable [] Nothing (newPosition name)
 
 newState :: State
 {-# INLINE newState #-}

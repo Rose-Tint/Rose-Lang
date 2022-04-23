@@ -7,21 +7,22 @@ import Prelude hiding (readFile)
 
 import Control.Monad ((<$!>), when, forM_)
 import Data.Text (Text)
-import qualified Data.Text as T (lines)
+-- import qualified Data.Text as T (lines)
 import Data.Text.IO (readFile)
 import System.Directory
 import Text.Parsec (parse, SourcePos)
 
 import CmdLine.Flags
 import Analyzer.Analyzer (Analysis(..), analyze_)
-import Analyzer.Error (prettyError)
+import Analyzer.Checker (infer_)
+-- import Analyzer.Error (prettyError)
 import Builder.Builder
 import Builder.CmdLine
 import Builder.Output
-import Parser.Data (Expr, ImportModule(..))
+import Parser.Components.Imports
+import Parser.Data (Expr, Var(Var))
 import Parser.Error (prettyParseErr)
 import Parser.Parser (importsParser, roseParser)
-import Typing.Checker (infer_)
 import Pretty
 import Utils (modToPath)
 
@@ -30,7 +31,7 @@ default (Int, Double)
 
 
 data ImportInfo = ImportInfo {
-        iiModules :: [ImportModule],
+        iiModules :: [Import],
         iiRemSource :: Text,
         iiEndPos :: !SourcePos
     }
@@ -56,8 +57,8 @@ buildFile path = do
             createDirectoryIfMissing True dir
         src <- readFile <#> path
         ImportInfo imports src' pos <- getImports src
-        forM_ imports $ \imp ->
-            buildFile (modToPath (impModule imp))
+        forM_ imports $ \(Import (Var modName _) _ _ _) -> 
+            buildFile (modToPath modName)
         setSource src
         parseRes <- parseFile pos src'
         analyzeFile parseRes
@@ -90,8 +91,8 @@ parseFile pos src = do
             fatal $ prettyParseErr err src' +\
                 "Failed while parsing module("+|name|+")"
         Right exprs -> do
-            trace "Parse-Tree.txt" $
-                concatMap pretty exprs
+            trace "Parse-Tree.txt" $ ""
+                -- concatMap pretty exprs
             return exprs
 
 analyzeFile :: [Expr] -> BuilderIO Analysis
@@ -99,14 +100,14 @@ analyzeFile es = do
     name <- getModule
     debug ("Analyzing ["+|name|+"]\n")
     let !res = analyze_ $! mapM_ infer_ es
-    trace "Symbol-Table.txt" $
-        detailed (arTable res)
+    trace "Symbol-Table.txt" $ ""
+        -- detailed (arTable res)
     if null $ arErrors res then
         return res
     else do
-        lns <- T.lines <$> getSource
-        forM_ (arErrors res) $ \em -> do
-            message (prettyError lns em)
+        -- lns <- T.lines <$> getSource
+        forM_ (arErrors res) $ \_ -> return ()-- \em -> do
+            -- message (prettyError lns em)
         flgs <- cmdFlags <$!> getCmdLine
         if f_fatal_errors `isFEnabled` flgs then fatal
             ("Failed while analyzing module ("+|

@@ -16,6 +16,7 @@ build-type:         Simple
 common general
     other-modules:
         Analyzer.Analyzer,
+        Analyzer.Checker,
         Analyzer.Error,
         Analyzer.Prims,
         Analyzer.State,
@@ -53,7 +54,6 @@ common general
         SymbolTable.SymbolMap,
         SymbolTable.Trie,
         Threading,
-        Typing.Checker,
         Utils
     build-depends:
         base >= 4.7.0.0,

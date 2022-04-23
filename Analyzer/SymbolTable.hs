@@ -10,8 +10,8 @@ import Prelude hiding (lookup)
 import Control.Monad ((<$!>))
 
 import Analyzer.Analyzer
+import Parser.Data (Type(..))
 import SymbolTable
-import Typing.Types (Type(..))
 
 
 -- Thus is the convention for Symbol Table lookups:

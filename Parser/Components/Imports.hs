@@ -24,8 +24,8 @@ import Parser.Data (
     )
 
 data Import = Import
-    {-# UNPACK #-} !Var
-    {-# UNPACK #-} !Var
+    {-# UNPACK #-} !Var -- module name
+    {-# UNPACK #-} !Var -- alias
     !Visibility
     (Maybe [(Item)])
 
