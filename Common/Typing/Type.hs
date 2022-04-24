@@ -13,6 +13,7 @@ module Common.Typing.Type  (
 ) where
 
 import Common.Var
+import Pretty
 
 
 data Type
@@ -113,3 +114,13 @@ arrayOf t = Type (prim "[]") [t]
 tupleOf :: [Type] -> Type
 tupleOf = Type (prim "(,)")
 
+
+instance Pretty Type where
+    terse Delayed = "*"
+    terse NoType = "_"
+    terse t = pretty t
+    pretty (Type name types) = name|+" "+|" "`seps`types
+    pretty (Param name types) = name|+" "+|" "`seps`types
+    pretty (Applied types) = "("+|" "`seps`types|+")"
+    pretty Delayed = "(DELAYED)"
+    pretty NoType = "(NOTYPE)"

@@ -1,3 +1,5 @@
+{-# LANGUAGE FlexibleInstances #-}
+
 module Parser.Data (
     Parser,
     Value(..),
@@ -12,7 +14,7 @@ module Parser.Data (
     valPos,
 ) where
 
-import Data.Array (Array)
+import Data.Array (Array, elems)
 import Data.Functor.Identity (Identity)
 import Data.Int (Int64)
 import Data.Text (Text)
@@ -21,6 +23,7 @@ import Text.Parsec.Prim (ParsecT)
 import Common.SrcPos
 import Common.Typing
 import Common.Var
+import Pretty
 
 
 default (Int, Double)
@@ -130,186 +133,97 @@ valPos (Tuple _) = UnknownPos
 valPos (StmtVal _) = UnknownPos
 valPos (Hole p) = p
 
--- instance Pretty Expr where
---     pretty (ValueE v) = pretty v
---     pretty (Pragma pr) = "Pragma "+|show pr
---     pretty (FuncDecl pur vis name cons ts)
---         = printf
---         "Function Type Declaration:\n\
---         \    Visibility  : %s\n\
---         \    Purity      : %s\n\
---         \    Name        : %s\n\
---         \    Constraints : \n%s\
---         \    Type        : %s\n"
---         (show vis) (show pur) (pretty name)
---         (indentAllUsing pretty{- -} cons)
---         (", " `seps` ts)
---     pretty (FuncDef name pars bdy) = printf
---         "Function Definition:\n\
---         \    Name       : %s\n\
---         \    Parameters : \n%s\
---         \    Body       : \n%s"
---         (pretty name)
---         (indentAllUsing pretty pars)
---         (indentAllUsing pretty bdy)
---     pretty (DataDef vis name tvs ctrs) = printf
---         "Datatype Definition:\n\
---         \    Visibility   : %s\n\
---         \    Name         : %s\n\
---         \    Type Vars    : \n%s\
---         \    Constructors : \n%s"
---         (show vis) (pretty name)
---         (indentAllUsing pretty tvs)
---         (indentAllUsing pretty ctrs)
---     pretty (IfElse cnd tBdy fBdy) = printf
---         "If Else Stmt:\n\
---         \    Clause     : \n%s\
---         \    True-Body  : \n%s\
---         \    False-Body : \n%s"
---         (indentUsing pretty cnd)
---         (indentAllUsing pretty tBdy)
---         (indentAllUsing pretty fBdy)
---     pretty (Pattern val cases) = printf
---         "Pattern Match:\n\
---         \    Value : %s\n\
---         \    Cases : \n%s"
---         (pretty val)
---         (indentAllUsing show cases)
---     pretty (Loop ini con itr b) = printf
---         "Loop:\n\
---         \    Init Stmnt : \n%s\n\
---         \    Condition  : \n%s\n\
---         \    Iter Stmnt : \n%s\n\
---         \    Body       : \n%s"
---         (maybe "None" pretty ini)
---         (pretty con)
---         (maybe "None" pretty itr)
---         (indentAllUsing pretty b)
---     pretty (TraitDecl vis cons name tvs ms) = printf
---         "Trait Declaration:\n\
---         \    Visibility  : %s\n\
---         \    Constraints : \n%s\
---         \    Name        : %s\n\
---         \    Type Var    : %s\n\
---         \    Methods     : \n%s"
---         (show vis) (indentAllUsing pretty{- -} cons)
---         (pretty name) (pretty tvs)
---         (indentAllUsing pretty ms)
---     pretty (TraitImpl name cons Nothing ms) = printf
---         "Trait Defaults:\n\
---         \    Name        : %s\n\
---         \    Constraints : \n%s\
---         \    Method Defs : \n%s"
---         (pretty name)
---         (indentAllUsing pretty{- -} cons)
---         (indentAllUsing pretty ms)
---     pretty (TraitImpl name cons (Just t) ms) = printf
---         "Trait Implementation:\n\
---         \    Name        : %s\n\
---         \    Constraints : \n%s\
---         \    Type Name   : %s\n\
---         \    Method Defs : \n%s"
---         (pretty name)
---         (indentAllUsing pretty{- -} cons)
---         (pretty t)
---         (indentAllUsing pretty ms)
---     pretty (NewVar mut typ name val) = printf
---         "New Var Definition:\n\
---         \    Mutability : %s\n\
---         \    Type       : %s\n\
---         \    Name       : %s\n\
---         \    Value      : \n%s"
---         (show mut) (pretty typ) (pretty name)
---         (indentUsing pretty val)
---     pretty (Reassign name val) = printf
---         "Var Reassignment:\n\
---         \    Name  : %s\n\
---         \    Value : \n%s"
---         (pretty name) (indentUsing pretty val)
---     pretty (Return val) = printf
---         "Return: %s"
---         (pretty val)
 
--- instance Pretty Ctor where
---     pretty (Ctor vis name []) = printf
---         "%s %s" (show vis) (pretty name)
---     pretty (Ctor vis name ts) = printf
---         "%s %s => %s"
---         (show vis) (pretty name)
---         (", " `seps` ts)
 
--- instance Pretty Constraint where
---     pretty (Constraint con typ) = printf "%s %s"
---         (pretty con) (pretty typ)
 
--- instance Pretty TypeDecl where
---     pretty (TypeDecl cons typ) = printf
---         "Type Declaration:\n\
---         \    Constraints :\n%s\
---         \    Type(s) : %s"
---         (indentAllUsing pretty cons)
---         (pretty typ)
 
--- instance Pretty Value where
---     pretty (VarVal var args) = printf
---         "Function Call:\n\
---         \    Name :%s\n\
---         \    Arguments :\n%s"
---         (pretty var) (indentAllUsing pretty args)
---     pretty (StmtVal e)
---         = "StmtVal: " ++ pretty e
---     pretty (CtorCall name [])
---         = "Nullary Ctor Call: " ++ pretty name
---     pretty (CtorCall name as) = printf
---         "Data Ctor Call:\n\
---         \    Name   : %s\n\
---         \    Params : \n%s"
---         (pretty name)
---         (indentAllUsing pretty as)
---     pretty v = show v
 
--- instance Pretty Visibility where
---     pretty Export = "export"
---     pretty Intern = "intern"
+instance Pretty Purity where
+    terse Pure = "pu"
+    terse Impure = "im"
+    terse Unsafe = "un"
+    pretty Pure = "pure"
+    pretty Impure = "impure"
+    pretty Unsafe = "unsafe"
 
--- instance Pretty Purity where
---     pretty Pure = "pure"
---     pretty Impure = "impure"
---     pretty Unsafe = "unsafe"
+instance Pretty Visibility where
+    terse Export = "ex"
+    terse Intern = "in"
+    pretty Export = "export"
+    pretty Intern = "intern"
+    detailed = show
 
--- instance Pretty Type where
---     pretty (TerminalType ht []) = pretty ht
---     pretty (TerminalType ht tps) = printf
---         "%s %s" (pretty ht)
---         (", " `seps` tps)
---     pretty (NonTermType t1 ts) = printf
---         "(%s, %s)" (pretty t1)
---         (", " `seps` toList ts)
+instance Pretty Ctor where
+    pretty (Ctor vis name types) =
+        vis|+" "+|name|+"<"+|", "`seps`types|+">"
 
--- instance Pretty SrcPos where
---     pretty UnknownPos = "[?]"
---     pretty (SrcPos _ ln st _) =
---         printf "[%d,%d]" ln st
---     detailed UnknownPos = "[?]"
---     detailed (SrcPos _ ln st end) = printf
---         "[%d,%d:%d]" ln st end
---     exhaustive UnknownPos = "[?]"
---     exhaustive (SrcPos name ln st _) = printf
---         "in %s: line %d, col %d"
---         (exhaustive name) ln st
+instance Pretty Value where
+    terse (Tuple arr) = "("-|","`sepsT`elems arr|-")"
+    terse (Array arr) = "["-|","`sepsT`elems arr|-"]"
+    terse val = terse val
+    pretty (IntLit n _) = show n
+    pretty (FloatLit n _) = show n
+    pretty (CharLit c _) = show c
+    pretty (StringLit s _) = show s
+    pretty (VarVal var) = pretty var
+    pretty (Application val args) =
+        "("+|val|+" "+|" "`seps`args|+")"
+    pretty (CtorCall name args) =
+        "("+|name|+" "+|" "`seps`args|+")"
+    pretty (Tuple arr) = "("+|", "`seps`elems arr|+")"
+    pretty (Array arr) = "[ "+|", "`seps`elems arr|+" ]"
+    pretty (Lambda ps val) = " "`seps`ps|+" => "+|val
+    pretty (StmtVal stmt) = "("+|stmt|+")"
+    pretty (Hole _) = "_"
 
--- instance Pretty Module where
---     pretty UnknownMod = "Unknown"
---     pretty (Module _ name) = pretty name
---     detailed UnknownMod = "Unknown"
---     detailed (Module Export name) = pretty name ++ "[E]"
---     detailed (Module Intern name) = pretty name ++ "[I]"
---     exhaustive UnknownMod = "Unknown"
---     exhaustive (Module Export name) = pretty name ++ "[export]"
---     exhaustive (Module Intern name) = pretty name ++ "[intern]"
+instance Pretty (Pattern, Body) where
+    pretty (ptrn, body) = prettyPattern ptrn|+" {\n"+|indentCatLns body|+"}"
 
--- instance Pretty Var where
---     pretty = varName
---     detailed (Var name UnknownPos) = name ++ detailed pos
---     detailed (Var name pos) = name ++ detailed pos
+prettyPattern :: Value -> String
+prettyPattern (VarVal var) = pretty var
+prettyPattern (Hole _) = "_"
+prettyPattern (Lambda _ _) = "(PTRN_ERR(Lambda))"
+prettyPattern (StmtVal _) = "(PTRN_ERR(StmtVal))"
+prettyPattern (Application _ _) = "(PTRN_ERR(Application))"
+prettyPattern val = "["+|val|+"]"
 
+instance Pretty Stmt where
+    pretty (IfElse val tb fb) = "if ("+|val|+") {\n"
+        +|indentCatLns tb|+"\n    else {\n"
+        +|indentCatLns fb|+"}"
+    pretty (Loop Nothing cond Nothing body) = 
+        "loop ("+|cond|+") {\n"
+        +|indentCatLns body|+"}"
+    pretty (Loop mInit cond mIter body) =
+        "loop ("+|mInit|+"; "+|cond|+"; "+|mIter|+") {\n"
+        +|indentCatLns body|+"}"
+    pretty (Match val cases) = "match ("+|val|+") {\n"
+        +|indentCatLns cases|+"}"
+    pretty (NewVar mut typ name val) =
+        "let "+|mut|+" "+|name|+|typ|+" = "+|val|+";"
+    pretty (Reassignment var val) = var|+" = "+|val|+";"
+    pretty (Return val) = "return"+|val|+";"
+    pretty (ValStmt val) = val|+";"
+
+instance Pretty Expr where
+    pretty (FuncDecl vis pur name typ) =
+        vis|+" "+|pur|+" "+|name|+|typ
+    pretty (FuncDef name pars body) =
+        name|+" "+|" "`seps`params|+" {\n"+|
+            indentCatLns body|+"}"
+        where
+            params = prettyPattern <$> pars
+    pretty (DataDef vis name pars []) =
+        vis|+" data "+|name|+" "+|" "`seps`pars
+    pretty (DataDef vis name pars (ctor:ctors)) =
+        vis|+" data "+|name|+" "+|" "`seps`pars|+
+        indentLns ("= "+|ctor)|+|
+        indentCatLns (fmap ("| "+|) ctors)
+    pretty (TraitDecl vis ctx name pars fns) =
+        vis|+" trait <"+|", "`seps`ctx|+"> "+|name|+
+        " "+|" "`seps`pars|+
+        " {\n"+|indentCatLns fns|+"}"
+    pretty (TraitImpl ctx name types fns) =
+        "impl <"+|", "`seps`ctx|+"> "+|name|+
+        " "+|" "`seps` types|+
+        " {\n"+|indentCatLns fns|+"}"

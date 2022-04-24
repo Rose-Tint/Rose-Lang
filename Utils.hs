@@ -1,7 +1,6 @@
 module Utils (
     pathToDir, pathToModule,
     modToPath, modToDir,
-    indentAllUsing, indentUsing,
     ord2,
     similarity, areSimilar,
 ) where
@@ -36,16 +35,6 @@ modToDir :: FilePath -> String
 modToDir [] = "/"
 modToDir ('.':rest) = ('/':modToDir rest)
 modToDir (ch:rest) = (ch:modToDir rest)
-
-indentAllUsing :: (a -> String) -> [a] -> String
-{-# INLINE indentAllUsing #-}
-indentAllUsing f = concat . fmap (indentUsing f)
-
-indentUsing :: (a -> String) -> a -> String
-{-# INLINE indentUsing #-}
-indentUsing f a = unlines $ fmap
-    ((++) "    |   ")
-    (lines $ f a)
 
 ord2 :: (Ord a) => (a, a) -> (a, a)
 {-# INLINE ord2 #-}

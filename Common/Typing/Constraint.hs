@@ -4,6 +4,7 @@ module Common.Typing.Constraint (
 ) where
 
 import Common.Var
+import Pretty
 
 
 data Constraint = Constraint
@@ -12,3 +13,8 @@ data Constraint = Constraint
     deriving (Eq)
 
 type Context = [Constraint]
+
+
+instance Pretty Constraint where
+    pretty (Constraint name types) =
+        name|+" "+|" "`seps`types

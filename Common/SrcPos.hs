@@ -9,6 +9,8 @@ module Common.SrcPos (
 import Data.Int (Int8)
 import qualified Text.Parsec.Pos as P
 
+import Pretty
+
 
 type Line = Int
 
@@ -33,10 +35,29 @@ data SrcPos
 fromParsecPos :: P.SourcePos -> P.SourcePos -> SrcPos
 fromParsecPos start end = SrcPos
     (P.sourceName start)
-    (P.sourceLine start)
-    (P.sourceLine end)
+    (fromIntegral (P.sourceLine start))
+    (fromIntegral (P.sourceLine end))
     (fromIntegral (P.sourceColumn start))
     (fromIntegral (P.sourceColumn end))
 
 newModulePos :: String -> SrcPos
 newModulePos name = SrcPos name 0 0 0 0
+
+
+instance Pretty SrcPos where
+    terse UnknownPos = "?"
+    terse (SrcPos name sl el sc ec)
+        | sl == el = name|+":"+|sl|+","+|sc|+"-"+|ec
+        | otherwise = name|+":"+|sl|+"-"+|el|+","+|sc|+"-"+|ec
+    pretty UnknownPos = "(unknown)"
+    pretty pos = terse pos
+    detailed UnknownPos = "(unknown)"
+    detailed (SrcPos name sl el sc ec)
+        | sl == el =
+            "in module "+|name|+
+            ", on line "+|sl|+
+            ", from col "+|sc|+" to "+|ec
+        | otherwise =
+            "in module "+|name|+
+            ", from line "+|sl|+" to "+|el|+
+            ", from col "+|sc|+" to "+|ec

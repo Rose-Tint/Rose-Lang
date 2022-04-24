@@ -7,6 +7,7 @@ import Data.Function (on)
 import Data.Ord (comparing)
 
 import Common.SrcPos
+import Pretty
 
 
 data Var = Var {
@@ -28,3 +29,7 @@ instance Ord Var where
 
 prim :: String -> Var
 prim s = Var s UnknownPos
+
+
+instance Pretty Var where
+    pretty = varName

@@ -17,6 +17,7 @@ import Common.SrcPos
 import Common.Typing.Type
 import Common.Var
 import Parser.Data
+import Pretty
 -- import SymbolTable.Attrs hiding (addPragma)
 -- import qualified SymbolTable.Attrs as A
 
@@ -94,22 +95,23 @@ ifDefined = Just
 -- ifDefined dta = if isWellDefined dta then Just dta else Nothing
 
 
--- instance Pretty (String, SymbolData) where
---     pretty (sym, SymbolData typ vis pur _ _) = printf
---         "| %13s | %30s | %6s | %6s |"
---         (pretty sym)
---         (pretty typ)
---         (maybe' vis)
---         (maybe' pur)
---         where
---             maybe' :: (Pretty a) => Maybe a -> String
---             maybe' a = maybe "" pretty a
---     detailed (sym, SymbolData typ vis pur _ _) = printf
---         "| %18s | %40s | %6s | %6s |"
---         (detailed sym)
---         (detailed typ)
---         (maybe' vis)
---         (maybe' pur)
---         where
---             maybe' :: (Pretty a) => Maybe a -> String
---             maybe' a = maybe "" detailed a
+-- Key-Value pair
+instance Pretty (String, SymbolData) where
+    pretty (sym, SymbolData typ vis pur _) = printf
+        "| %13s | %30s | %6s | %6s |"
+        (pretty sym)
+        (pretty typ)
+        (maybe' vis)
+        (maybe' pur)
+        where
+            maybe' :: (Pretty a) => Maybe a -> String
+            maybe' a = maybe "" pretty a
+    detailed (sym, SymbolData typ vis pur _) = printf
+        "| %18s | %40s | %6s | %6s |"
+        (detailed sym)
+        (detailed typ)
+        (maybe' vis)
+        (maybe' pur)
+        where
+            maybe' :: (Pretty a) => Maybe a -> String
+            maybe' a = maybe "" detailed a
