@@ -1,7 +1,7 @@
 module Parser.Components.Types (
     constraint,
     ttype,
-    typeDecl,
+    typeDecl, typeDeclNoCtx,
 ) where
 
 import Text.Parsec (
@@ -59,3 +59,9 @@ typeDecl = angles $ do
     ctx <- option [] ctxDeclSeq
     typ <- Applied <$> ttype `sepBy1` resOper "->"
     return (TypeDecl ctx typ)
+
+-- = "<", type, { "->", type }, ">";
+typeDeclNoCtx :: Parser TypeDecl
+typeDeclNoCtx = angles $ do
+    typ <- Applied <$> ttype `sepBy1` resOper "->"
+    return (TypeDecl [] typ)

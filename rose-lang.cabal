@@ -35,6 +35,7 @@ common general
         Common.Typing.Constraint,
         Common.Typing.Type,
         Common.Var,
+        Parser.Components.Datatypes,
         Parser.Components.Functions,
         Parser.Components.Identifiers,
         Parser.Components.Imports,

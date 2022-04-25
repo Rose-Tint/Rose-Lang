@@ -7,6 +7,7 @@ module Parser.Data (
     Purity(..),
     Mutability,
     Visibility(..),
+    Field(..),
     Ctor(..),
     Stmt(..),
     Body,
@@ -39,8 +40,8 @@ data Value
     | VarVal {-# UNPACK #-} !Var
     | Application Value [Value]
     | CtorCall {-# UNPACK #-} !Var [Value]
-    | Tuple {-# UNPACK #-} !(Array Int Value)-- SrcPos
-    | Array {-# UNPACK #-} !(Array Int Value)-- SrcPos
+    | Tuple {-# UNPACK #-} !(Array Int Value)
+    | Array {-# UNPACK #-} !(Array Int Value)
     | Lambda [Var] Value -- Body
     | StmtVal Stmt
     | Hole SrcPos
@@ -57,18 +58,29 @@ type Mutability = Purity
 data Visibility = Export | Intern
     deriving (Show, Eq)
 
-data Ctor = Ctor {
-        ctorVisib :: Visibility,
-        ctorName :: {-# UNPACK #-} !Var,
-        ctorTypes :: [Type]
-    }
+data Field = Field {-# UNPACK #-} !Var Type
+    deriving (Eq)
+
+data Ctor
+    = Record
+        Visibility
+        {-# UNPACK #-} !Var
+        [Field]
+    | SumType
+        Visibility
+        {-# UNPACK #-} !Var
+        [Type]
     deriving (Eq)
 
 data Stmt
     = IfElse Value Body Body
     | Loop (Maybe Stmt) Value (Maybe Stmt) Body
     | Match Value [(Pattern, Body)]
-    | NewVar Mutability Type {-# UNPACK #-} !Var Value
+    | NewVar
+        Mutability
+        Type
+        {-# UNPACK #-} !Var
+        Value
     | Reassignment {-# UNPACK #-} !Var Value
     | Return Value
     | ValStmt Value
@@ -107,6 +119,7 @@ data Expr
         exprTypes :: [Type],
         exprFuncs :: [Expr]
     }
+    | TypeAlias Visibility Type Type
     deriving (Eq)
 
 valPos :: Value -> SrcPos
@@ -134,10 +147,6 @@ valPos (StmtVal _) = UnknownPos
 valPos (Hole p) = p
 
 
-
-
-
-
 instance Pretty Purity where
     terse Pure = "pu"
     terse Impure = "im"
@@ -153,9 +162,14 @@ instance Pretty Visibility where
     pretty Intern = "intern"
     detailed = show
 
+instance Pretty Field where
+    pretty (Field name typ) = name|+|TypeDecl [] typ
+
 instance Pretty Ctor where
-    pretty (Ctor vis name types) =
-        vis|+" "+|name|+"<"+|", "`seps`types|+">"
+    pretty (SumType vis name types) =
+        vis|+" "+|name|+" "`seps`types
+    pretty (Record vis name flds) =
+        vis|+" "+|name|+" {\n"+|indentCatLns flds|+"\n}"
 
 instance Pretty Value where
     terse (Tuple arr) = "("-|","`sepsT`elems arr|-")"
@@ -177,15 +191,16 @@ instance Pretty Value where
     pretty (Hole _) = "_"
 
 instance Pretty (Pattern, Body) where
-    pretty (ptrn, body) = prettyPattern ptrn|+" {\n"+|indentCatLns body|+"}"
+    pretty (ptrn, body) = prettyPtrn ptrn|+
+        " {\n"+|indentCatLns body|+"}"
 
-prettyPattern :: Value -> String
-prettyPattern (VarVal var) = pretty var
-prettyPattern (Hole _) = "_"
-prettyPattern (Lambda _ _) = "(PTRN_ERR(Lambda))"
-prettyPattern (StmtVal _) = "(PTRN_ERR(StmtVal))"
-prettyPattern (Application _ _) = "(PTRN_ERR(Application))"
-prettyPattern val = "["+|val|+"]"
+prettyPtrn :: Value -> String
+prettyPtrn (VarVal var) = pretty var
+prettyPtrn (Hole _) = "_"
+prettyPtrn (Lambda _ _) = "(PTRN_ERR(Lambda))"
+prettyPtrn (StmtVal _) = "(PTRN_ERR(StmtVal))"
+prettyPtrn (Application _ _) = "(PTRN_ERR(Application))"
+prettyPtrn val = "["+|val|+"]"
 
 instance Pretty Stmt where
     pretty (IfElse val tb fb) = "if ("+|val|+") {\n"
@@ -209,10 +224,8 @@ instance Pretty Expr where
     pretty (FuncDecl vis pur name typ) =
         vis|+" "+|pur|+" "+|name|+|typ
     pretty (FuncDef name pars body) =
-        name|+" "+|" "`seps`params|+" {\n"+|
+        name|+" "+|" "`seps`fmap prettyPtrn pars|+" {\n"+|
             indentCatLns body|+"}"
-        where
-            params = prettyPattern <$> pars
     pretty (DataDef vis name pars []) =
         vis|+" data "+|name|+" "+|" "`seps`pars
     pretty (DataDef vis name pars (ctor:ctors)) =
@@ -227,3 +240,5 @@ instance Pretty Expr where
         "impl <"+|", "`seps`ctx|+"> "+|name|+
         " "+|" "`seps` types|+
         " {\n"+|indentCatLns fns|+"}"
+    pretty (TypeAlias vis alias typ) =
+        vis|+" using "+|alias|+" = "+|typ

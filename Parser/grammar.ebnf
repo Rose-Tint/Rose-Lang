@@ -71,15 +71,15 @@ purity              = "pure" | "unsafe" | "impure";
 mutab               = ["mut"] | ["imut"];
 
 
-(* TYPE DECLARATION: *)
-(* ignore mutab for now *)
-type                = [mutab], "[", type, "]"
-                    | [mutab], big-ident, {type}
-                    | [mutab], small-ident, {type}
-                    | [mutab], "(", type, ",", type, { ",", type } ")"
+(* TYPES: *)
+type                = "[", type, "]"
+                    | big-ident, {type}
+                    | small-ident, {type}
+                    | "(", type, ",", type, { ",", type } ")"
                     | "(", type, { "->", type }, ")";
 constraint          = big-ident, small-ident, {small-ident};
 ctx-decl-seq        = constraint, { ",", constraint }, ":";
+type-decl-no-ctx    = "<", type, { "->", type }, ">";
 type-decl           = "<", [ctx-decl-seq], type, { "->", type }, ">";
 
 
@@ -92,11 +92,11 @@ func-def            = func-param-seq, body-assignment;
 
 
 (* DATATYPE DEFINITION: *)
-ctor-def            = big-ident, [type-decl];
-data-decl           = visib, "data", big-ident;
-data-def            = data-decl, "=", ctor-def, { "|", ctor-def };
-type-decl-name      = [mutab], big-ident, {type};
-type-alias          = visib, "using", type-decl-name, "=", type;
+field-decl          = small-ident, type-decl;
+ctor-def            = visib, big-ident, {type}
+                    | visib, big-ident, [ "{", field-decl, { ",", field-decl }, [","], "}" ];
+data-def            = visib, "data", big-ident, "=", ctor-def, { "|", ctor-def };
+type-alias          = visib, "using", type, "=", type;
 
 
 (* TRAIT DEFINITION: *)

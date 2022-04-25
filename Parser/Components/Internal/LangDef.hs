@@ -6,7 +6,8 @@ module Parser.Components.Internal.LangDef (
     lexeme,
     parens, braces, angles, brackets,
     semi, comma,
-    commaSep, commaSepEnd, commaSep1,
+    commaSep, commaSepEnd,
+    commaSep1, commaSepEnd1,
 ) where
 
 import Data.Functor.Identity (Identity)
@@ -85,7 +86,11 @@ commaSep :: Parser a -> Parser [a]
 commaSep = T.commaSep tokenP
 
 commaSepEnd :: Parser a -> Parser [a]
-commaSepEnd p = many $ p <* comma
+commaSepEnd p = commaSepEnd1 p <|> return []
+
+commaSepEnd1 :: Parser a -> Parser [a]
+commaSepEnd1 p = (:) <$> p <*>
+    (comma >> commaSepEnd p)
 
 commaSep1 :: Parser a -> Parser [a]
 commaSep1 = T.commaSep1 tokenP
