@@ -13,6 +13,7 @@ module Pretty (
     (*|),(|*|),(|*),
 ) where
 
+import Data.Char (isDigit, digitToInt)
 import Data.Int
 import Data.List (intercalate)
 import Data.Text (Text, unpack)
@@ -118,7 +119,23 @@ instance Pretty Char where
     pretty = (:[])
 
 instance Pretty String where
-    pretty = id
+    -- |Does some formatting, such as repeating characters
+    pretty [] = []
+    pretty ('\\':'#':rest) = ('#':pretty rest)
+    pretty ('#':n1:n2:n3:ch:rest)
+        | isDigit n1 && isDigit n2 && isDigit n3 =
+            let n = 100 * digitToInt n1 +
+                    10 * digitToInt n2 +
+                    digitToInt n3
+            in replicate n ch ++ pretty rest
+        | isDigit n1 && isDigit n2 =
+            let n = 10 * digitToInt n1 +
+                    digitToInt n2
+            in replicate n n3 ++ pretty rest
+        | isDigit n1 =
+            replicate (digitToInt n1) n2 ++ (ch:pretty rest)
+        | otherwise = ('#':pretty (n1:n2:ch:rest))
+    pretty (c:cs) = (c:pretty cs)
 
 instance Pretty Text where
     pretty = unpack

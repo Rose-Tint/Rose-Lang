@@ -104,11 +104,7 @@ instance Pretty (String, SymbolData) where
         where
             maybe' a = maybe "" pretty a
     detailed (sym, SymbolData typ vis pur pos) =
-         "| "*|20.<sym|*
-        " | "*|10.<pos|*
-        " | "*|35.<typ|*
-        " | "*|6.<maybe' vis|*
-        " | "*|6.<maybe' pur|*
-        " |"
+         "| "*|20.<sym|*" | "*|10.<pos|*" | "*|35.<typ|*
+        " | "*|6.<maybe' vis|*" | "*|6.<maybe' pur|*" |"
         where
             maybe' a = maybe "" detailed a

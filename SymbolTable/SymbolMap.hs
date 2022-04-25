@@ -63,16 +63,17 @@ isMemberOf :: Symbol -> SymbolMap -> Bool
 {-# INLINE isMemberOf #-}
 isMemberOf = T.isMemberOf . varName
 
-symbolMapOutline :: String
-symbolMapOutline ="\
-\+-Symbol--------+-Type---------------------------+-Visib.-+-Purity-+\n\
-\%s\
-\+---------------+--------------------------------+--------+--------+"
 
 instance Pretty SymbolMap where
-    terse sm = printf symbolMapOutline
-        (unlines $! terse <$> T.assocs sm)
-    pretty sm = printf symbolMapOutline
-        (unlines $! pretty <$> T.assocs sm)
-    detailed sm = printf symbolMapOutline
-        (unlines $! detailed <$> T.assocs sm)
+    terse sm =
+        "+-Symbol-----+-Type#17-+\n"
+        +|(unlines $! terse <$> T.assocs sm)|+
+        "\n+#12-+#22-+"
+    pretty sm =
+        "+-Symbol#6-+-Type#22-+-Visib.-+\n"
+        +|(unlines $! pretty <$> T.assocs sm)|+
+        "\n+#17-+#27-+#8-+"
+    detailed sm =
+        "+-Symbol#11-+-Position---+-Type#27-+-Visib.-+-Purity-+\n"
+        +|(unlines $! detailed <$> T.assocs sm)|+
+        "\n+#17-+#12-+#32-+#8-+#8-+"

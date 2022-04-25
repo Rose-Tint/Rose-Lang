@@ -75,7 +75,7 @@ instance Pretty ScopedTable where
 \+-Symbol-------------+-Type--------------------------------+-Visib.-+-Purity-+\n\
 \%s\
 \+--------------------+-------------------------------------+--------+--------+"
-        (unlines $! detailed <$>
+        (unlines $! pretty <$>
             concatMap assocs scps)
 
 instance Pretty SymbolTable where
