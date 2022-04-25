@@ -92,8 +92,8 @@ parseFile pos src = do
             fatal $ prettyParseErr err src'
                 |+"\nFailed while parsing module("+|name|+")"
         Right exprs -> do
-            trace "Parse-Tree.txt" $ ""
-                -- concatMap pretty exprs
+            trace "Parse-Tree.txt" $
+                concatMap pretty exprs
             return exprs
 
 analyzeFile :: [Expr] -> BuilderIO Analysis
@@ -101,8 +101,8 @@ analyzeFile es = do
     name <- getModule
     debug ("Analyzing ["+|name|+"]\n")
     let !res = analyze_ $! mapM_ infer_ es
-    trace "Symbol-Table.txt" $ ""
-        -- detailed (arTable res)
+    trace "Symbol-Table.txt" $
+        detailed (arTable res)
     if null $ arErrors res then
         return res
     else do

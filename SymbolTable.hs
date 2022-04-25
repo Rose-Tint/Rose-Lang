@@ -15,6 +15,7 @@ import Common.Var
 import SymbolTable.SymbolData as S
 import SymbolTable.SymbolMap as S
 import SymbolTable.Trie (assocs)
+import Pretty
 import Utils
 
 
@@ -67,9 +68,20 @@ getSimilarSymbols sym (SymbolTable typs trts glbs scps) =
     in concatMap filt [typs, trts, glbs] ++ scpKeys
 
 
--- instance Pretty SymbolTable where
---     pretty (SymbolTable typs trts glbs _) = printf
---         "Type Table:\n%s\n\n\n\
---         \Trait Table:\n%s\n\n\n\
---         \Top-Level Table:\n%s"
---         (pretty typs) (pretty trts) (pretty glbs)
+newtype ScopedTable = ScpTbl [SymbolMap]
+
+instance Pretty ScopedTable where
+    pretty (ScpTbl scps) = printf "\
+\+-Symbol-------------+-Type--------------------------------+-Visib.-+-Purity-+\n\
+\%s\
+\+--------------------+-------------------------------------+--------+--------+"
+        (unlines $! detailed <$>
+            concatMap assocs scps)
+
+instance Pretty SymbolTable where
+    pretty (SymbolTable typs trts glbs scps) =
+            "Type Table:\n"+|typs|+
+        "\n\nTrait Table:\n"+|trts|+
+        "\n\nTop-Level Table:\n"+|glbs|+
+        "\n\nFunction-Local Table:\n"+|ScpTbl scps|+
+        "\n\n"

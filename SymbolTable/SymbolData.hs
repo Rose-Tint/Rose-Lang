@@ -97,21 +97,18 @@ ifDefined = Just
 
 -- Key-Value pair
 instance Pretty (String, SymbolData) where
-    pretty (sym, SymbolData typ vis pur _) = printf
-        "| %13s | %30s | %6s | %6s |"
-        (pretty sym)
-        (pretty typ)
-        (maybe' vis)
-        (maybe' pur)
+    terse (sym, SymbolData typ _ _ _) =
+        "| "-|10.<sym|-" | "-|25.<typ|-" |"
+    pretty (sym, SymbolData typ vis _ _) =
+        "| "+|15.<sym|+" | "+|30.<typ|+" | "+|6.<maybe' vis|+" |"
         where
-            maybe' :: (Pretty a) => Maybe a -> String
             maybe' a = maybe "" pretty a
-    detailed (sym, SymbolData typ vis pur _) = printf
-        "| %18s | %40s | %6s | %6s |"
-        (detailed sym)
-        (detailed typ)
-        (maybe' vis)
-        (maybe' pur)
+    detailed (sym, SymbolData typ vis pur pos) =
+         "| "*|20.<sym|*
+        " | "*|10.<pos|*
+        " | "*|35.<typ|*
+        " | "*|6.<maybe' vis|*
+        " | "*|6.<maybe' pur|*
+        " |"
         where
-            maybe' :: (Pretty a) => Maybe a -> String
             maybe' a = maybe "" detailed a
