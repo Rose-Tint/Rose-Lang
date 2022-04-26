@@ -1,4 +1,5 @@
 module Parser.Components.Identifiers (
+    moduleName,
     validIdLetter,
     smallIdent,
     bigIdent,
@@ -7,51 +8,53 @@ module Parser.Components.Identifiers (
     prefixIdent,
 ) where
 
-import Text.Parsec (
-    many, (<|>), endBy1,
-    upper, lower, char,
-    (<?>), getPosition,
-    )
+import Control.Monad (when)
+import Text.Parsec
 
 import Common.SrcPos
 import Common.Var
-import Parser.Components.Internal.LangDef (
-    lexeme,
-    validIdLetter,
-    symbol,
-    )
-import Parser.Data (
-    Parser,
-    )
+import Parser.Components.Internal.LangDef
+import Parser.Data (Parser)
 
 
 upperIdent, lowerIdent :: Parser String
 upperIdent = (:) <$> upper <*> many validIdLetter
-lowerIdent = (:) <$> (lower <|> char '_')
-    <*> many validIdLetter
+lowerIdent = (:) <$> lower <*> many validIdLetter
+
+moduleName :: Parser String
+moduleName = (varName <$> bigIdent)
+    <?> "module name"
 
 -- = ? REGEX "([A-Z][a-zA-Z0-9]*\.)*" ?;
 qualifier :: Parser String
-qualifier = concat <$> (dotQualIden `endBy1` char '.')
-    where
-        dotQualIden = (++ ".") <$> upperIdent
+qualifier = (concat <$> many (try $ (++) <$>
+    upperIdent <*> ((:[]) <$> char '.'
+    ))) <?> "qualifier"
 
 -- = qualifier, ? REGEX "[A-Z][a-zA-Z0-9_]*" ?;
 bigIdent :: Parser Var
 bigIdent = lexeme (do
     start <- getPosition
-    name <- (++) <$> qualifier <*> upperIdent
+    qual <- qualifier
+    name <- upperIdent
     end <- getPosition
-    return (Var name (fromParsecPos start end))
+    let !name' = qual ++ name
+        pos = fromParsecPos start end
+    return (Var name' pos)
     ) <?> "big identifier"
 
 -- = qualifier, ? REGEX "[a-z_][a-zA-Z0-9_]*" ?;
 smallIdent :: Parser Var
 smallIdent = lexeme (do
     start <- getPosition
-    name <- (++) <$> qualifier <*> lowerIdent
+    qual <- qualifier
+    name <- lowerIdent
+    when (isResName name) $
+        unexpected ("keyword " ++ show name)
     end <- getPosition
-    return (Var name (fromParsecPos start end))
+    let !name' = qual ++ name
+        pos = fromParsecPos start end
+    return (Var name' pos)
     ) <?> "small identifier"
 
 oper :: Parser String
@@ -65,22 +68,23 @@ oper = (:) <$> symbol <*> many symbol
 operator :: Parser Var
 operator = lexeme (do
     start <- getPosition
-    op <- (++) <$> qualifier <*> oper
+    qual <- qualifier
+    op <- oper
+    when (isResOper op) $
+        unexpected ("reserved operator " ++ show op)
     end <- getPosition
-    return (Var op (fromParsecPos start end))
+    let !name = qual ++ op
+        pos = fromParsecPos start end
+    return (Var name pos)
     ) <?> "operator"
     where
 
 -- = operator | "`", small-ident, "`";
 infixIdent :: Parser Var
-infixIdent = operator <|> (char '`' *> smallIdent <* char '`')
-    <?> "infix identifier"
+infixIdent = lexeme (
+    operator <|> (char '`' *> smallIdent <* char '`')
+    ) <?> "infix identifier"
 
 -- = small-ident | "(", operator, ")";
 prefixIdent :: Parser Var
-prefixIdent = lexeme (do
-    start <- getPosition
-    name <- (++) <$> qualifier <*> (lowerIdent <|> oper)
-    end <- getPosition
-    return (Var name (fromParsecPos start end))
-    ) <?> "prefix identifier"
+prefixIdent = smallIdent <|> parens operator

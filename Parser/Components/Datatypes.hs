@@ -30,7 +30,7 @@ fieldDecl = (do
 --     { ",", field-decl }, [","], "}" ];
 ctorDef :: Parser Ctor
 ctorDef = (do
-    vis <- visibility
+    vis <- option Extern visibility
     name <- bigIdent
     choice [
         SumType vis name <$> many ttype,
@@ -43,8 +43,8 @@ ctorDef = (do
 --     "=", ctor-def, { "|", ctor-def };
 dataDef :: Parser Expr
 dataDef = do
-    vis <- visibility
     keyword "data"
+    vis <- option Extern visibility
     name <- bigIdent
     pars <- many smallIdent
     ctors <- option [] $ do
@@ -58,8 +58,8 @@ dataDef = do
 -- = visib, "using", type, "=", type;
 typeAlias :: Parser Expr
 typeAlias = do
-    vis <- visibility
     keyword "using"
+    vis <- option Extern visibility
     alias <- ttype
     resOper "="
     typ <- ttype

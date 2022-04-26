@@ -17,6 +17,7 @@ import Data.Char (isDigit, digitToInt)
 import Data.Int
 import Data.List (intercalate)
 import Data.Text (Text, unpack)
+import Text.Parsec.Pos (SourcePos)
 
 import Color
 
@@ -29,13 +30,16 @@ data Align a
     | AC Int Char a
     | AR Int Char a
 
--- |Required: terse | pretty
+
 class Pretty a where
     terse :: a -> String
     pretty :: a -> String
     detailed :: a -> String
     terse = pretty
     detailed = pretty
+
+    default pretty :: (Show a) => a -> String
+    pretty = show
 
 
 infixr 5 `sepsT`, `seps`, `sepsD`
@@ -102,18 +106,17 @@ alignC n pc str = case compare padLen 0 of
 
 alignR :: Int -> Char -> String -> String
 alignR n pc str
-    | n < strLen = take (strLen - n) str
+    | n < strLen = drop (strLen - n) str
     | n == 0 = []
-    | otherwise = str ++ replicate n pc
+    | otherwise = replicate n pc ++ str
     where
         strLen = length str
 
 
-instance Pretty Int8 where
-    pretty = show
-
-instance Pretty Int where
-    pretty = show
+instance Pretty Int8
+instance Pretty Int
+instance Pretty Color
+instance Pretty SourcePos
 
 instance Pretty Char where
     pretty = (:[])

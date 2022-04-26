@@ -2,11 +2,11 @@ module Parser.Error (prettyParseErr) where
 
 import Prelude hiding (lines)
 
-import Data.Text (Text, unpack, lines)
-import Text.Parsec (sourceLine)
+import Data.Text (Text, lines)
+import Text.Parsec (sourceLine, sourceColumn)
 import Text.Parsec.Error
 
-import Color
+import Pretty
 
 
 default (Int, Double)
@@ -14,20 +14,20 @@ default (Int, Double)
 
 prettyParseErr :: ParseError -> Text -> String
 prettyParseErr err input = 
-    if errLn < length srcLines then printf
-        "Error while parsing %s:\n\
-        \    %4d | %s\n%s\n"
-            (show src)
-            (sourceLine src)
-            (unpack (lines input !! errLn))
-            errMsg
-    else printf
-        "$runexpected EOF resulting from:\n    %s\n"
-        errMsg
+    if errLn < length srcLines then
+        Red|+"Error while parsing "+|pos|+":\n"+|
+        Purple|+|4.>posLine|+" | "+|Reset|+|srcLine|+"\n"+|
+        replicate (posCol + 8) ' '|+|Red|+"^"+|
+        Reset|+|errMsg|+"\n"
+    else
+        Red|+"unexpected EOF resulting from:\n    "+|errMsg|+"\n"
     where
-        src = errorPos err
+        pos = errorPos err
         srcLines = lines input
-        errLn = sourceLine src - 1
+        posLine = sourceLine pos
+        posCol = sourceColumn pos
+        errLn = posLine - 1
+        srcLine = lines input !! (posLine - 1)
         errMsg = showErrorMessages "or" "unknown"
                 "Expected:" "Found: " "end of input"
                 (errorMessages err)

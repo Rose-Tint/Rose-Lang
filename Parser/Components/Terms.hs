@@ -4,10 +4,8 @@ module Parser.Components.Terms (
 ) where
 
 import Data.Array (listArray)
-import Text.Parsec (
-    many, choice, try, (<|>),
-    (<?>),
-    )
+import Data.Maybe (catMaybes)
+import Text.Parsec
 
 import Parser.Components.Identifiers
 import Parser.Components.Terms.Literals
@@ -19,15 +17,18 @@ import Parser.Components.Internal.LangDef (
 import Parser.Data (Parser, Value(..))
 
 
--- = literal | func-app | lambda | "(", term, ")";
+-- = literal
+-- | lambda
+-- | func-call
+-- | "(", term, ")"
 term :: Parser Value
 term = choice [
+        parens term,
         literal,
-        try lambda,
-        funcApp,
-        try tupleLit,
-        parens term
-    ]
+        ctorCall,
+        funcCall,
+        lambda
+    ] <?> "term"
 
 literal :: Parser Value
 literal = choice [
@@ -35,21 +36,9 @@ literal = choice [
     floatLit,
     charLit,
     stringLit,
-    arrayLit
-    -- `tupleLit` is excluded bc of the
-    -- parentheses. find it in `term`.
+    arrayLit,
+    tupleLit
     ] <?> "literal"
-
--- = term, infix-ident, term
--- | infix-ident, term
--- | term, infix-ident;
-infixCall :: Parser Value
-infixCall = (do
-    lhs <- term
-    op <- VarVal <$> infixIdent
-    rhs <- term
-    return (Application op [lhs, rhs])
-    ) <?> "infix call"
 
 -- (for now, lambdas will be very limited due to
 -- requiring statement)
@@ -62,36 +51,87 @@ lambda = (do
     return (Lambda params body)
     ) <?> "lambda"
 
--- = prefix-ident | ("(", lambda, func-app ")");
-prefixCaller :: Parser Value
-prefixCaller = (VarVal <$> smallIdent) <|> parens (choice [
-        VarVal <$> operator,
-        try lambda,
-        funcApp
-    ]) <?> "prefixing caller"
+-- = term, infix-ident, term
+-- | infix-ident, term
+-- | term, infix-ident;
+infixCall :: Parser Value
+infixCall = choice [
+    try $ do
+        lhs <- Just <$> term
+        op <- VarVal <$> infixIdent
+        rhs <- optionMaybe term
+        let args = catMaybes [lhs, rhs]
+        return (Application op args),
+    do  lhs <- optionMaybe term
+        op <- VarVal <$> infixIdent
+        rhs <- Just <$> term
+        let args = catMaybes [lhs, rhs]
+        return (Application op args)
+    ] <?> "infix call"
+
+-- = infix-call
+-- | small-ident, {term}
+-- | "(", operator, ")", {term}
+-- | "(", func-call, ")", {term}
+-- | "(", lambda, ")", {term}
+funcCall :: Parser Value
+funcCall = choice [
+        try infixCall,
+        do  clr <- prefixCaller
+            args <- many term
+            if null args then
+                return clr
+            else
+                return (Application clr args)
+    ] <?> "function call"
+    where
+        prefixCaller = choice [
+                VarVal <$> smallIdent,
+                parens (choice [
+                        try lambda,
+                        try (VarVal <$> operator),
+                        funcCall
+                    ])
+            ]
+
+-- = big-ident, {term}
+ctorCall :: Parser Value
+ctorCall = (do
+    name <- bigIdent
+    args <- many term
+    return (CtorCall name args)
+    ) <?> "constructor call"
+
+
+
+
+-- -- = prefix-ident | "(", lambda, func-app ")";
+-- prefixCaller :: Parser Value
+-- prefixCaller = (VarVal <$> smallIdent)
+--     <|> parens (choice [
+--         VarVal <$> operator,
+--         try lambda,
+--         funcApp
+--     <?> "prefixing caller"
 
 -- = prefix-caller, {term},
 -- | big-ident, {term}
 -- | infix-call;
-funcApp :: Parser Value
-funcApp = funcCall <|> ctor
-    where
-        funcCall = try infixCall <|> prefixCall
-            <?> "function call"
-        prefixCall = do
-            caller <- prefixCaller
-            args <- many term
-            return (Application caller args)
-        ctor = (do
-            name <- bigIdent
-            args <- many term
-            return (CtorCall name args)
-            ) <?> "constructor"
+-- funcApp :: Parser Value
+-- funcApp = funcCall <|> ctor
+--     <?> "function application"
+--     where
+--         funcCall = try infixCall <|> prefixCall
 
-{-
-@arrayLit@ and @tupleLit@ must be in this
-module because they require @term@.
--}
+-- prefixCall :: Parser Value
+-- prefixCall = (do
+--     caller <- prefixCaller
+--     args <- many term
+--     if null args then
+--         return caller
+--     else
+--         return (Application caller args)
+--     ) <?> "function call"
 
 -- = "[", {term}, "]";
 arrayLit :: Parser Value

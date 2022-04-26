@@ -32,8 +32,8 @@ traitCtx = option [] (angles (commaSep1 constraint))
 --     "{", {func-decl}, "}";
 traitDecl :: Parser Expr
 traitDecl = do
-    vis <- visibility
     keyword "trait"
+    vis <- option Extern visibility
     ctx <- traitCtx
     name <- bigIdent
     tVars <- many1 smallIdent
@@ -47,6 +47,6 @@ traitImpl = do
     keyword "impl"
     ctx <- traitCtx
     name <- bigIdent
-    tVars <- many1 ttype
+    tVars <- many ttype
     fns <- braces (many funcDef)
     return (TraitImpl ctx name tVars fns)

@@ -7,7 +7,6 @@ import Builder.Builder (buildM_)
 import CmdLine (CmdLine(..), getCmdLine)
 import Color (printf)
 import Build (build)
--- import Threading
 
 
 default (Int, Double)

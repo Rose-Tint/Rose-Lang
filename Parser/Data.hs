@@ -55,7 +55,7 @@ data Purity = Pure | Impure | Unsafe
 
 type Mutability = Purity
 
-data Visibility = Export | Intern
+data Visibility = Extern | Intern
     deriving (Show, Eq)
 
 data Field = Field {-# UNPACK #-} !Var Type
@@ -156,9 +156,9 @@ instance Pretty Purity where
     pretty Unsafe = "unsafe"
 
 instance Pretty Visibility where
-    terse Export = "ex"
+    terse Extern = "ex"
     terse Intern = "in"
-    pretty Export = "export"
+    pretty Extern = "export"
     pretty Intern = "intern"
     detailed = show
 

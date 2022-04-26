@@ -1,6 +1,8 @@
 {-# OPTIONS_GHC -Wno-missing-signatures #-}
 
 module Parser.Components.Internal.LangDef (
+    isResName, isResOper,
+    reservedNames, reservedOpers,
     validIdLetter, symbol,
     keyword, resOper,
     lexeme,
@@ -11,6 +13,7 @@ module Parser.Components.Internal.LangDef (
 ) where
 
 import Data.Functor.Identity (Identity)
+import Data.Set (Set, member, toList, fromList)
 import Data.Text (Text)
 import Text.Parsec
 import Text.Parsec.Language (emptyDef)
@@ -25,33 +28,47 @@ default (Int, Double)
 -- = ? REGEX "(~!@#\$%^&\*-\+=\\\|:<>\.\?/)+" ?;
 symbol :: Parser Char
 symbol = oneOf "~!@#$%^&*-+=\\|:<>.?/"
+    <?> "symbol character"
 
 validIdLetter :: Parser Char
 validIdLetter = alphaNum <|> char '_'
+    <?> "id character"
+
+isResName :: String -> Bool
+isResName = (`member` reservedNames)
+
+reservedNames :: Set String
+reservedNames = fromList [
+        "pure", "impure", "unsafe",
+        "let", "mut", "imut",
+        "intern", "extern",
+        "module", "import",
+        "return",
+        "if", "unless", "else",
+        "match",
+        "loop",
+        "impl", "trait",
+        "data"
+    ]
+
+isResOper :: String -> Bool
+isResOper = (`member` reservedOpers)
+
+reservedOpers :: Set String
+reservedOpers = fromList [ "=", ",", "=>" ]
 
 tokenP :: T.GenTokenParser Text () Identity
-tokenP = T.makeTokenParser $! emptyDef {
+tokenP = T.makeTokenParser $ emptyDef {
         T.commentStart = "{-",
         T.commentEnd = "-}",
         T.commentLine = "--",
         T.nestedComments = True,
-        T.identStart = letter <|> char '_',
+        T.identStart = letter,
         T.identLetter = validIdLetter,
         T.opStart = symbol,
         T.opLetter = symbol,
-        T.reservedNames = [
-                "pure", "impure", "unsafe",
-                "let", "mut", "imut",
-                "intern", "extern",
-                "module", "import",
-                "return",
-                "if", "unless", "else",
-                "match",
-                "loop",
-                "impl", "trait",
-                "data"
-            ],
-        T.reservedOpNames = [ "=", ",", "=>" ],
+        T.reservedNames = toList reservedNames,
+        T.reservedOpNames = toList reservedOpers,
         T.caseSensitive = True
     }
 

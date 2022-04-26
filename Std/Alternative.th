@@ -9,7 +9,7 @@ trait Alternative a {
 
 
 impl Alternative {
-    choose = foldl (<|>);
+    choose = foldl (<|>));
 }
 
 impl Alternative Bool {

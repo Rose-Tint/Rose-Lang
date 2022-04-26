@@ -1,12 +1,13 @@
 module Parser.Components.Specifiers (
+    Purity(..),
+    Visibility(..),
+    Mutability,
     purity,
     visibility,
-    visibility',
     mutability,
-    mutability',
 ) where
 
-import Text.Parsec (choice, option, (<?>))
+import Text.Parsec (choice, (<?>))
 
 import Parser.Components.Internal.LangDef (keyword)
 import Parser.Data (
@@ -24,20 +25,14 @@ purity = choice [
         keyword "unsafe" >> return Unsafe
     ] <?> "purity"
 
-visibility' :: Parser Visibility
-visibility' = choice [
-        keyword "export" >> return Export,
+visibility :: Parser Visibility
+visibility = choice [
+        keyword "export" >> return Extern,
         keyword "intern" >> return Intern
     ] <?> "visibility"
 
-mutability' :: Parser Mutability
-mutability' = choice [
+mutability :: Parser Mutability
+mutability = choice [
         keyword "mut"  >> return Pure,
         keyword "imut" >> return Impure
     ] <?> "mutability"
-
-visibility :: Parser Visibility
-visibility = option Export visibility'
-
-mutability :: Parser Mutability
-mutability = option Pure mutability'
