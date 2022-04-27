@@ -83,6 +83,7 @@ common general
         -threaded
         -fhide-source-paths
         -fshow-warning-groups
+        -fglasgow-exts
         -Wall
         -Wextra
         -Wcompat
