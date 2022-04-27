@@ -1,12 +1,9 @@
 {
 module Parser.Parser where
 }
-
-
 %name parser Module
-%error parseError
-
-%tokentype Token
+%tokentype { Token }
+%error { parseError }
 %token
     -- primatives
     int             { TInt $$    }
@@ -81,6 +78,10 @@ TopLevelExpr :: { Expr }
     | TraitImpl { $1 }
     -- | PragmaSeq { Left $1  }
 
+TopLevelExprs :: { [Expr] }
+    : TopLevelExprs TopLevelExpr    { ($2:$1) }
+    | TopLevelExpr                  { [$1] }
+
 
 Item :: { Item }
     : trait big_id  { TraitItem $2 }
@@ -93,6 +94,10 @@ Items1_ :: { [Item] }
     : Item                  { [$1]  }
     | Items1_ comma         { $1    }
     | Items1_ comma Item    { $3:$1 }
+
+Imports :: { [Import] }
+    : Imports Imports   { ($2:$1) }
+    | Import            { [$1] }
 
 Import :: { Import }
     : import big_id                                     { Import $2 Intern Nothing   }
@@ -208,15 +213,15 @@ TraitCtx :: { Context }
     : l_angle CtxSeq r_angle    { $2 }
 
 TraitDecl :: { Expr }
-    : trait Vis TraitCtx big_id SmallIds l_brace MethodDecls r_brace
+    : trait Vis TraitCtx big_id SmallIds l_brace MethodDecls r_brace    { TraitDecl $2 $3 $4 $5 $7 }
 
 MethodDecls :: { [Expr] }
-    : Methods FuncDecl   { ($2:$1) }
-    | Methods FuncDef    { ($2:$1) }
+    : MethodDecls FuncDecl   { ($2:$1) }
+    | MethodDecls FuncDef    { ($2:$1) }
     | {- empty -}        { []      }
 
 TraitImpl :: { Expr }
-    : impl TraitCtx big_id Types l_brace MethodImpls r_brace
+    : impl TraitCtx big_id Types l_brace MethodImpls r_brace    { TraitImpl $2 $3 $4 $6 }
 
 MethodImpls :: { [Expr] }
     : MethodImpls FuncDef    { ($2:$1) }
@@ -230,16 +235,16 @@ Terms0_ :: { [Value] }
     | {- empty -}   { []      }
 
 Term :: { Value }
-    : char
-    | string
-    | int
-    | float
-    | Array
-    | Tuple
-    | Lambda
-    | CtorCall
-    | FuncCall
-    | l_paren Term r_paren
+    : char                  { CharVal $1 }
+    | string                { StringVal $1 }
+    | int                   { IntVal $1 }
+    | float                 { FloatVal $1 }
+    | Array                 { $1 }
+    | Tuple                 { $1 }
+    | Lambda                { $1 }
+    | CtorCall              { $1 }
+    | FuncCall              { $1 }
+    | l_paren Term r_paren  { $2 }
 
 Array :: { Value }
     : l_bracket ArrayTerms r_bracket   { mkArray $2 }
@@ -336,7 +341,7 @@ ExprStmt :: { Stmt }
     : NewVar        { $1         }
     | Reassignment { $1         }
     | FuncCall      { ValStmt $1 }
-    | NullExpr      { $1         }
+    | NullStmt      { $1         }
 
 JumpStmt :: { Stmt }
     : break semi        { Break }
