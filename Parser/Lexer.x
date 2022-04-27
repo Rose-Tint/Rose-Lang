@@ -45,7 +45,7 @@ $r_angle         = ">"
 
 tokens :-
     $white+         ;
-    $comment        ;
+    $comment+       ;
     @integer        { TInt . read   }
     @float          { TFloat . read }
     @char           { TChar         }
@@ -54,9 +54,12 @@ tokens :-
     @small_id       { TSmall        }
     @prefix_id      { TPrefix       }
     @infix_id       { TInfix        }
+    "="             { TEq           }
     ":"             { TColon        }
     ";"             { TSemi         }
-    "#"             { THash         }
+    "|"             { TPipe         }
+    "->"            { TArrow        }
+    "=>"            { TEqArrow      }
     ","             { TComma        }
     "("             { TLParen       }
     ")"             { TRParen       }
@@ -66,13 +69,11 @@ tokens :-
     "]"             { TRBracket     }
     "<"             { TLAngle       }
     ">"             { TRAngle       }
-    "->"            { TArrow        }
+    "_"             { THole         }
     "pure"          { TPure         }
     "impure"        { TImpure       }
-    "unsafe"        { TUnsafe       }
     "let"           { TLet          }
     "mut"           { TMut          }
-    "imut"          { TImut         }
     "intern"        { TIntern       }
     "extern"        { TExtern       }
     "module"        { TModule       }
@@ -84,11 +85,8 @@ tokens :-
     "else"          { TElse         }
     "match"         { TMatch        }
     "loop"          { TLoop         }
+    "break"         { TBreak        }
+    "continue"      { TContinue     }
     "impl"          { TImpl         }
     "trait"         { TTrait        }
     "data"          { TData         }
-    "allow_unused"  { TAllowUnused  }
-    "warn_unused"   { TWarnUnused   }
-    "inline"        { TInline       }
-    "deprecated"    { TDeprecated   }
-    "test"          { TTest         }
