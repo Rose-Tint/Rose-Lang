@@ -3,8 +3,6 @@ module Parser.Error (prettyParseErr) where
 import Prelude hiding (lines)
 
 import Data.Text (Text, lines)
-import Text.Parsec (sourceLine, sourceColumn)
-import Text.Parsec.Error
 
 import Pretty
 

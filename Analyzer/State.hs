@@ -8,7 +8,7 @@ import Analyzer.Error
 import Common.SrcPos
 import Common.Typing
 import Common.Var
-import Parser.Components.Imports (Import)
+import Parser (Import)
 import SymbolTable
 
 

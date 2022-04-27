@@ -2,6 +2,7 @@
 !.git*
 /dist*
 cabal-dev
+*.info
 *.o
 *.hi
 *.hie

@@ -3,12 +3,7 @@ module Common.Item (
     item,
 ) where
 
-import Text.Parsec (choice)
-
 import Common.Var
-import Parser.Components.Identifiers
-import Parser.Components.Internal.LangDef (keyword)
-import Parser.Data (Parser)
 import Pretty
 
 
@@ -23,18 +18,6 @@ data Item
         itemName :: {-# UNPACK #-} !Var
     }
     deriving (Eq)
-
-item :: Parser Item
-item = choice [
-        do  keyword "trait"
-            name <- bigIdent
-            return (TraitItem name),
-        do  keyword "data"
-            name <- bigIdent
-            return (DataItem name),
-        do  name <- prefixIdent
-            return (FuncItem name)
-    ]
 
 
 instance Pretty Item where

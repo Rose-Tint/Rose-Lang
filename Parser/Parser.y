@@ -1,9 +1,13 @@
 {
-module Parser.Parser where
+module Parser.Parser (parse) where
+
+import Parser.Lexer
 }
-%name parser Module
-%tokentype { Token }
+
+%name rose Module
 %error { parseError }
+
+%tokentype { Token }
 %token
     -- primatives
     int             { TInt $$    }
@@ -388,6 +392,7 @@ Reassignment :: { Stmt }
 
 
 {
+parseError _ = error "parse error"
 
 mkTuple :: [Value] -> Value
 mkTuple vals = Tuple (listArray (0, length vals) (reverse vals))
@@ -395,4 +400,6 @@ mkTuple vals = Tuple (listArray (0, length vals) (reverse vals))
 mkArray :: [Value] -> Value
 mkArray vals = Array (listArray (0, length vals) (reverse vals))
 
+parse :: String -> Module
+parse str = rose (alexScanTokens)
 }

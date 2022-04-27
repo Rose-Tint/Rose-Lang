@@ -17,7 +17,6 @@ import Data.Char (isDigit, digitToInt)
 import Data.Int
 import Data.List (intercalate)
 import Data.Text (Text, unpack)
-import Text.Parsec.Pos (SourcePos)
 
 import Color
 
@@ -116,7 +115,6 @@ alignR n pc str
 instance Pretty Int8
 instance Pretty Int
 instance Pretty Color
-instance Pretty SourcePos
 
 instance Pretty Char where
     pretty = (:[])
