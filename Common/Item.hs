@@ -1,6 +1,5 @@
 module Common.Item (
     Item(..),
-    item,
 ) where
 
 import Common.Var

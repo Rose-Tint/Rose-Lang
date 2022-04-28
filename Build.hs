@@ -5,10 +5,10 @@ module Build (
 import Prelude hiding (readFile)
 
 import Control.Monad ((<$!>), when, forM_)
+import Data.Text (unpack)
 import qualified Data.Text as T (lines)
 import Data.Text.IO (readFile)
 import System.Directory
-import Text.Parsec (parse)
 
 import CmdLine.Flags
 import Common.Var
@@ -19,8 +19,6 @@ import Builder.Builder
 import Builder.CmdLine
 import Builder.Output
 import Parser
-import Parser.Data (Expr)
-import Parser.Error (prettyParseErr)
 import Pretty
 import Utils (modToPath)
 
@@ -31,7 +29,7 @@ default (Int, Double)
 build :: BuilderIO ()
 build = do
     files <- getSourceFiles
-    forM_ files $ buildFile
+    forM_ files buildFile
     status "Finished building\n"
 
 buildFile :: FilePath -> BuilderIO ()
@@ -48,26 +46,21 @@ buildFile path = do
             createDirectoryIfMissing True dir
         src <- readFile <#> path
         setSource src
-        ParseResults imports tree _ <- parseFile
-        forM_ imports $ \(Import (Var modName _) _ _ _) -> 
+        Module _ imports tree <- parseFile
+        forM_ imports $ \(Import (Var modName _) _ _) ->
             buildFile (modToPath modName)
         analyzeFile tree
         addUTDModule name
 
-parseFile :: BuilderIO ParseResults
+parseFile :: BuilderIO Module
 parseFile = do
     name <- getModule
     src <- getSource
     debug ("Parsing   ["+|name|+"]\n")
-    case parse parser name src of
-        Left err -> do
-            src' <- getSource
-            fatal $ prettyParseErr err src'
-                |+"\nFailed while parsing module("+|name|+")"
-        Right res -> do
-            trace "Parse-Tree.txt" $
-                concatMap pretty (prParseTree res)
-            return res
+    let parseTree = parse (unpack src)
+    trace "Parse-Tree.txt" $
+        pretty parseTree
+    return parseTree
 
 analyzeFile :: [Expr] -> BuilderIO Analysis
 analyzeFile es = do

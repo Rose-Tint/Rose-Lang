@@ -1,12 +1,16 @@
 {
-module Parser.Lexer where
+module Parser.Lexer (
+    Token(..),
+    alexScanTokens
+) where
 
 import Data.Char (digitToInt)
 import Data.Int (Int64)
+import Data.List (foldl')
 
 import Common.SrcPos
 import Common.Var
-import Parser.Data (Value)
+import Parser.Data
 }
 
 %wrapper "posn"
@@ -107,13 +111,16 @@ tokens :-
 type TokenAction = AlexPosn -> String -> Token
 
 
+fromAlexPosn :: AlexPosn -> SrcPos
+fromAlexPosn (AlexPn off ln col) = SrcPos off ln (fromIntegral col)
+
 mkVar :: (Var -> Token) -> TokenAction
-mkVar ctor (AlexPn off ln col) str =
-    ctor (Var str (SrcPos off ln col))
+mkVar ctor pos str =
+    ctor (Var str (fromAlexPosn pos))
 
 hole :: TokenAction
-hole (AlexPn off ln col) _ =
-    THole (Hole (SrcPos off ln col))
+hole pos _ =
+    THole (Hole (fromAlexPosn pos))
 
 reserved :: Token -> TokenAction
 reserved t _ _ = t
@@ -121,21 +128,21 @@ reserved t _ _ = t
 integer :: TokenAction
 integer (AlexPn _ ln _) [] = error
     ("error lexing integer on line " ++ show ln)
-integer (AlexPn off ln col) str =
+integer pos str =
     let !n = foldl' (\ !x d ->
-        base * x + fromIntegral (digitToInt d)
-        ) (0 :: Int64) str
-    in TInt (IntVal n (SrcPos off ln col))
+            (10 :: Int64) * x + fromIntegral (digitToInt d)
+            ) (0 :: Int64) str
+    in TInt (IntLit n (fromAlexPosn pos))
 
 float :: TokenAction
-float (AlexPn off ln col) str =
+float pos str =
     let !n = read str :: Double
-    in TFloat (FloatVal n (SrcPos off ln col))
+    in TFloat (FloatLit n (fromAlexPosn pos))
 
 char :: TokenAction
 char (AlexPn _ ln _) [] = error
     ("error lexing character literal on line " ++ show ln)
-char (AlexPn off ln col) (_:'\\':ch:rest) =
+char pos (_:'\\':ch:_) =
     let ch' = case ch of
             'a' -> '\a'
             'b' -> '\b'
@@ -145,30 +152,31 @@ char (AlexPn off ln col) (_:'\\':ch:rest) =
             't' -> '\t'
             'v' -> '\v'
             _ -> ch
-    in TChar (CharVal ch' (SrcPos off ln col))
-char (AlexPn off ln col) str =
+    in TChar (CharLit ch' (fromAlexPosn pos))
+char pos str =
     let !ch = head (tail str)
-    in TChar (CharVal ch (SrcPos off ln col))
+    in TChar (CharLit ch (fromAlexPosn pos))
 
 string :: TokenAction
-string (AlexPn off ln col) [_, _] =
-    TString (StringVal "" (SrcPos off ln col))
-string (AlexPn off ln col) (_:str@(_:_)) =
+string pos [_, _] =
+    TString (StringLit "" (fromAlexPosn pos))
+string pos (_:str@(_:_)) =
     let !s = init str
-    in TString (StringVal s (SrcPos off ln col))
+    in TString (StringLit s (fromAlexPosn pos))
 string (AlexPn _ ln _) _ = error
     ("error lexing string literal on line " ++ show ln)
 
 
 data Token
-    = TInt Int64
-    | TFloat Double
-    | TChar Char
-    | TString String
-    | TBig String
-    | TSmall String
-    | TPrefix String
-    | TInfix String
+    = TInt Value
+    | TFloat Value
+    | TChar Value
+    | TString Value
+    | TBig Var
+    | TSmall Var
+    | TPrefix Var
+    | TInfix Var
+    | THole Value
     | TEq
     | TColon
     | TSemi
@@ -184,7 +192,6 @@ data Token
     | TRBracket
     | TLAngle
     | TRAngle
-    | THole
     | TPure
     | TImpure
     | TLet

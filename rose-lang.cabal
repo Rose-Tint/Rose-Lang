@@ -38,7 +38,6 @@ common general
         Parser,
         Parser.Imports,
         Parser.Data,
-        Parser.Error,
         Parser.Lexer,
         Parser.Parser,
         Pretty,
@@ -87,16 +86,6 @@ common general
         -Wmissing-export-lists
         -Wno-unused-do-bind
         -Werror
-
-    happy-options:
-        --ghc
-        --arrays
-        --coerce
-        --strict
-        --info
-    alex-options:
-        --ghc
-        --info
 
 
 executable Rose

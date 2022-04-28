@@ -16,8 +16,10 @@ module Analyzer.Analyzer (
     throw, warn, catch, throwUndefined,
 ) where
 
-import Control.Monad ((<$!>))
+import Control.Monad ((<$!>), void)
 import Control.Monad.Fail
+import Data.Either (fromRight)
+import Data.Functor ((<&>))
 
 import Analyzer.Error
 import Analyzer.State
@@ -31,7 +33,7 @@ import SymbolTable
 default (Int, Double)
 
 
-data Analyzer a
+newtype Analyzer a
     = Analyzer {
         runA :: forall b. State
             -> (a -> State -> b)     -- analyzed
@@ -160,10 +162,10 @@ addImport imp = modifyState_ $ \s ->
     s { stImports = (imp:stImports s) }
 
 option :: a -> Analyzer a -> Analyzer a
-option def a = catch a >>= return . either (const def) id
+option def a = catch a <&> fromRight def
 
 optional :: Analyzer a -> Analyzer ()
-optional a = catch a >> return ()
+optional = void . catch
 
 throw :: Error -> Analyzer a
 throw FalseError = Analyzer $ \ !s _ err -> err FalseError s
@@ -195,7 +197,7 @@ throwUndefined sym = do
 
 instance Functor Analyzer where
     fmap f a = Analyzer $ \ !s aok err ->
-        let okay x s' = aok (f x) s' in
+        let okay x = aok (f x) in
         runA a s okay err
 
 instance Applicative Analyzer where

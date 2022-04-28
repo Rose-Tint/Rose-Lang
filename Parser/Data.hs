@@ -1,25 +1,21 @@
 {-# LANGUAGE FlexibleInstances #-}
 
 module Parser.Data (
-    Parser,
     Value(..),
-    Pattern,
     Purity(..),
     Mutability,
     Visibility(..),
     Field(..),
     Ctor(..),
     Stmt(..),
+    MatchCase,
     Body,
     Expr(..),
     valPos,
 ) where
 
 import Data.Array (Array, elems)
-import Data.Functor.Identity (Identity)
 import Data.Int (Int64)
-import Data.Text (Text)
-import Text.Parsec.Prim (ParsecT)
 
 import Common.SrcPos
 import Common.Typing
@@ -29,8 +25,6 @@ import Pretty
 
 default (Int, Double)
 
-
-type Parser a = ParsecT Text () Identity a
 
 data Value
     = IntLit {-# UNPACK #-} !Int64 SrcPos
@@ -42,13 +36,10 @@ data Value
     | CtorCall {-# UNPACK #-} !Var [Value]
     | Tuple {-# UNPACK #-} !(Array Int Value)
     | Array {-# UNPACK #-} !(Array Int Value)
-    | Lambda [Var] Value -- Body
+    | Lambda [Var] Body
     | StmtVal Stmt
     | Hole SrcPos
     deriving (Eq)
-
--- type Pattern = [Value]
-type Pattern = Value
 
 data Purity = Pure | Impure | Unsafe
     deriving (Show, Eq)
@@ -63,35 +54,40 @@ data Field = Field {-# UNPACK #-} !Var Type
 
 data Ctor
     = Record
-        Visibility
         {-# UNPACK #-} !Var
+        Visibility
         [Field]
     | SumType
-        Visibility
         {-# UNPACK #-} !Var
+        Visibility
         [Type]
     deriving (Eq)
 
 data Stmt
     = IfElse Value Body Body
-    | Loop (Maybe Stmt) Value (Maybe Stmt) Body
-    | Match Value [(Pattern, Body)]
+    | Loop Stmt Stmt Stmt Body
+    | Match Value [(Value, Body)]
     | NewVar
         Mutability
-        Type
         {-# UNPACK #-} !Var
+        Type
         Value
     | Reassignment {-# UNPACK #-} !Var Value
     | Return Value
     | ValStmt Value
+    | Break
+    | Continue
+    | NullStmt
     deriving (Eq)
+
+type MatchCase = (Value, Body)
 
 type Body = [Stmt]
 
 data Expr
     = FuncDecl {
-        exprVisib :: Visibility,
         exprPurity :: Purity,
+        exprVisib :: Visibility,
         exprName :: {-# UNPACK #-} !Var,
         exprType :: {-# UNPACK #-} !TypeDecl
     }
@@ -134,11 +130,11 @@ valPos (Application _ _) = UnknownPos -- ERROR
 --     SrcPos m ln st _ -> case valPos (tail vals) of
 --         UnknownPos -> UnknownPos
 --         SrcPos _ _ _ end -> SrcPos m ln st end
-valPos (Lambda (par:_) val) = case varPos par of
-    UnknownPos -> UnknownPos
-    SrcPos m ls _ cs _ -> case valPos val of
-        UnknownPos -> UnknownPos
-        SrcPos _ _ le _ ce -> SrcPos m ls le cs ce
+-- valPos (Lambda (par:_) val) = case varPos par of
+--     UnknownPos -> UnknownPos
+--     SrcPos off ln col -> case valPos val of
+--         UnknownPos -> UnknownPos
+--         SrcPos _ _ le _ ce -> SrcPos m ls le cs ce
 valPos (Lambda _ _) = UnknownPos
 valPos (CtorCall var _) = varPos var
 valPos (Array _) = UnknownPos
@@ -186,11 +182,11 @@ instance Pretty Value where
         "("+|name|+" "+|" "`seps`args|+")"
     pretty (Tuple arr) = "("+|", "`seps`elems arr|+")"
     pretty (Array arr) = "[ "+|", "`seps`elems arr|+" ]"
-    pretty (Lambda ps val) = " "`seps`ps|+" => "+|val
+    pretty (Lambda ps stmts) = " "`seps`ps|+" => "+|indentCatLns stmts
     pretty (StmtVal stmt) = "("+|stmt|+")"
     pretty (Hole _) = "_"
 
-instance Pretty (Pattern, Body) where
+instance Pretty (Value, Body) where
     pretty (ptrn, body) = prettyPtrn ptrn|+
         " {\n"+|indentCatLns body|+"}"
 
@@ -206,19 +202,22 @@ instance Pretty Stmt where
     pretty (IfElse val tb fb) = "if ("+|val|+") {\n"
         +|indentCatLns tb|+"\n    else {\n"
         +|indentCatLns fb|+"}"
-    pretty (Loop Nothing cond Nothing body) = 
+    pretty (Loop NullStmt cond NullStmt body) =
         "loop ("+|cond|+") {\n"
         +|indentCatLns body|+"}"
-    pretty (Loop mInit cond mIter body) =
-        "loop ("+|mInit|+"; "+|cond|+"; "+|mIter|+") {\n"
+    pretty (Loop init' cond iter body) =
+        "loop ("+|init'|+"; "+|cond|+"; "+|iter|+") {\n"
         +|indentCatLns body|+"}"
     pretty (Match val cases) = "match ("+|val|+") {\n"
         +|indentCatLns cases|+"}"
     pretty (NewVar mut typ name val) =
         "let "+|mut|+" "+|name|+|typ|+" = "+|val|+";"
     pretty (Reassignment var val) = var|+" = "+|val|+";"
+    pretty Continue = "continue"
+    pretty Break = "Break"
     pretty (Return val) = "return"+|val|+";"
     pretty (ValStmt val) = val|+";"
+    pretty NullStmt = ";"
 
 instance Pretty Expr where
     pretty (FuncDecl vis pur name typ) =

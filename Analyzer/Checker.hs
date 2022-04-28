@@ -64,11 +64,11 @@ instance Checker Value where
                 typ -> return typ
             ) eT arr
         return $! arrayOf typ
-    infer (Lambda params val) = do
+    infer (Lambda params bdy) = do
         let pTs = (Delayed:(Delayed <$ params))
             apT = Applied pTs
-        vT <- expect apT (infer val)
-        return (Applied (tail pTs ++ [vT]))
+        bT <- expect apT (inferBody bdy)
+        return (Applied (tail pTs ++ [bT]))
     infer (StmtVal stmt) = infer stmt
     infer (Hole p) = updatePos p >> peekExpType
 

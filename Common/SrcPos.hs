@@ -2,6 +2,7 @@ module Common.SrcPos (
     Line,
     Col,
     SrcPos(..),
+    newSrcPos,
 ) where
 
 import Data.Int (Int8)
@@ -23,6 +24,10 @@ data SrcPos
         srcCol :: {-# UNPACK #-} !Col
     }
     deriving (Eq, Ord)
+
+
+newSrcPos :: SrcPos
+newSrcPos = SrcPos 0 0 0
 
 
 instance Pretty SrcPos where

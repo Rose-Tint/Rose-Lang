@@ -27,7 +27,7 @@ data State
 newModuleState :: String -> State
 {-# INLINE newModuleState #-}
 newModuleState name = State (prim name) [] []
-    emptyTable [] Nothing (newModulePos name)
+    emptyTable [] Nothing newSrcPos
 
 newState :: State
 {-# INLINE newState #-}
