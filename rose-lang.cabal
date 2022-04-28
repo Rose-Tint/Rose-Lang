@@ -41,6 +41,7 @@ common general
         Parser.Data,
         Parser.Lexer,
         Parser.Parser,
+        Parser.Token,
         Pretty,
         SymbolTable,
         -- SymbolTable.Attrs,

@@ -57,10 +57,15 @@ parseFile = do
     name <- getModule
     src <- getSource
     debug ("Parsing   ["+|name|+"]\n")
-    let parseTree = parse (unpack src)
-    trace "Parse-Tree.txt" $
-        pretty parseTree
-    return parseTree
+    case parse (unpack src) of
+        Left msg -> fatal $
+            msg|+"\n"+|Red|+
+            "Failed while parsing module '"
+            +|name|+"'\n"
+        Right parseTree -> do
+            trace "Parse-Tree.txt" $
+                pretty parseTree
+            return parseTree
 
 analyzeFile :: [Expr] -> BuilderIO Analysis
 analyzeFile es = do

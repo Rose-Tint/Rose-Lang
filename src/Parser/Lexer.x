@@ -1,19 +1,27 @@
 {
 module Parser.Lexer (
     Token(..),
-    alexScanTokens
+    Alex(..),
+    runAlex,
+    lexer,
+    alexError,
+    getLexerPos,
 ) where
 
 import Data.Char (digitToInt)
 import Data.Int (Int64)
 import Data.List (foldl')
+import Text.Read (readMaybe)
 
 import Common.SrcPos
 import Common.Var
 import Parser.Data
+import Parser.Token
+import Pretty
 }
 
-%wrapper "posn"
+%wrapper "monad"
+
 
 $bin_digit      = 0-1
 $oct_digit      = 0-7
@@ -43,7 +51,7 @@ $r_angle        = \>
 @integer        = $sign? (@decimal | "0" (@binary | @octal | @hexa))
 @exponent       = "."? ("e"|"E") $sign? @decimal
 @hex_exponent   = "."? ("p"|"P") $sign? @decimal
-@float          = $sign? @decimal @exponent ("f"|"F")?
+@float          = $sign? @decimal @exponent
                 | $sign? @decimal "." @decimal ("f"|"F")?
                 | $sign? @hexa @hex_exponent ("f"|"F")?
 @character      = "\\" (@hexa | @octal | $special) | .
@@ -59,90 +67,112 @@ $r_angle        = \>
 
 
 tokens :-
-    $white+         ;
-    @comment+       ;
-    @integer        { integer                  }
-    @float          { float                    }
-    @char           { char                     }
-    @string         { string                   }
-    @big_id         { mkVar TBig               }
-    @small_id       { mkVar TSmall             }
-    @prefix_id      { mkVar TPrefix            }
-    @infix_id       { mkVar TInfix             }
-    "="             { reserved TEq             }
-    ":"             { reserved TColon          }
-    ";"             { reserved TSemi           }
-    "|"             { reserved TPipe           }
-    "->"            { reserved TArrow          }
-    "=>"            { reserved TEqArrow        }
-    ","             { reserved TComma          }
-    "("             { reserved TLParen         }
-    ")"             { reserved TRParen         }
-    "{"             { reserved TLBrace         }
-    "}"             { reserved TRBrace         }
-    "["             { reserved TLBracket       }
-    "]"             { reserved TRBracket       }
-    "<"             { reserved TLAngle         }
-    ">"             { reserved TRAngle         }
-    "_"             { hole                     }
-    "pure"          { reserved TPure           }
-    "impure"        { reserved TImpure         }
-    "let"           { reserved TLet            }
-    "mut"           { reserved TMut            }
-    "intern"        { reserved TIntern         }
-    "extern"        { reserved TExtern         }
-    "module"        { reserved TModule         }
-    "where"         { reserved TWhere          }
-    "import"        { reserved TImport         }
-    "using"         { reserved TUsing          }
-    "return"        { reserved TReturn         }
-    "if"            { reserved TIf             }
-    "else"          { reserved TElse           }
-    "match"         { reserved TMatch          }
-    "loop"          { reserved TLoop           }
-    "break"         { reserved TBreak          }
-    "continue"      { reserved TContinue       }
-    "impl"          { reserved TImpl           }
-    "trait"         { reserved TTrait          }
-    "data"          { reserved TData           }
+    $white+             ;
+    @comment+           ;
+    $sign? @decimal     { integer 10               }
+    $sign? 0 @binary    { integer 2                }
+    $sign? 0 @octal     { integer 8                }
+    $sign? 0 @hexa      { integer 16               }
+    @float              { float                    }
+    @char               { char                     }
+    @string             { string                   }
+    @big_id             { mkVar TBig               }
+    @small_id           { mkVar TSmall             }
+    @prefix_id          { mkVar TPrefix            }
+    @infix_id           { mkVar TInfix             }
+    "="                 { reserved TEq             }
+    ":"                 { reserved TColon          }
+    ";"                 { reserved TSemi           }
+    "|"                 { reserved TPipe           }
+    "->"                { reserved TArrow          }
+    "=>"                { reserved TEqArrow        }
+    ","                 { reserved TComma          }
+    "("                 { reserved TLParen         }
+    ")"                 { reserved TRParen         }
+    "{"                 { reserved TLBrace         }
+    "}"                 { reserved TRBrace         }
+    "["                 { reserved TLBracket       }
+    "]"                 { reserved TRBracket       }
+    "<"                 { reserved TLAngle         }
+    ">"                 { reserved TRAngle         }
+    "_"                 { hole                     }
+    "pure"              { reserved TPure           }
+    "impure"            { reserved TImpure         }
+    "let"               { reserved TLet            }
+    "mut"               { reserved TMut            }
+    "intern"            { reserved TIntern         }
+    "extern"            { reserved TExtern         }
+    "module"            { reserved TModule         }
+    "where"             { reserved TWhere          }
+    "import"            { reserved TImport         }
+    "using"             { reserved TUsing          }
+    "return"            { reserved TReturn         }
+    "if"                { reserved TIf             }
+    "else"              { reserved TElse           }
+    "match"             { reserved TMatch          }
+    "loop"              { reserved TLoop           }
+    "break"             { reserved TBreak          }
+    "continue"          { reserved TContinue       }
+    "impl"              { reserved TImpl           }
+    "trait"             { reserved TTrait          }
+    "data"              { reserved TData           }
 
 
 {
-type TokenAction = AlexPosn -> String -> Token
+alexEOF :: Alex Token
+alexEOF = return TEOF
+
+type TokenAction = AlexInput -> Int -> Alex Token
 
 
 fromAlexPosn :: AlexPosn -> SrcPos
-fromAlexPosn (AlexPn off ln col) = SrcPos off ln (fromIntegral col)
+fromAlexPosn (AlexPn off ln col) =
+    SrcPos off ln (fromIntegral col)
 
 mkVar :: (Var -> Token) -> TokenAction
-mkVar ctor pos str =
-    ctor (Var str (fromAlexPosn pos))
+mkVar ctor (pos, _, _, str) _ = return
+    (ctor (Var str (fromAlexPosn pos)))
 
 hole :: TokenAction
-hole pos _ =
-    THole (Hole (fromAlexPosn pos))
+hole (pos, _, _, _) _ = return
+    (THole (Hole (fromAlexPosn pos)))
 
 reserved :: Token -> TokenAction
-reserved t _ _ = t
+reserved tok _inp _sc = return tok
 
-integer :: TokenAction
-integer (AlexPn _ ln _) [] = error
-    ("error lexing integer on line " ++ show ln)
-integer pos str =
-    let !n = foldl' (\ !x d ->
-            (10 :: Int64) * x + fromIntegral (digitToInt d)
-            ) (0 :: Int64) str
-    in TInt (IntLit n (fromAlexPosn pos))
+stoi :: Int -> String -> Int64
+stoi base =
+    let b = fromIntegral base
+        digToInt = fromIntegral . digitToInt
+    in foldl' (\ !x !d ->
+        b * x + digToInt d
+        ) (0 :: Int64)
+
+integer :: Int -> TokenAction
+integer _ (pos, _, _, []) _ =
+    lexError pos "integral literal"
+integer base (pos, _, _, ('+':str)) _ = return
+    (TLiteral (IntLit
+        (negate (stoi base str))
+        (fromAlexPosn pos)))
+integer base (pos, _, _, ('-':str)) _ = return
+    (TLiteral (IntLit
+        (negate (stoi base str))
+        (fromAlexPosn pos)))
+integer base (pos, _, _, str) _ = return
+    (TLiteral (IntLit
+        (stoi base str)
+        (fromAlexPosn pos)))
 
 float :: TokenAction
-float pos str =
-    let !n = read str :: Double
-    in TFloat (FloatLit n (fromAlexPosn pos))
+float (pos, _, _, str) _ =
+    case readMaybe str :: Maybe Double of
+        Nothing -> lexError pos "float literal"
+        Just n -> return (TLiteral
+            (FloatLit n (fromAlexPosn pos)))
 
 char :: TokenAction
-char (AlexPn _ ln _) [] = error
-    ("error lexing character literal on line " ++ show ln)
-char pos (_:'\\':ch:_) =
+char (pos, _, _, (_:'\\':ch:_)) _ =
     let ch' = case ch of
             'a' -> '\a'
             'b' -> '\b'
@@ -152,64 +182,35 @@ char pos (_:'\\':ch:_) =
             't' -> '\t'
             'v' -> '\v'
             _ -> ch
-    in TChar (CharLit ch' (fromAlexPosn pos))
-char pos str =
-    let !ch = head (tail str)
-    in TChar (CharLit ch (fromAlexPosn pos))
+    in return (TLiteral
+        (CharLit ch' (fromAlexPosn pos)))
+char (pos, _, _, (_:ch:_)) _ = return
+    (TLiteral (CharLit ch (fromAlexPosn pos)))
+char (pos, _, _, _) _ =
+    lexError pos "character literal"
 
 string :: TokenAction
-string pos [_, _] =
-    TString (StringLit "" (fromAlexPosn pos))
-string pos (_:str@(_:_)) =
-    let !s = init str
-    in TString (StringLit s (fromAlexPosn pos))
-string (AlexPn _ ln _) _ = error
-    ("error lexing string literal on line " ++ show ln)
+-- `init str` will throw an error if
+-- `str` is empty
+string (pos, _, _, "\"\"") _ = return
+    (TLiteral (StringLit "" (fromAlexPosn pos)))
+string (pos, _, _, ('"':str@(_:_))) _ =
+    let s = init str
+    in return (TLiteral
+        (StringLit s (fromAlexPosn pos)))
+string (pos, _, _, _) _ =
+    lexError pos "string literal"
 
+lexError :: AlexPosn -> String -> Alex a
+lexError (AlexPn _ ln col) msg = alexError $
+    "error parsing "+|msg|+
+    ":\n    on line "+|ln|+", column "+|col
 
-data Token
-    = TInt Value
-    | TFloat Value
-    | TChar Value
-    | TString Value
-    | TBig Var
-    | TSmall Var
-    | TPrefix Var
-    | TInfix Var
-    | THole Value
-    | TEq
-    | TColon
-    | TSemi
-    | TPipe
-    | TArrow
-    | TEqArrow
-    | TComma
-    | TLParen
-    | TRParen
-    | TLBrace
-    | TRBrace
-    | TLBracket
-    | TRBracket
-    | TLAngle
-    | TRAngle
-    | TPure
-    | TImpure
-    | TLet
-    | TMut
-    | TIntern
-    | TExtern
-    | TModule
-    | TWhere
-    | TImport
-    | TUsing
-    | TReturn
-    | TIf
-    | TElse
-    | TMatch
-    | TLoop
-    | TBreak
-    | TContinue
-    | TImpl
-    | TTrait
-    | TData
+lexer :: (Token -> Alex a) -> Alex a
+lexer = (alexMonadScan >>=)
+
+getLexerPos :: Alex SrcPos
+getLexerPos = do
+    (pos, _, _, _) <- alexGetInput
+    return (fromAlexPosn pos)
 }

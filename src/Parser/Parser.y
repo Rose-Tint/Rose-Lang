@@ -12,62 +12,61 @@ import Common.Var
 import Parser.Data
 import Parser.Imports
 import Parser.Lexer
+import Pretty
 }
 
 %name rose Module
 %error { parseError }
+%lexer { lexer } { TEOF }
+%monad { Alex }
 
 %tokentype { Token }
 %token
-    -- primatives
-    int             { TInt $$    }
-    float           { TFloat $$  }
-    char            { TChar $$   }
-    string          { TString $$ }
+    literal         { TLiteral $$ }
     -- identifiers
-    big_id          { TBig $$    }
-    small_id        { TSmall $$  }
-    prefix_id       { TPrefix $$ }
-    infix_id        { TInfix $$  }
+    big_id          { TBig $$     }
+    small_id        { TSmall $$   }
+    prefix_id       { TPrefix $$  }
+    infix_id        { TInfix $$   }
+    '_'             { THole $$    }
     -- reserved symbols
-    '='             { TEq        }
-    ':'             { TColon     }
-    ';'             { TSemi      }
-    '|'             { TPipe      }
-    "->"            { TArrow     }
-    "=>"            { TEqArrow   }
-    ','             { TComma     }
+    '='             { TEq         }
+    ':'             { TColon      }
+    ';'             { TSemi       }
+    '|'             { TPipe       }
+    "->"            { TArrow      }
+    "=>"            { TEqArrow    }
+    ','             { TComma      }
     -- groupers
-    '('             { TLParen    }
-    ')'             { TRParen    }
-    '{'             { TLBrace    }
-    '}'             { TRBrace    }
-    '['             { TLBracket  }
-    ']'             { TRBracket  }
-    '<'             { TLAngle    }
-    '>'             { TRAngle    }
-    '_'             { THole $$   }
+    '('             { TLParen     }
+    ')'             { TRParen     }
+    '{'             { TLBrace     }
+    '}'             { TRBrace     }
+    '['             { TLBracket   }
+    ']'             { TRBracket   }
+    '<'             { TLAngle     }
+    '>'             { TRAngle     }
     -- keywords
-    pure            { TPure      }
-    impure          { TImpure    }
-    let             { TLet       }
-    mut             { TMut       }
-    intern          { TIntern    }
-    extern          { TExtern    }
-    module          { TModule    }
-    where           { TWhere     }
-    import          { TImport    }
-    using           { TUsing     }
-    return          { TReturn    }
-    if              { TIf        }
-    else            { TElse      }
-    match           { TMatch     }
-    loop            { TLoop      }
-    break           { TBreak     }
-    continue        { TContinue  }
-    impl            { TImpl      }
-    trait           { TTrait     }
-    data            { TData      }
+    pure            { TPure       }
+    impure          { TImpure     }
+    let             { TLet        }
+    mut             { TMut        }
+    intern          { TIntern     }
+    extern          { TExtern     }
+    module          { TModule     }
+    where           { TWhere      }
+    import          { TImport     }
+    using           { TUsing      }
+    return          { TReturn     }
+    if              { TIf         }
+    else            { TElse       }
+    match           { TMatch      }
+    loop            { TLoop       }
+    break           { TBreak      }
+    continue        { TContinue   }
+    impl            { TImpl       }
+    trait           { TTrait      }
+    data            { TData       }
 
 
 %%
@@ -111,9 +110,9 @@ Imports1 :: { [Import] }
 
 Import :: { Import }
     : import big_id                             { Import $2 Intern Nothing   }
-    | import big_id using '{' Items1 '}'        { Import $2 Intern (Just $5) }
     | import Vis big_id                         { Import $3 $2 Nothing       }
-    | import Vis big_id using '{' Items1 '}'    { Import $3 $2 (Just $6)     }
+    -- | import big_id using '{' Items1 '}'        { Import $2 Intern (Just $5) }
+    -- | import Vis big_id using '{' Items1 '}'    { Import $3 $2 (Just $6)     }
 
 
 Vis :: { Visibility }
@@ -256,10 +255,7 @@ Terms0_ :: { [Value] }
     | {- empty -}   { []      }
 
 Term :: { Value }
-    : char                  { $1 }
-    | string                { $1 }
-    | int                   { $1 }
-    | float                 { $1 }
+    : literal               { $1 }
     | Array                 { $1 }
     | Tuple                 { $1 }
     | Lambda                { $1 }
@@ -312,10 +308,7 @@ Pattern :: { Value }
 --     | PatternItem                       { [$1]    }
 
 PatternItem :: { Value }
-    : char                               { $1 }
-    | string                             { $1 }
-    | int                                { $1 }
-    | float                              { $1 }
+    : literal                            { $1 }
     | TuplePattern                       { $1 }
     | CtorPattern                        { $1 }
 
@@ -408,8 +401,12 @@ Reassignment :: { Stmt }
 
 
 {
-parseError :: [Token] -> a
-parseError _ = error "\nPARSE ERROR\n"
+parseError :: Token -> Alex a
+parseError token = do
+    pos <- getLexerPos
+    alexError $! Red|+
+        "Error parsing token ("-|pos|-"):\n"+|
+        Reset|+|token|+"\n"
 
 mkTuple :: [Value] -> Value
 mkTuple vals = Tuple (listArray (0, length vals) (reverse vals))
@@ -417,6 +414,6 @@ mkTuple vals = Tuple (listArray (0, length vals) (reverse vals))
 mkArray :: [Value] -> Value
 mkArray vals = Array (listArray (0, length vals) (reverse vals))
 
-parse :: String -> Module
-parse = rose . alexScanTokens
+parse :: String -> Either String Module
+parse str = runAlex str rose
 }
