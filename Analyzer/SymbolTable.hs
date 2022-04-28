@@ -98,7 +98,7 @@ findScoped sym = do
         go [] = findGlobal sym
         go (scp:scps) = case lookup sym scp of
             Nothing -> go scps
-            Just dta -> return $! Just dta
+            Just dta -> return (Just dta)
 
 modifyType :: Symbol -> (SymbolData -> SymbolData) -> Analyzer ()
 {-# INLINE modifyType #-}

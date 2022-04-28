@@ -1,4 +1,5 @@
 {-# LANGUAGE Rank2Types #-}
+{-# LANGUAGE LambdaCase #-}
 
 module Threading (
     Manager,
@@ -43,18 +44,18 @@ fork (Mgr mgr) f = modifyMVar mgr $ \m -> do
     thrID <- forkIO $ do
         res <- try f
         putMVar st (either Threw (const Finished) res)
-    return $! (Map.insert thrID st m, thrID)
+    return (Map.insert thrID st m, thrID)
 
 threadStatus :: Manager -> ThreadId -> IO (Maybe Status)
 threadStatus (Mgr mgr) thrID = modifyMVar mgr $ \m ->
     case Map.lookup thrID m of
-        Nothing -> return $! (m, Nothing)
-        Just st -> tryTakeMVar st >>= \mst -> case mst of
-            Nothing -> return $! (m, Just Running)
-            Just sth -> return $! (Map.delete thrID m, Just sth)
+        Nothing -> return (m, Nothing)
+        Just st -> tryTakeMVar st >>= \case
+            Nothing -> return (m, Just Running)
+            Just sth -> return (Map.delete thrID m, Just sth)
 
 exitSelf :: ExitCode -> IO a
-exitSelf ec = throwIO ec
+exitSelf = throwIO
 
 wait :: Manager -> ThreadId -> IO (Maybe Status)
 wait (Mgr mgr) thrID = join $! modifyMVar mgr $ \m -> return $!

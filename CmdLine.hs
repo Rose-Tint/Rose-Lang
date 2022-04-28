@@ -60,7 +60,7 @@ buildDir path = do
     return $! BuildDir (dir ++ "/")
 
 options :: [OptDescr (IO Flag)]
-options = id $! [
+options = [
         Option "h" ["help"]              (NoArg help)
             "Displays help information",
         Option "v" ["verbosity"]         (OptArg verbosity "LEVEL")

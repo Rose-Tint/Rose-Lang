@@ -42,9 +42,7 @@ _ <:> Applied [] = NoType
 Applied [t1] <:> t2 = t1 <:> t2
 t1 <:> Applied [t2] = t1 <:> t2
 Applied ts1 <:> Applied ts2 =
-    case zipTypes ts1 ts2 of
-        Nothing -> NoType
-        Just ts -> Applied ts
+    maybe NoType Applied (zipTypes ts1 ts2)
 Type n1 ts1 <:> Type n2 ts2
     | n1 /= n2 = NoType
     | otherwise = case zipTypes ts1 ts2 of

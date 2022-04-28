@@ -86,7 +86,7 @@ singleton !str !a = let (cs, c) = (init str, last str)
 -- that key already exists, it will be replaced.
 push :: String -> a -> Trie a -> Trie a
 {-# INLINE push #-}
-push = insertWith (flip const)
+push = insertWith (const id)
 
 
 -- |Inserts a value at the given key. If a value at
@@ -307,8 +307,8 @@ keys (Node chn _) = concatMap (\(c, trie) ->
 elems :: Trie a -> [a]
 {-# INLINE elems #-}
 elems Empty = []
-elems (Link chn _) = foldr ((++) . elems) [] chn
-elems (Node chn a) = foldr ((++) . elems) [a] chn
+elems (Link chn _) = concatMap elems chn
+elems (Node chn a) = (a:concatMap elems chn)
 
 
 -- |Returns a list of key-value pairs, where the values

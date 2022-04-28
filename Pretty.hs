@@ -93,7 +93,7 @@ alignC n pc str = case compare padLen 0 of
     LT -> take n str
     EQ -> str
     GT -> pad ++ str ++ (
-        if diff `mod` 2 == 0 then
+        if even diff then
             pad
         else
             pc:pad
@@ -151,7 +151,7 @@ instance Pretty a => Pretty (Align a) where
     detailed (AL n c a) = alignL n c (detailed a)
     detailed (AC n c a) = alignC n c (detailed a)
     detailed (AR n c a) = alignR n c (detailed a)
-        
+
 
 instance Pretty a => Pretty (Maybe a) where
     terse Nothing = ""

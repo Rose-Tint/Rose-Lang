@@ -50,8 +50,5 @@ trace path str = do
 myPutStr :: Int -> String -> BuilderIO ()
 myPutStr thresh str = do
     verb <- getVerbosity
-    -- `when` doesnt work?
-    if (verb >= thresh) then
+    when (verb >= thresh) $
         putStr <#> color str
-    else
-        return ()
