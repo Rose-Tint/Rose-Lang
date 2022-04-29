@@ -350,7 +350,7 @@ NullStmt :: { Stmt }
 ExprStmt :: { Stmt }
     : NewVar        { $1         }
     | Reassignment  { $1         }
-    | FuncCall      { ValStmt $1 }
+    | FuncCall ';'  { ValStmt $1 }
     | NullStmt      { $1         }
 
 JumpStmt :: { Stmt }
