@@ -22,42 +22,29 @@ import Pretty
 
 %wrapper "monad"
 
-
 $oct_digit      = [0-7]
 $sign           = [\-\+]
 $upper          = [A-Z]
 $lower          = [a-z]
-$id_char        = [A-Za-z0-9\_]
+$id_char        = [A-Za-z0-9_]
 $symbol         = [~!@#\$\%\^\&\*\-\+=\\\|:\<\>\.\?\/]
 
 @comment        = "--" .* "\n" | "{-" .* "-}"
 @hexa           = (x|X) [A-Fa-f0-9]+
 @decimal        = [0-9]+
-@floating       = $sign? @decimal "."? (e|E) $sign? @decimal
-                | $sign? @decimal "." @decimal
-                | $sign? @hexa "."? (p|P) $sign? @decimal
+@floating       = $sign? @decimal \.? (e|E) $sign? @decimal
+                | $sign? @decimal \. @decimal
+                | $sign? @hexa \.? (p|P) $sign? @decimal
 @character      = "\\" (@hexa | $oct_digit+ | [\\abfnrtv\'\"]) | .
-@qualifier      = ($upper$id_char*".")*
-@big_id         = @qualifier$upper$id_char*
-@small_id       = @qualifier$lower$id_char*
-@operator       = @qualifier $symbol (([A-Za-z]|$symbol)+$symbol|$symbol*)
+@qualifier      = ($upper $id_char*\.)*
+@big_id         = @qualifier $upper $id_char*
+@small_id       = @qualifier $lower $id_char*
+@operator       = @qualifier $symbol+ -- (([A-Za-z]|$symbol)+$symbol|$symbol*)
 
 
 tokens :-
     $white+                         ;
     @comment+                       ;
-    $sign? @decimal                 { integer 10               }
-    $sign? 0 [Bb] [01]+             { integer 2                }
-    $sign? 0 [Oo] $oct_digit+       { integer 8                }
-    $sign? 0 @hexa                  { integer 16               }
-    @floating                       { float                    }
-    -- @floating (f|F)?                { float                    }
-    "'" @character "'"              { char                     }
-    "\"" @character* "\""           { string                   }
-    @big_id                         { mkVar TBig               }
-    @small_id                       { mkVar TSmall             }
-    @small_id | "(" @operator ")"   { mkVar TPrefix            }
-    `@small_id` | @operator         { mkVar TInfix             }
     "="                             { reserved TEq             }
     ":"                             { reserved TColon          }
     ";"                             { reserved TSemi           }
@@ -79,7 +66,7 @@ tokens :-
     "let"                           { reserved TLet            }
     "mut"                           { reserved TMut            }
     "intern"                        { reserved TIntern         }
-    "extern"                        { reserved TExtern         }
+    "export"                        { reserved TExtern         }
     "module"                        { reserved TModule         }
     "where"                         { reserved TWhere          }
     "import"                        { reserved TImport         }
@@ -94,6 +81,19 @@ tokens :-
     "impl"                          { reserved TImpl           }
     "trait"                         { reserved TTrait          }
     "data"                          { reserved TData           }
+    $sign? @decimal                 { integer 10               }
+    $sign? 0 [Bb] [01]+             { integer 2                }
+    $sign? 0 [Oo] $oct_digit+       { integer 8                }
+    $sign? 0 @hexa                  { integer 16               }
+    @floating                       { float                    }
+    -- @floating (f|F)?                { float                    }
+    "'" @character "'"              { char                     }
+    "\"" @character* "\""           { string                   }
+    @big_id                         { mkVar TBig               }
+    @small_id                       { mkVar TSmall             }
+    "(" @operator ")"               { mkVar TPrefix            }
+    \`@small_id\`                   { mkVar TInfix             }
+    -- @operator                       { mkVar TInfix             }
 
 
 {
