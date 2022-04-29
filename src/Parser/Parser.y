@@ -76,7 +76,7 @@ Module :: { Module }
     : Header Imports1 TopLevelExprs  { Module $1 $2 $3 }
 
 Header :: { Var }
-    : module big_id where           { $2 }
+    : module big_id where   { $2 }
 
 TopLevelExpr :: { Expr }
     : FuncDecl  { $1 }
@@ -89,20 +89,20 @@ TopLevelExpr :: { Expr }
 
 TopLevelExprs :: { [Expr] }
     : TopLevelExprs TopLevelExpr    { ($2:$1) }
-    | TopLevelExpr                  { [$1] }
+    | {- empty -}                   { [] }
 
 
-Item :: { Item }
-    : trait big_id  { TraitItem $2 }
-    | data big_id   { DataItem $2  }
-    | prefix_id     { FuncItem $1  }
+-- Item :: { Item }
+--     : trait big_id  { TraitItem $2 }
+--     | data big_id   { DataItem $2  }
+--     | prefix_id     { FuncItem $1  }
 
-Items1 :: { [Item] }
-    : Items1_ { reverse $1 }
-Items1_ :: { [Item] }
-    : Item                  { [$1]  }
-    | Items1_ ','         { $1    }
-    | Items1_ ',' Item    { $3:$1 }
+-- Items1 :: { [Item] }
+--     : Items1_ { reverse $1 }
+-- Items1_ :: { [Item] }
+--     : Item                  { [$1]  }
+--     | Items1_ ','         { $1    }
+--     | Items1_ ',' Item    { $3:$1 }
 
 Imports1 :: { [Import] }
     : Imports1 Import   { ($2:$1) }
@@ -172,9 +172,6 @@ CtxSeq :: { Context }
 CtxSeq_ :: { Context }
     : CtxSeq_ ',' Constraint  { ($3:$1) }
     | Constraint              { [$1]    }
-
-TypeDeclNoCtx :: { TypeDecl }
-    : '<' ArrowSepTypes1 '>' { TypeDecl [] (Applied $2) }
 
 TypeDecl :: { TypeDecl }
     : '<' CtxSeq ArrowSepTypes1 '>' { TypeDecl $2 (Applied $3) }
@@ -405,8 +402,8 @@ parseError :: Token -> Alex a
 parseError token = do
     pos <- getLexerPos
     alexError $! Red|+
-        "Error parsing token ("-|pos|-"):\n"+|
-        Reset|+|token|+"\n"
+        "Error parsing token ("*|pos|*"):\n"+|
+        Reset|*|token|*"\n"
 
 mkTuple :: [Value] -> Value
 mkTuple vals = Tuple (listArray (0, length vals) (reverse vals))
