@@ -26,8 +26,8 @@ $oct_digit      = [0-7]
 $sign           = [\-\+]
 $upper          = [A-Z]
 $lower          = [a-z]
-$id_char        = [A-Za-z0-9_]
-$symbol         = [~!@#\$\%\^\&\*\-\+=\\\|:\<\>\.\?\/]
+$id_char        = [A-Za-z0-9\_]
+$symbol         = [\~!@#\$\%\^\&\*\-\+=\\\|:\<\>\.\?\/]
 
 @comment        = "--" .* "\n" | "{-" .* "-}"
 @hexa           = (x|X) [A-Fa-f0-9]+
@@ -43,57 +43,63 @@ $symbol         = [~!@#\$\%\^\&\*\-\+=\\\|:\<\>\.\?\/]
 
 
 tokens :-
-    $white+                         ;
-    @comment+                       ;
-    "="                             { reserved TEq             }
-    ":"                             { reserved TColon          }
-    ";"                             { reserved TSemi           }
-    "|"                             { reserved TPipe           }
-    "->"                            { reserved TArrow          }
-    "=>"                            { reserved TEqArrow        }
-    ","                             { reserved TComma          }
-    "("                             { reserved TLParen         }
-    ")"                             { reserved TRParen         }
-    "{"                             { reserved TLBrace         }
-    "}"                             { reserved TRBrace         }
-    "["                             { reserved TLBracket       }
-    "]"                             { reserved TRBracket       }
-    "<"                             { reserved TLAngle         }
-    ">"                             { reserved TRAngle         }
-    "_"                             { hole                     }
-    "pure"                          { reserved TPure           }
-    "impure"                        { reserved TImpure         }
-    "let"                           { reserved TLet            }
-    "mut"                           { reserved TMut            }
-    "intern"                        { reserved TIntern         }
-    "export"                        { reserved TExtern         }
-    "module"                        { reserved TModule         }
-    "where"                         { reserved TWhere          }
-    "import"                        { reserved TImport         }
-    "using"                         { reserved TUsing          }
-    "return"                        { reserved TReturn         }
-    "if"                            { reserved TIf             }
-    "else"                          { reserved TElse           }
-    "match"                         { reserved TMatch          }
-    "loop"                          { reserved TLoop           }
-    "break"                         { reserved TBreak          }
-    "continue"                      { reserved TContinue       }
-    "impl"                          { reserved TImpl           }
-    "trait"                         { reserved TTrait          }
-    "data"                          { reserved TData           }
-    $sign? @decimal                 { integer 10               }
-    $sign? 0 [Bb] [01]+             { integer 2                }
-    $sign? 0 [Oo] $oct_digit+       { integer 8                }
-    $sign? 0 @hexa                  { integer 16               }
-    @floating                       { float                    }
-    -- @floating (f|F)?                { float                    }
-    "'" @character "'"              { char                     }
-    "\"" @character* "\""           { string                   }
-    @big_id                         { mkVar TBig               }
-    @small_id                       { mkVar TSmall             }
-    "(" @operator ")"               { mkVar TPrefix            }
-    \`@small_id\`                   { mkVar TInfix             }
-    -- @operator                       { mkVar TInfix             }
+    $white+                     ;
+    @comment+                   ;
+    "="                         { reserved TEq             }
+    ":"                         { reserved TColon          }
+    ";"                         { reserved TSemi           }
+    "|"                         { reserved TPipe           }
+    "->"                        { reserved TArrow          }
+    "=>"                        { reserved TEqArrow        }
+    ","                         { reserved TComma          }
+    "("                         { reserved TLParen         }
+    ")"                         { reserved TRParen         }
+    "{"                         { reserved TLBrace         }
+    "}"                         { reserved TRBrace         }
+    "["                         { reserved TLBracket       }
+    "]"                         { reserved TRBracket       }
+    "<"                         { reserved TLAngle         }
+    ">"                         { reserved TRAngle         }
+    "_"                         { hole                     }
+    pure                        { reserved TPure           }
+    impure                      { reserved TImpure         }
+    let                         { reserved TLet            }
+    mut                         { reserved TMut            }
+    intern                      { reserved TIntern         }
+    export                      { reserved TExtern         }
+    module                      { reserved TModule         }
+    where                       { reserved TWhere          }
+    import                      { reserved TImport         }
+    using                       { reserved TUsing          }
+    return                      { reserved TReturn         }
+    if                          { reserved TIf             }
+    else                        { reserved TElse           }
+    match                       { reserved TMatch          }
+    loop                        { reserved TLoop           }
+    break                       { reserved TBreak          }
+    continue                    { reserved TContinue       }
+    impl                        { reserved TImpl           }
+    trait                       { reserved TTrait          }
+    data                        { reserved TData           }
+    $sign? @decimal             { integer 10               }
+    $sign? 0 [Bb] [01]+         { integer 2                }
+    $sign? 0 [Oo] $oct_digit+   { integer 8                }
+    $sign? 0 @hexa              { integer 16               }
+    @floating                   { float                    }
+    -- @floating (f|F)?            { float                    }
+    <0> '"'                     { begin string_            }
+    <0> '\''                    { begin char_              }
+    <string_> @character*       { string                   }
+    <string_> '"'               { begin 0                  }
+    <char_> @character          { char                     }
+    <char_> '\''                { begin 0                  }
+    "'" @character "'"          { char                     }
+    "\"" @character* "\""       { string                   }
+    @big_id                     { mkVar TBig               }
+    @small_id                   { mkVar TSmall             }
+    "(" @operator ")"           { mkVar TPrefix            }
+    \`@small_id\`               { mkVar TInfix             }
+    -- @operator                   { mkVar TInfix             }
 
 
 {
@@ -109,7 +115,7 @@ fromAlexPosn (AlexPn off ln col) =
 
 mkVar :: (Var -> Token) -> TokenAction
 mkVar ctor (pos, _, _, str) _ = return
-    (ctor (Var str (fromAlexPosn pos)))
+    (ctor (Var (init str) (fromAlexPosn pos)))
 
 hole :: TokenAction
 hole (pos, _, _, _) _ = return
@@ -150,7 +156,7 @@ float (pos, _, _, str) _ =
             (FloatLit n (fromAlexPosn pos)))
 
 char :: TokenAction
-char (pos, _, _, (_:'\\':ch:_)) _ =
+char (pos, _, _, ('\\':ch:_)) _ =
     let ch' = case ch of
             'a' -> '\a'
             'b' -> '\b'
@@ -162,7 +168,7 @@ char (pos, _, _, (_:'\\':ch:_)) _ =
             _ -> ch
     in return (TLiteral
         (CharLit ch' (fromAlexPosn pos)))
-char (pos, _, _, (_:ch:_)) _ = return
+char (pos, _, _, (ch:_)) _ = return
     (TLiteral (CharLit ch (fromAlexPosn pos)))
 char (pos, _, _, _) _ =
     lexError pos "character literal"
@@ -172,12 +178,8 @@ string :: TokenAction
 -- `str` is empty
 string (pos, _, _, "\"\"") _ = return
     (TLiteral (StringLit "" (fromAlexPosn pos)))
-string (pos, _, _, ('"':str@(_:_))) _ =
-    let s = init str
-    in return (TLiteral
-        (StringLit s (fromAlexPosn pos)))
-string (pos, _, _, _) _ =
-    lexError pos "string literal"
+string (pos, _, _, str) _ = return
+    (TLiteral (StringLit str (fromAlexPosn pos)))
 
 lexError :: AlexPosn -> String -> Alex a
 lexError (AlexPn _ ln col) msg = alexError $
