@@ -6,6 +6,7 @@ module Common.Typing.Type  (
     boolType,
     intType,
     floatType,
+    doubleType,
     stringType,
     charType,
     arrayType, arrayOf,
@@ -96,6 +97,9 @@ intType = Type (prim "Int") []
 
 floatType :: Type
 floatType = Type (prim "Float") []
+
+doubleType :: Type
+doubleType = Type (prim "Double") []
 
 stringType :: Type
 stringType = Type (prim "Array") [charType]

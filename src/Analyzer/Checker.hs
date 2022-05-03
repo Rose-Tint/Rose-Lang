@@ -39,6 +39,8 @@ instance Checker Value where
         return intType
     infer (FloatLit _ p) = updatePos p >>
         return floatType
+    infer (DoubleLit _ p) = updatePos p >>
+        return doubleType
     infer (CharLit _ p) = updatePos p >>
         return charType
     infer (StringLit _ p) = updatePos p >>

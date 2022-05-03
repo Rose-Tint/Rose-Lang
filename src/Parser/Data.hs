@@ -28,7 +28,8 @@ default (Int, Double)
 
 data Value
     = IntLit {-# UNPACK #-} !Int64 SrcPos
-    | FloatLit {-# UNPACK #-} !Double SrcPos
+    | FloatLit {-# UNPACK #-} !Float SrcPos
+    | DoubleLit {-# UNPACK #-} !Double SrcPos
     | CharLit {-# UNPACK #-} !Char SrcPos
     | StringLit String SrcPos
     | VarVal {-# UNPACK #-} !Var
@@ -121,6 +122,7 @@ data Expr
 valPos :: Value -> SrcPos
 valPos (IntLit _ p) = p
 valPos (FloatLit _ p) = p
+valPos (DoubleLit _ p) = p
 valPos (CharLit _ p) = p
 valPos (StringLit _ p) = p
 valPos (VarVal var) = varPos var
@@ -168,11 +170,14 @@ instance Pretty Ctor where
         vis|+" "+|name|+" {\n"+|indentCatLns flds|+"\n}"
 
 instance Pretty Value where
+    terse (FloatLit n _) = show n
+    terse (VarVal var) = terse var
     terse (Tuple arr) = "("-|","`sepsT`elems arr|-")"
     terse (Array arr) = "["-|","`sepsT`elems arr|-"]"
-    terse val = terse val
+    terse val = pretty val
     pretty (IntLit n _) = show n
-    pretty (FloatLit n _) = show n
+    pretty (FloatLit n _) = show n ++ "f"
+    pretty (DoubleLit n _) = show n
     pretty (CharLit c _) = show c
     pretty (StringLit s _) = show s
     pretty (VarVal var) = pretty var
