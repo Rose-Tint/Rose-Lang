@@ -19,11 +19,12 @@ import Pretty
 
 %tokentype { Token }
 %token
-    literal         { TLiteral $$ }
+    literal         { TValue $$ }
     -- identifiers
     big_id          { TBig $$     }
     small_id        { TSmall $$   }
-    operator        { TOper $$    }
+    infix_id        { TInfix $$   }
+    prefix_id       { TPrefix $$  }
     '_'             { THole $$    }
     -- reserved symbols
     '='             { TEq         }
@@ -75,24 +76,10 @@ TopLevelExpr :: { Expr }
     | TypeAlias { $1 }
     | TraitDecl { $1 }
     | TraitImpl { $1 }
-    -- | PragmaSeq { Left $1  }
 
 TopLevelExprs :: { [Expr] }
     : TopLevelExprs TopLevelExpr    { ($2:$1) }
     | {- empty -}                   { [] }
-
-
--- Item :: { Item }
---     : trait big_id  { TraitItem $2 }
---     | data big_id   { DataItem $2  }
---     | PrefixId      { FuncItem $1  }
-
--- Items1 :: { [Item] }
---     : Items1_ { reverse $1 }
--- Items1_ :: { [Item] }
---     : Item                  { [$1]  }
---     | Items1_ ','         { $1    }
---     | Items1_ ',' Item    { $3:$1 }
 
 Imports1 :: { [Import] }
     : Imports1 Import   { ($2:$1) }
@@ -166,14 +153,14 @@ TypeDecl :: { TypeDecl }
 
 
 FuncDecl :: { Expr }
-    : Pur Vis PrefixId TypeDecl     { FuncDecl $1 $2 $3 $4 }
+    : Pur Vis prefix_id TypeDecl     { FuncDecl $1 $2 $3 $4 }
 
 FuncParamSeq :: { (Var, [Value]) }
     : InfixParamSeq             { $1 }
-    | PrefixId PrefixParamSeq0  { ($1, $2) }
+    | prefix_id PrefixParamSeq0  { ($1, $2) }
 
 InfixParamSeq :: { (Var, [Value]) }
-    : Pattern operator Pattern    { ($2, [$1, $3]) }
+    : Pattern infix_id Pattern    { ($2, [$1, $3]) }
 
 PrefixParamSeq0 :: { [Value] }
     : PrefixParamSeq0_  { reverse $1 }
@@ -246,7 +233,7 @@ Term :: { Value }
     | Lambda                { $1 }
     | CtorCall              { $1 }
     | FuncCall              { $1 }
-    | '(' Term ')'  { $2 }
+    | '(' Term ')'          { $2 }
 
 Array :: { Value }
     : '[' ArrayTerms ']'   { mkArray $2 }
@@ -267,35 +254,18 @@ Lambda :: { Value }
 CtorCall :: { Value }
     : big_id Terms0 { CtorCall $1 $2 }
 
--- TODO: how to apply only to second arg in case of the
--- second option??
--- InfixCall :: { (Var, [Value]) }
-    -- | Term operator Term
-    -- | operator Term
-    -- | Term operator
-
 FuncCall :: { Value }
-    : Term operator Term        { Application (VarVal $2) [$1, $3] }
-    | PrefixId Term Terms0      { Application (VarVal $1) ($2:$3)  }
-    | PrefixId                  { VarVal $1                        }
+    : Term infix_id Term        { Application (VarVal $2) [$1, $3] }
+    | prefix_id Term Terms0      { Application (VarVal $1) ($2:$3)  }
+    | prefix_id                  { VarVal $1                        }
     | '(' Lambda ')' Terms0     { Application $2 $4                }
     | '(' FuncCall ')' Terms0   { Application $2 $4                }
-
-PrefixId :: { Var }
-    : small_id          { $1 }
-    | big_id            { $1 }
-    | '(' operator ')'  { $2 }
 
 
 Pattern :: { Value }
     : '_'                               { $1 }
     | small_id                          { VarVal $1 }
     | '[' PatternItem ']'               { $2 }
-
--- item order doesn't matter here
--- PatternItems1 :: { [Value] }
---     : PatternItems1 ',' PatternItem    { ($3:$1) }
---     | PatternItem                       { [$1]    }
 
 PatternItem :: { Value }
     : literal                            { $1 }

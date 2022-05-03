@@ -8,10 +8,11 @@ import Pretty
 
 
 data Token
-    = TLiteral Value
+    = TValue Value
     | TBig Var
     | TSmall Var
-    | TOper Var
+    | TInfix Var
+    | TPrefix Var
     | THole Value
     | TEq
     | TColon
@@ -50,10 +51,11 @@ data Token
 
 
 instance Pretty Token where
-    pretty (TLiteral val) = pretty val
+    pretty (TValue val) = pretty val
     pretty (TBig var) = pretty var
     pretty (TSmall var) = pretty var
-    pretty (TOper var) = pretty var
+    pretty (TInfix var) = pretty var
+    pretty (TPrefix var) = pretty var
     pretty (THole hole) = pretty hole
     pretty TEq = "="
     pretty TColon = ":"
@@ -89,10 +91,11 @@ instance Pretty Token where
     pretty TTrait = "trait"
     pretty TData = "data"
     pretty TEOF = ""
-    detailed (TLiteral val) = "TLiteral ("+|val|+")"
+    detailed (TValue val) = "TValue ("+|val|+")"
     detailed (TBig var) = "TBig ("+|var|+")"
     detailed (TSmall var) = "TSmall ("+|var|+")"
-    detailed (TOper var) = "TOper ("+|var|+")"
+    detailed (TInfix var) = "TInfix ("+|var|+")"
+    detailed (TPrefix var) = "TPrefix ("+|var|+")"
     detailed (THole hole) = "THole ("+|hole|+")"
     detailed TEq = "TEq"
     detailed TColon = "TColon"
