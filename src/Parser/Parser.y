@@ -23,8 +23,7 @@ import Pretty
     -- identifiers
     big_id          { TBig $$     }
     small_id        { TSmall $$   }
-    prefix_id       { TPrefix $$  }
-    infix_id        { TInfix $$   }
+    operator        { TOper $$    }
     '_'             { THole $$    }
     -- reserved symbols
     '='             { TEq         }
@@ -86,7 +85,7 @@ TopLevelExprs :: { [Expr] }
 -- Item :: { Item }
 --     : trait big_id  { TraitItem $2 }
 --     | data big_id   { DataItem $2  }
---     | prefix_id     { FuncItem $1  }
+--     | PrefixId      { FuncItem $1  }
 
 -- Items1 :: { [Item] }
 --     : Items1_ { reverse $1 }
@@ -167,14 +166,14 @@ TypeDecl :: { TypeDecl }
 
 
 FuncDecl :: { Expr }
-    : Pur Vis prefix_id TypeDecl    { FuncDecl $1 $2 $3 $4 }
+    : Pur Vis PrefixId TypeDecl     { FuncDecl $1 $2 $3 $4 }
 
 FuncParamSeq :: { (Var, [Value]) }
     : InfixParamSeq             { $1 }
-    | prefix_id PrefixParamSeq0 { ($1, $2) }
+    | PrefixId PrefixParamSeq0  { ($1, $2) }
 
 InfixParamSeq :: { (Var, [Value]) }
-    : Pattern infix_id Pattern    { ($2, [$1, $3]) }
+    : Pattern operator Pattern    { ($2, [$1, $3]) }
 
 PrefixParamSeq0 :: { [Value] }
     : PrefixParamSeq0_  { reverse $1 }
@@ -271,16 +270,21 @@ CtorCall :: { Value }
 -- TODO: how to apply only to second arg in case of the
 -- second option??
 -- InfixCall :: { (Var, [Value]) }
-    -- | Term infix_id Term
-    -- | infix_id Term
-    -- | Term infix_id
+    -- | Term operator Term
+    -- | operator Term
+    -- | Term operator
 
 FuncCall :: { Value }
-    : Term infix_id Term        { Application (VarVal $2) [$1, $3] }
-    | prefix_id Term Terms0     { Application (VarVal $1) ($2:$3)  }
-    | prefix_id                 { VarVal $1                        }
+    : Term operator Term        { Application (VarVal $2) [$1, $3] }
+    | PrefixId Term Terms0      { Application (VarVal $1) ($2:$3)  }
+    | PrefixId                  { VarVal $1                        }
     | '(' Lambda ')' Terms0     { Application $2 $4                }
     | '(' FuncCall ')' Terms0   { Application $2 $4                }
+
+PrefixId :: { Var }
+    : small_id          { $1 }
+    | big_id            { $1 }
+    | '(' operator ')'  { $2 }
 
 
 Pattern :: { Value }
@@ -391,8 +395,8 @@ parseError :: Token -> Alex a
 parseError token = do
     pos <- getLexerPos
     alexError $
-        Red|+"Error parsing token ("*|pos|*"):\n"+|
-        Reset|*|token|*"\n"
+        Red|+"\nError parsing token ("*|pos|*"):\n"+|
+        Yellow|*|token|*"\n"
 
 mkTuple :: [Value] -> Value
 mkTuple vals = Tuple

@@ -11,8 +11,7 @@ data Token
     = TLiteral Value
     | TBig Var
     | TSmall Var
-    | TPrefix Var
-    | TInfix Var
+    | TOper Var
     | THole Value
     | TEq
     | TColon
@@ -35,8 +34,6 @@ data Token
     | TMut
     | TIntern
     | TExtern
-    | TModule
-    | TWhere
     | TImport
     | TUsing
     | TReturn
@@ -56,8 +53,7 @@ instance Pretty Token where
     pretty (TLiteral val) = pretty val
     pretty (TBig var) = pretty var
     pretty (TSmall var) = pretty var
-    pretty (TPrefix var) = pretty var
-    pretty (TInfix var) = pretty var
+    pretty (TOper var) = pretty var
     pretty (THole hole) = pretty hole
     pretty TEq = "="
     pretty TColon = ":"
@@ -80,8 +76,6 @@ instance Pretty Token where
     pretty TMut = "mut"
     pretty TIntern = "intern"
     pretty TExtern = "extern"
-    pretty TModule = "module"
-    pretty TWhere = "where"
     pretty TImport = "import"
     pretty TUsing = "using"
     pretty TReturn = "return"
@@ -98,8 +92,7 @@ instance Pretty Token where
     detailed (TLiteral val) = "TLiteral ("+|val|+")"
     detailed (TBig var) = "TBig ("+|var|+")"
     detailed (TSmall var) = "TSmall ("+|var|+")"
-    detailed (TPrefix var) = "TPrefix ("+|var|+")"
-    detailed (TInfix var) = "TInfix ("+|var|+")"
+    detailed (TOper var) = "TOper ("+|var|+")"
     detailed (THole hole) = "THole ("+|hole|+")"
     detailed TEq = "TEq"
     detailed TColon = "TColon"

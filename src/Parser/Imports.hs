@@ -2,8 +2,6 @@ module Parser.Imports (
     Module(..),
     Import(..),
 ) where
-
-import Common.Item
 import Common.Var
 import Parser.Data (Visibility, Expr)
 import Pretty

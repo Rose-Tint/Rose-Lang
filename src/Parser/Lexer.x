@@ -23,10 +23,10 @@ import Pretty
 %wrapper "monad"
 
 $oct_digit      = [0-7]
-$sign           = [\-\+]
+$sign           = [\- \+]
 $upper          = [A-Z]
-$lower          = [a-z]
-$id_char        = [A-Za-z0-9\_]
+$lower          = [a-z \_]
+$id_char        = [A-Z a-z 0-9 \_]
 $symbol         = [\~!@#\$\%\^\&\*\-\+=\\\|:\<\>\.\?\/]
 
 @comment        = "--" .* "\n" | "{-" .* "-}"
@@ -35,70 +35,73 @@ $symbol         = [\~!@#\$\%\^\&\*\-\+=\\\|:\<\>\.\?\/]
 @floating       = $sign? @decimal \.? (e|E) $sign? @decimal
                 | $sign? @decimal \. @decimal
                 | $sign? @hexa \.? (p|P) $sign? @decimal
-@character      = "\\" (@hexa | $oct_digit+ | [\\abfnrtv\'\"]) | .
-@qualifier      = ($upper $id_char*\.)*
-@big_id         = @qualifier $upper $id_char*
-@small_id       = @qualifier $lower $id_char*
-@operator       = @qualifier $symbol+ -- (([A-Za-z]|$symbol)+$symbol|$symbol*)
+@character      = "\\" (@hexa
+                    | $oct_digit+
+                    | [\\abfnrtv\'\"])
+                | .
+@qualifier      = ($upper $id_char*\.)+
+@big_id         = @qualifier? $upper $id_char*
+@small_id       = @qualifier? $lower $id_char*
+@operator       = @qualifier? $symbol+
 
 
 tokens :-
     $white+                     ;
     @comment+                   ;
-    "="                         { reserved TEq             }
-    ":"                         { reserved TColon          }
-    ";"                         { reserved TSemi           }
-    "|"                         { reserved TPipe           }
-    "->"                        { reserved TArrow          }
-    "=>"                        { reserved TEqArrow        }
-    ","                         { reserved TComma          }
-    "("                         { reserved TLParen         }
-    ")"                         { reserved TRParen         }
-    "{"                         { reserved TLBrace         }
-    "}"                         { reserved TRBrace         }
-    "["                         { reserved TLBracket       }
-    "]"                         { reserved TRBracket       }
-    "<"                         { reserved TLAngle         }
-    ">"                         { reserved TRAngle         }
-    "_"                         { hole                     }
-    pure                        { reserved TPure           }
-    impure                      { reserved TImpure         }
-    let                         { reserved TLet            }
-    mut                         { reserved TMut            }
-    intern                      { reserved TIntern         }
-    export                      { reserved TExtern         }
-    where                       { reserved TWhere          }
-    import                      { reserved TImport         }
-    using                       { reserved TUsing          }
-    return                      { reserved TReturn         }
-    if                          { reserved TIf             }
-    else                        { reserved TElse           }
-    match                       { reserved TMatch          }
-    loop                        { reserved TLoop           }
-    break                       { reserved TBreak          }
-    continue                    { reserved TContinue       }
-    impl                        { reserved TImpl           }
-    trait                       { reserved TTrait          }
-    data                        { reserved TData           }
-    $sign? @decimal             { integer 10               }
-    $sign? 0 [Bb] [01]+         { integer 2                }
-    $sign? 0 [Oo] $oct_digit+   { integer 8                }
-    $sign? 0 @hexa              { integer 16               }
-    @floating                   { float                    }
-    -- @floating (f|F)?            { float                    }
-    <0> '"'                     { begin string_            }
-    <0> '\''                    { begin char_              }
-    <string_> @character*       { string                   }
-    <string_> '"'               { begin 0                  }
-    <char_> @character          { char                     }
-    <char_> '\''                { begin 0                  }
-    "'" @character "'"          { char                     }
-    "\"" @character* "\""       { string                   }
-    @big_id                     { mkVar TBig               }
-    @small_id                   { mkVar TSmall             }
-    "(" @operator ")"           { mkVar TPrefix            }
-    \`@small_id\`               { mkVar TInfix             }
-    -- @operator                   { mkVar TInfix             }
+    "="                         { reserved TEq       }
+    ":"                         { reserved TColon    }
+    ";"                         { reserved TSemi     }
+    "|"                         { reserved TPipe     }
+    "->"                        { reserved TArrow    }
+    "=>"                        { reserved TEqArrow  }
+    ","                         { reserved TComma    }
+    "("                         { reserved TLParen   }
+    ")"                         { reserved TRParen   }
+    "{"                         { reserved TLBrace   }
+    "}"                         { reserved TRBrace   }
+    "["                         { reserved TLBracket }
+    "]"                         { reserved TRBracket }
+    "<"                         { reserved TLAngle   }
+    ">"                         { reserved TRAngle   }
+    "_"                         { hole               }
+    pure                        { reserved TPure     }
+    impure                      { reserved TImpure   }
+    let                         { reserved TLet      }
+    mut                         { reserved TMut      }
+    intern                      { reserved TIntern   }
+    export                      { reserved TExtern   }
+    import                      { reserved TImport   }
+    using                       { reserved TUsing    }
+    return                      { reserved TReturn   }
+    if                          { reserved TIf       }
+    else                        { reserved TElse     }
+    match                       { reserved TMatch    }
+    loop                        { reserved TLoop     }
+    break                       { reserved TBreak    }
+    continue                    { reserved TContinue }
+    impl                        { reserved TImpl     }
+    trait                       { reserved TTrait    }
+    data                        { reserved TData     }
+    $sign? @decimal             { integer 10         }
+    $sign? 0 [Bb] [01]+         { integer 2          }
+    $sign? 0 [Oo] $oct_digit+   { integer 8          }
+    $sign? 0 @hexa              { integer 16         }
+    @floating                   { float              }
+    <0> '\''                    { begin char_        }
+    <char_> @character          { char               }
+    <char_> '\''                { begin 0            }
+    <0> '"'                     { begin string_      }
+    <string_> @character*       { string             }
+    <string_> '"'               { begin 0            }
+    "'" @character "'"          { char               }
+    "\"" @character* "\""       { string             }
+    <0> '`'                     { begin infix_       }
+    <infix_> @big_id            { mkVar TOper        }
+    <infix_> @small_id          { mkVar TOper        }
+    <infix_> '`'                { begin 0            }
+    @big_id                     { mkVar TBig         }
+    @small_id                   { mkVar TSmall       }
+    @operator                   { mkVar TOper        }
 
 
 {
@@ -182,8 +185,8 @@ string (pos, _, _, str) _ = return
 
 lexError :: AlexPosn -> String -> Alex a
 lexError (AlexPn _ ln col) msg = alexError $
-    "error parsing "+|msg|+
-    ":\n    on line "+|ln|+", column "+|col
+    Red|+"\nError parsing "+|msg|+|
+    Reset|+":\n    on line "+|ln|+", column "+|col
 
 lexer :: (Token -> Alex a) -> Alex a
 lexer = (alexMonadScan >>=)
