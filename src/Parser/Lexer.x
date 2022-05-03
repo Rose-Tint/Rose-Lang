@@ -4,8 +4,7 @@ module Parser.Lexer (
     Alex(..),
     runAlex,
     lexer,
-    alexError,
-    getLexerPos,
+    lexError,
 ) where
 
 import Data.Char (digitToInt)
@@ -49,62 +48,62 @@ $symbol         = [\~\!\@\#\$\%\^\&\*\-\+\=\\\|\:\<\>\.\?\/]
 
 
 tokens :-
-    $white+                     { skip               }
-    @comment+                   { skip               }
-    \=                          { reserved TEq       }
-    \:                          { reserved TColon    }
-    \;                          { reserved TSemi     }
-    \|                          { reserved TPipe     }
-    \-\>                        { reserved TArrow    }
-    \=\>                        { reserved TEqArrow  }
-    \,                          { reserved TComma    }
-    \(                          { reserved TLParen   }
-    \)                          { reserved TRParen   }
-    \{                          { reserved TLBrace   }
-    \}                          { reserved TRBrace   }
-    \[                          { reserved TLBracket }
-    \]                          { reserved TRBracket }
-    \<                          { reserved TLAngle   }
-    \>                          { reserved TRAngle   }
-    \_                          { hole               }
-    pure                        { reserved TPure     }
-    impure                      { reserved TImpure   }
-    let                         { reserved TLet      }
-    mut                         { reserved TMut      }
-    intern                      { reserved TIntern   }
-    export                      { reserved TExtern   }
-    import                      { reserved TImport   }
-    using                       { reserved TUsing    }
-    return                      { reserved TReturn   }
-    if                          { reserved TIf       }
-    else                        { reserved TElse     }
-    match                       { reserved TMatch    }
-    loop                        { reserved TLoop     }
-    break                       { reserved TBreak    }
+    $white+                     { skip }
+    @comment+                   { skip }
+    "="                         { reserved TEq }
+    <ctx_> ":"                  { reserved TColon }
+    ";"                         { reserved TSemi }
+    "|"                         { reserved TPipe }
+    "->"                        { reserved TArrow }
+    "=>"                        { reserved TEqArrow }
+    ","                         { reserved TComma }
+    "("                         { reserved TLParen }
+    ")"                         { reserved TRParen }
+    "{"                         { reserved TLBrace }
+    "}"                         { reserved TRBrace }
+    "["                         { reserved TLBracket }
+    "]"                         { reserved TRBracket }
+    <ctx_> "<"                  { reserved TLAngle `andBegin` 0 }
+    <ctx_> ">"                  { reserved TRAngle `andBegin` 0 }
+    "_"                         { hole }
+    pure                        { reserved TPure }
+    impure                      { reserved TImpure }
+    let                         { reserved TLet }
+    mut                         { reserved TMut }
+    intern                      { reserved TIntern }
+    export                      { reserved TExtern }
+    import                      { reserved TImport }
+    using                       { reserved TUsing }
+    return                      { reserved TReturn }
+    if                          { reserved TIf }
+    else                        { reserved TElse }
+    match                       { reserved TMatch }
+    loop                        { reserved TLoop }
+    break                       { reserved TBreak }
     continue                    { reserved TContinue }
-    impl                        { reserved TImpl     }
-    trait                       { reserved TTrait    }
-    data                        { reserved TData     }
-    $sign? 0 [Bb] [01]+         { integer 2          }
-    $sign? 0 [Oo] $oct_digit+   { integer 8          }
-    $sign? @decimal             { integer 10         }
-    $sign? 0 @hexa              { integer 16         }
-    @floating                   { float              }
-    @floating[Ff]               { double             }
-    <char_> @character          { char               }
-    <string_> @character*       { string             }
-    <infix_> @qual @small_id    { mkVar TInfix       }
-    \( @qual @operator \)       { prefixOper         }
-    @qual @big_id               { mkVar TBig         }
-    @qual @small_id             { mkVar TSmall       }
-    @qual @operator             { mkVar TInfix       }
+    impl                        { reserved TImpl `andBegin` ctx_ }
+    trait                       { reserved TTrait `andBegin` ctx_ }
+    data                        { reserved TData }
+    $sign? 0 [Bb] [01]+         { integer 2 }
+    $sign? 0 [Oo] $oct_digit+   { integer 8 }
+    $sign? @decimal             { integer 10 }
+    $sign? 0 @hexa              { integer 16 }
+    @floating                   { float }
+    @floating[Ff]               { double }
+    <char_> @character          { char }
+    <string_> @character*       { string }
+    <infix_> @qual @small_id    { mkVar TInfix }
+    \( @qual @operator \)       { prefixOper }
+    @qual @big_id               { mkVar TBig }
+    @qual @small_id             { mkVar TSmall }
+    @qual @operator             { mkVar TInfix }
 
-    <0>         '\''            { begin char_        }
-    <0>         '"'             { begin string_      }
-    <0>         '`'             { begin infix_       }
-    <string_>   '"'             { begin 0            }
-    <char_>     '\''            { begin 0            }
-    <infix_>      '`'           { begin 0            }
+    <0>         '\''            { begin char_ }
+    <0>         '"'             { begin string_ }
+    <0>         '`'             { begin infix_ }
+    <string_>   '"'             { begin 0 }
+    <char_>     '\''            { begin 0 }
+    <infix_>      '`'           { begin 0 }
 
 
 {
@@ -142,8 +141,8 @@ stoi base =
         ) (0 :: Int64)
 
 integer :: Int -> TokenAction
-integer _ (pos, _, _, []) _ =
-    lexError pos "integral literal"
+integer _ _ 0 =
+    lexError "integral literal"
 integer base (pos, _, _, ('+':str)) len = return
     (TValue (IntLit
         (negate (stoi base (take len str)))
@@ -160,14 +159,14 @@ integer base (pos, _, _, str) len = return
 float :: TokenAction
 float (pos, _, _, str) len =
     case readMaybe (take len str) :: Maybe Float of
-        Nothing -> lexError pos "float literal"
+        Nothing -> lexError "float literal"
         Just n -> return (TValue
             (FloatLit n (fromAlexPosn pos)))
 
 double :: TokenAction
 double (pos, _, _, str) len =
     case readMaybe (take len str) :: Maybe Double of
-        Nothing -> lexError pos "float literal"
+        Nothing -> lexError "float literal"
         Just n -> return (TValue
             (DoubleLit n (fromAlexPosn pos)))
 
@@ -186,23 +185,24 @@ char (pos, _, _, ('\\':ch:_)) _len =
         (CharLit ch' (fromAlexPosn pos)))
 char (pos, _, _, (ch:_)) 1 = return
     (TValue (CharLit ch (fromAlexPosn pos)))
-char (pos, _, _, _) _ =
-    lexError pos "character literal"
+char _ _ = lexError "character literal"
 
 string :: TokenAction
 string (pos, _, _, str) len = return
     (TValue (StringLit (take len str) (fromAlexPosn pos)))
 
-lexError :: AlexPosn -> String -> Alex a
-lexError (AlexPn _ ln col) msg = alexError $
-    Red|+"\nError parsing "+|msg|+|
-    Reset|+":\n    on line "+|ln|+", column "+|col
+lexError :: String -> Alex a
+lexError msg = do
+    (pos_, _, _, input) <- alexGetInput
+    let pos = fromAlexPosn pos_
+        lno = srcLine pos
+        line = "..." ++ takeWhile (/= '\n') input
+    alexError $
+        "::"-|pos|-|Red|+": Error parsing a "+|msg|+":\n"
+        +|Purple|+|4.>lno|+" | "+|Reset|+|line|+"\n"
+        -- +|replicate (posCol + 8) ' '|+|Red|+"^"
 
 lexer :: (Token -> Alex a) -> Alex a
 lexer = (alexMonadScan >>=)
 
-getLexerPos :: Alex SrcPos
-getLexerPos = do
-    (pos, _, _, _) <- alexGetInput
-    return (fromAlexPosn pos)
 }

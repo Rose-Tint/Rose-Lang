@@ -59,7 +59,7 @@ parseFile = do
     debug ("Parsing   ["+|name|+"]\n")
     case parse (unpack src) of
         Left msg -> fatal $
-            msg|+"\n"+|Red|+
+            Red|+|name|+|msg|+"\n"+|Red|+
             "Failed while parsing module '"
             +|name|+"'\n"
         Right parseTree -> do
