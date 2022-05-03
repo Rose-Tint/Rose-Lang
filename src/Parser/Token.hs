@@ -122,8 +122,6 @@ instance Pretty Token where
     detailed TMut = "TMut"
     detailed TIntern = "TIntern"
     detailed TExtern = "TExtern"
-    detailed TModule = "TModule"
-    detailed TWhere = "TWhere"
     detailed TImport = "TImport"
     detailed TUsing = "TUsing"
     detailed TReturn = "TReturn"

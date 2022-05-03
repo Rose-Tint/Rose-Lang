@@ -1,10 +1,7 @@
-module Std.Alternative where
-
-
 trait Alternative a {
-    pure vacant <a>
-    pure (<|>) <a -> a -> a>
-    pure choose <[a] -> a>
+    pure vacant<a>
+    pure (<|>)<a -> a -> a>
+    pure choose<[a] -> a>
 }
 
 

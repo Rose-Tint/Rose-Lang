@@ -1,22 +1,14 @@
-module Std.Bit where
-
-
-#[inline((<<))]
 pure (<<) <Integral n : n -> n -> n>
 (<<) = rose_shiftl__;
 
-#[inline((&))]
 pure (&) <Integral n : n -> n -> n>
 (&) = rose_and__;
 
-#[inline((|))]
 pure (|) <Integral n : n -> n -> n>
 (|) = rose_or__;
 
-#[inline((^))]
 pure (^) <Integral n : n -> n -> n>
 (^) = rose_xor__;
 
-#[inline((>>))]
 pure (>>) <Integral n : n -> n -> n>
 (>>) = rose_shiftr__;

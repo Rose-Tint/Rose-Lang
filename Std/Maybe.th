@@ -1,5 +1,3 @@
-module Std.Maybe where
-
 import Std.Data.List
 import Std.Alternative
 
@@ -9,39 +7,34 @@ data Maybe a
     | Just<a>
 
 
-impl Alternative (Maybe a) {
-    vacant := Nothing;
-    [Nothing] <|> m := m;
-    m <|> _ := m;
+impl Alternative Maybe {
+    vacant = Nothing;
+    [Nothing] <|> m = m;
+    m <|> _ = m;
 }
 
 
-#[inline(maybe)]
-pure maybe => (a, b), Maybe a, Maybe b;
-maybe _ [Nothing] := Nothing;
-maybe f [Just a] := Just (f a);
+pure maybe<(a -> b) -> Maybe a -> Maybe b>
+maybe _ [Nothing] = Nothing;
+maybe f [Just a] = Just (f a);
 
-#[inline(maybeApply)]
-pure maybeApply => b, Maybe a, (a, b), b;
-maybeApply b [Nothing] f := b;
-maybeApply _ [Just a] f := f a;
+pure maybeApply<b -> Maybe a -> (a -> b) -> b>
+maybeApply b [Nothing] f = b;
+maybeApply _ [Just a] f = f a;
 
-#[inline(exists)]
-pure exists => Maybe a, Boolean;
-exists [Nothing] := False;
-exists _ := True;
+pure exists<Maybe a -> Boolean>
+exists [Nothing] = False;
+exists _ = True;
 
-#[inline((:?))]
-pure (:?) => Maybe a, (a, b), Maybe b;
-[Nothing] :? _ := Nothing;
-[Just a] :? f := Just (f a);
+pure (:?)<Maybe a -> (a -> b) -> Maybe b>
+[Nothing] :? _ = Nothing;
+[Just a] :? f = Just (f a);
 
-pure filterMaybes => List (Maybe a), List a;
-filterMaybes [Null] := Null;
+pure filterMaybes<List (Maybe a) -> List a>
+filterMaybes [Null] = Null;
 filterMaybes [List head tail] {
-    if (head == Nothing) {
+    if (head == Nothing)
         return filterMaybes tail;
-    } else {
+    else
         return List head (filterMaybes tail);
-    };
 }

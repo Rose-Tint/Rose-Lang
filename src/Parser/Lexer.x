@@ -67,7 +67,6 @@ tokens :-
     mut                         { reserved TMut            }
     intern                      { reserved TIntern         }
     export                      { reserved TExtern         }
-    module                      { reserved TModule         }
     where                       { reserved TWhere          }
     import                      { reserved TImport         }
     using                       { reserved TUsing          }

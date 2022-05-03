@@ -1,47 +1,48 @@
-module Std.Compare where
-
-
-data Ordering = LT | EQ | GT
+data Ordering
+    = LT
+    | EQ
+    | GT
 
 
 trait Eq a {
-    pure (==) <a -> a -> Boolean>
-    pure (==) <a -> a -> Boolean>
+    pure (==)<a -> a -> Boolean>
+    pure (==)<a -> a -> Boolean>
 }
 
 trait Ord a {
-    pure (<) <a -> a -> Boolean>
-    pure (<=) <a -> a -> Boolean>
-    pure (>) <a -> a -> Boolean>
-    pure (>=) <a -> a -> Boolean>
-    pure (<=>) <a -> a -> Ordering>
+    pure (<)<a -> a -> Boolean>
+    pure (<=)<a -> a -> Boolean>
+    pure (>)<a -> a -> Boolean>
+    pure (>=)<a -> a -> Boolean>
+    pure (<=>)<a -> a -> Ordering>
 }
 
 trait Logical a {
-    pure asBool <a -> Boolean>
-    pure (&&) <a -> a -> Boolean>
-    pure (||) <a -> a -> Boolean>
-    pure (^^) <a -> a -> Boolean>
-    pure not <a -> Boolean>
+    pure asBool<a -> Boolean>
+    pure (&&)<a -> a -> Boolean>
+    pure (||)<a -> a -> Boolean>
+    pure (^^)<a -> a -> Boolean>
+    pure not<a -> Boolean>
 }
 
 
-#[inline(min)]
-pure min <Ord a : a -> a -> a>
-min a b = match (a <=> b) {
-    [LT, EQ] = a;
-    [GT] = b;
+pure min<Ord a : a -> a -> a>
+min a b {
+    match (a <=> b) {
+        [LT, EQ] = a;
+        [GT] = b;
+    }
 }
 
-#[inline(max)]
-pure max <Ord a : a -> a -> a>
-max a b = match (a <=> b) {
-    [LT, EQ] = b;
-    [GT] = a;
+pure max<Ord a : a -> a -> a>
+max a b {
+    match (a <=> b) {
+        [LT, EQ] = b;
+        [GT] = a;
+    }
 }
 
-#[inline(clamp)]
-pure clamp <Ord a : a -> a -> a -> a>
+pure clamp<Ord a : a -> a -> a -> a>
 clamp lo hi = min hi . max lo;
 
 

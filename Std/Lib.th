@@ -1,6 +1,3 @@
-module Std.Lib where
-
-
 import export Std.Alternative
 import export Std.Bit
 import export Std.Compare

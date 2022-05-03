@@ -1,5 +1,3 @@
-module Std.Data.Tree where
-
 import Std.Compare
 
 

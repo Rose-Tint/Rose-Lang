@@ -46,8 +46,8 @@ buildFile path = do
             createDirectoryIfMissing True dir
         src <- readFile <#> path
         setSource src
-        Module _ imports tree <- parseFile
-        forM_ imports $ \(Import (Var modName _) _ _) ->
+        Module imports tree <- parseFile
+        forM_ imports $ \(Import (Var modName _) _) ->
             buildFile (modToPath modName)
         analyzeFile tree
         addUTDModule name

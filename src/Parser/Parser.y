@@ -1,8 +1,5 @@
 {
-module Parser.Parser (
-    Module(..),
-    parse,
-) where
+module Parser.Parser (rose) where
 
 import Data.Array (listArray)
 
@@ -53,8 +50,6 @@ import Pretty
     mut             { TMut        }
     intern          { TIntern     }
     extern          { TExtern     }
-    module          { TModule     }
-    where           { TWhere      }
     import          { TImport     }
     using           { TUsing      }
     return          { TReturn     }
@@ -71,12 +66,8 @@ import Pretty
 
 %%
 
-
 Module :: { Module }
-    : Header Imports1 TopLevelExprs  { Module $1 $2 $3 }
-
-Header :: { Var }
-    : module big_id where   { $2 }
+    : Imports1 TopLevelExprs  { Module $1 $2 }
 
 TopLevelExpr :: { Expr }
     : FuncDecl  { $1 }
@@ -109,10 +100,8 @@ Imports1 :: { [Import] }
     | Import            { [$1]    }
 
 Import :: { Import }
-    : import big_id                             { Import $2 Intern Nothing   }
-    | import Vis big_id                         { Import $3 $2 Nothing       }
-    -- | import big_id using '{' Items1 '}'        { Import $2 Intern (Just $5) }
-    -- | import Vis big_id using '{' Items1 '}'    { Import $3 $2 (Just $6)     }
+    : import big_id     { Import $2 Intern }
+    | import Vis big_id { Import $3 $2     }
 
 
 Vis :: { Visibility }
@@ -401,16 +390,17 @@ Reassignment :: { Stmt }
 parseError :: Token -> Alex a
 parseError token = do
     pos <- getLexerPos
-    alexError $! Red|+
-        "Error parsing token ("*|pos|*"):\n"+|
+    alexError $
+        Red|+"Error parsing token ("*|pos|*"):\n"+|
         Reset|*|token|*"\n"
 
 mkTuple :: [Value] -> Value
-mkTuple vals = Tuple (listArray (0, length vals) (reverse vals))
+mkTuple vals = Tuple
+    (listArray (0, length vals)
+    (reverse vals))
 
 mkArray :: [Value] -> Value
-mkArray vals = Array (listArray (0, length vals) (reverse vals))
-
-parse :: String -> Either String Module
-parse str = runAlex str rose
+mkArray vals = Array
+    (listArray (0, length vals)
+    (reverse vals))
 }

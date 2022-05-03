@@ -1,5 +1,3 @@
-module Std.IO.File where
-
 import Std.IO.Output
 import Std.IO.Input
 import Std.Resource
