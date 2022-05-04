@@ -109,15 +109,14 @@ TopLevelExpr :: { Expr }
     | TraitImpl { $1 }
 
 FuncDecl :: { Expr }
-    : Pur Vis prefix_id TypeDecl     { FuncDecl $1 $2 $3 $4 }
-
-Pur :: { Purity }
-    : pure      { Pure   }
-    | impure    { Impure }
+    : pure prefix_id TypeDecl         { FuncDecl Pure $2 $3 $4 }
+    | impure prefix_id TypeDecl       { FuncDecl Impure $2 $3 $4 }
+    | pure Vis prefix_id TypeDecl     { FuncDecl Pure $2 $3 $4 }
+    | impure Vis prefix_id TypeDecl   { FuncDecl Impure $2 $3 $4 }
 
 Vis :: { Visibility }
-    : {- empty -}   { Extern }
-    | extern        { Extern }
+    -- : {- empty -}   { Extern }
+    : extern        { Extern }
     | intern        { Intern }
 
 TypeDecl :: { TypeDecl }
@@ -359,9 +358,9 @@ CtorList :: { [Ctor] }
     | CtorList "|" CtorDef  { ($3:$1) }
 
 CtorDef :: { Ctor }
-    : big_id Vis                        { SumType $1 $2 [] }
-    | big_id Vis "<" ArrowSepTypes1 ">" { SumType $1 $2 $4 }
-    | big_id Vis "{" DataFields1 "}"    { Record $1 $2 $4 }
+    : Vis big_id                        { SumType $2 $1 [] }
+    | Vis big_id "<" ArrowSepTypes1 ">" { SumType $2 $1 $4 }
+    | Vis big_id "{" DataFields1 "}"    { Record $2 $1 $4 }
 
 DataFields1 :: { [Field] }
     : DataFields1_  { reverse $1 }

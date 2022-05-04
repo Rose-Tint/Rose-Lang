@@ -1,7 +1,7 @@
 data Pointer a = intern Ptr<Int>
 
 
-impure malloc<Int -> Pointer a>;
+impure malloc<Int -> Pointer a>
 
 impure new<a -> Pointer a>
 new a {
