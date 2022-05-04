@@ -40,12 +40,13 @@ fatal str = do
     putChar <#> '\n'
     liftBuild exitFailure
 
-trace :: FilePath -> String -> BuilderIO ()
-trace path str = do
+trace :: Pretty a => FilePath -> a -> BuilderIO ()
+trace path a = do
     doTrace <- cmdTrace <$!> getCmdLine
     dir <- getBuildDir
-    when doTrace <#>
-        writeFile (dir ++ path) (uncolor str)
+    when doTrace <#> writeFile
+        (dir ++ path)
+        (uncolor (detailed a))
 
 myPutStr :: Int -> String -> BuilderIO ()
 myPutStr thresh str = do

@@ -61,8 +61,7 @@ parseFile = do
             "Failed while parsing module '"
             +|name|+"'\n"
         Right parseTree -> do
-            trace "Parse-Tree.txt" $
-                pretty parseTree
+            trace "Parse-Tree.txt" parseTree
             return parseTree
 
 analyzeFile :: [Expr] -> BuilderIO Analysis
@@ -70,8 +69,7 @@ analyzeFile es = do
     name <- getModule
     debug ("Analyzing ["+|name|+"]\n")
     let !res = analyze es
-    trace "Symbol-Table.txt" $
-        detailed (arTable res)
+    trace "Symbol-Table.txt" (arTable res)
     if null $ arErrors res then
         return res
     else do

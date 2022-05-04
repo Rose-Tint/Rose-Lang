@@ -51,11 +51,11 @@ data Token
 
 
 instance Pretty Token where
-    terse (TValue _) = "value"
-    terse (TBig _) = "'big' variable"
-    terse (TSmall _) = "'small' variable"
-    terse (TInfix _) = "'infix' variable"
-    terse (TPrefix _) = "'prefix' variable"
+    terse (TValue val) = "value ("+|val|+")"
+    terse (TBig var) = "'big' variable ("+|var|+")"
+    terse (TSmall var) = "'small' variable ("+|var|+")"
+    terse (TInfix var) = "'infix' variable ("+|var|+")"
+    terse (TPrefix var) = "'prefix' variable ("+|var|+")"
     terse (THole _) = "hole"
     terse TEq = "'='"
     terse TColon = "':'"

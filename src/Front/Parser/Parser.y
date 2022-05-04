@@ -85,7 +85,7 @@ import Pretty
 %%
 
 Module :: { Module }
-    : Imports1 TopLevelExprs  { Module $1 $2 }
+    : Imports0 TopLevelExprs  { Module $1 $2 }
 
 TopLevelExpr :: { Expr }
     : FuncDecl  { $1 }
@@ -99,9 +99,9 @@ TopLevelExprs :: { [Expr] }
     : {- empty -}                   { [] }
     | TopLevelExprs TopLevelExpr    { ($2:$1) }
 
-Imports1 :: { [Import] }
-    : Imports1 Import   { ($2:$1) }
-    | Import            { [$1]    }
+Imports0 :: { [Import] }
+    : Imports0 Import   { ($2:$1) }
+    | {- empty -}       { [] }
 
 Import :: { Import }
     : import big_id         { Import $2 Intern }
@@ -162,7 +162,7 @@ Constraint :: { Constraint }
 
 
 SmallIds1 :: { [Var] }
-    : small_id SmallIds0    { ($1:$2) }
+    : small_id SmallIds0     { ($1:$2) }
 SmallIds0 :: { [Var] }
     : SmallIds0_ { reverse $1 }
 SmallIds0_ :: { [Var] }
@@ -211,19 +211,16 @@ DataFields1_ :: { [Field] }
     | DataField                     { [$1] }
 
 CtorDef :: { Ctor }
-    : big_id Vis "<" ArrowSepTypes1 ">" { SumType $1 $2 $4 }
-    | big_id Vis                        { SumType $1 $2 [] }
+    : big_id Vis                        { SumType $1 $2 [] }
+    | big_id Vis "<" ArrowSepTypes1 ">" { SumType $1 $2 $4 }
     | big_id Vis "{" DataFields1 "}"    { Record $1 $2 $4 }
 
-PipeSepCtors :: { [Ctor] }
-    : PipeSepCtors_ { reverse $1 }
-PipeSepCtors_ :: { [Ctor] }
-    : PipeSepCtors_ "|" CtorDef { ($3:$1) }
-    | CtorDef                   { [$1] }
+CtorList :: { [Ctor] }
+    : "=" CtorDef           { [$2] }
+    | CtorList "|" CtorDef  { ($3:$1) }
 
 DataDef :: { Expr }
-    : data Vis big_id SmallIds0 "=" CtorDef                   { DataDef $2 $3 $4 [$6] }
-    | data Vis big_id SmallIds0 "=" CtorDef "|" PipeSepCtors  { DataDef $2 $3 $4 ($6:$8) }
+    : data Vis big_id SmallIds0 CtorList    { DataDef $2 $3 $4 $5 }
 
 TypeAlias :: { Expr }
     : using Vis Type "=" Type  { TypeAlias $2 $3 $5 }
@@ -407,12 +404,6 @@ Reassignment :: { Stmt }
 {
 parseError :: Token -> Alex a
 parseError = lexError . terse
--- parseError token = do
---     pos <- getLexerPos
---     alexError $
---         Red|+"\nError parsing token ("*|pos|*"):\n"+|
---         Yellow|*|token|*"\n"
-
 
 whileLoop :: Value -> Body -> Stmt
 whileLoop stmt = Loop NullStmt (ValStmt stmt) NullStmt
