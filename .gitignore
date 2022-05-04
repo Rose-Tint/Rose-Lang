@@ -18,5 +18,5 @@ cabal.sandbox.config
 cabal.project.local
 cabal.project.local~
 /Rose-Build*
-src/Parser/Lexer.hs
-src/Parser/Parser.hs
+src/Front/Parser/Lexer.hs
+src/Front/Parser/Parser.hs
