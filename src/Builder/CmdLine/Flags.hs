@@ -1,6 +1,6 @@
 {-# OPTIONS_GHC -Wno-missing-signatures #-}
 
-module CmdLine.Flags (Flags,
+module Builder.CmdLine.Flags (Flags,
     flagOptions,
     setFlag, clrFlag,
     isFEnabled,

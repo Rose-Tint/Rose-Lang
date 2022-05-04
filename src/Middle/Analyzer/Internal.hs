@@ -1,10 +1,10 @@
 {-# LANGUAGE Rank2Types #-}
 
-module Analyzer.Analyzer (
+module Middle.Analyzer.Internal (
     Control.Monad.Fail.fail,
     Analyzer,
     Analysis(..),
-    analyze_,
+    runAnalyzer,
     getTable, setTable, modifyTable, modifyTable_,
     getModuleName,
     pushScope, popScope,
@@ -21,13 +21,13 @@ import Control.Monad.Fail
 import Data.Either (fromRight)
 import Data.Functor ((<&>))
 
-import Analyzer.Error
-import Analyzer.State
 import Common.SrcPos
 import Common.Typing
 import Common.Var
-import Parser (Import)
-import SymbolTable
+import Front.Parser (Import)
+import Middle.Analyzer.Error
+import Middle.Analyzer.State
+import Middle.SymbolTable
 
 
 default (Int, Double)
@@ -49,8 +49,8 @@ data Analysis
     }
 
 
-analyze_ :: Analyzer a -> Analysis
-analyze_ a = runA a newState okay err
+runAnalyzer :: Analyzer a -> Analysis
+runAnalyzer a = runA a newState okay err
     where
         err _ s = Analysis {
                     arErrors = stErrors s,

@@ -2,7 +2,7 @@
 
 {-# OPTIONS_GHC -Wno-orphans #-}
 
-module SymbolTable.SymbolMap (SymbolMap,
+module Middle.SymbolTable.SymbolMap (SymbolMap,
     -- Construction
     T.empty, singleton,
     -- Insertion
@@ -20,9 +20,9 @@ module SymbolTable.SymbolMap (SymbolMap,
 import Prelude hiding (lookup)
 
 import Common.Var
+import qualified Middle.SymbolTable.Trie as T
+import Middle.SymbolTable.SymbolData
 import Pretty
-import qualified SymbolTable.Trie as T
-import SymbolTable.SymbolData
 
 
 type SymbolMap = T.Trie SymbolData

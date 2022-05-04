@@ -7,7 +7,7 @@ module Builder.State (
 import Data.Set as S (Set, empty)
 import Data.Text as T (Text, empty)
 
-import CmdLine
+import Builder.CmdLine.Internal
 
 
 type Stream = Text

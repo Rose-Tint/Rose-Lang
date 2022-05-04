@@ -1,9 +1,9 @@
-module Parser.Token (
+module Front.Parser.Token (
     Token(..),
 ) where
 
 import Common.Var
-import Parser.Data
+import Front.Parser.Data
 import Pretty
 
 

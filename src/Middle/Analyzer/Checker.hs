@@ -1,5 +1,4 @@
-module Analyzer.Checker (
-    Checker(..),
+module Middle.Analyzer.Checker (
     infer_,
 ) where
 
@@ -8,12 +7,12 @@ import Prelude hiding (fail)
 import Control.Monad (foldM)
 import Data.Array (elems)
 
-import Analyzer.Analyzer
-import Analyzer.Error
-import Analyzer.SymbolTable
 import Common.Typing
-import Parser.Data
-import SymbolTable
+import Front.Parser
+import Middle.Analyzer.Error
+import Middle.Analyzer.Internal
+import Middle.Analyzer.SymbolTable
+import Middle.SymbolTable
 
 
 default (Int, Double)

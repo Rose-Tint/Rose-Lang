@@ -1,25 +1,20 @@
 {-# LANGUAGE FlexibleInstances #-}
 
-module SymbolTable.SymbolData (
+module Middle.SymbolTable.SymbolData (
     -- module SymbolTable.Attrs,
     Symbol,
     SymbolData(..),
     stitchSD,
     mkSymbolData,
     undef,
-    -- isWellDefined,
-    -- isUndefined,
     ifDefined,
-    -- addAttr, addPragma, hasAttr,
 ) where
 
 import Common.SrcPos
 import Common.Typing.Type
 import Common.Var
-import Parser.Data
+import Front.Parser
 import Pretty
--- import SymbolTable.Attrs hiding (addPragma)
--- import qualified SymbolTable.Attrs as A
 
 
 default (Int, Double)
@@ -46,19 +41,7 @@ mkSymbolData :: Symbol -> Type -> Maybe Visibility
           -> Maybe Purity -> SymbolData
 {-# INLINE mkSymbolData #-}
 mkSymbolData sym typ vis pur = SymbolData
-    typ vis pur (Just (varPos sym))-- emptyAttrs
-
--- addAttr :: Attrs -> SymbolData -> SymbolData
--- {-# INLINE addAttr #-}
--- addAttr as sd = sd { sdAttrs = mergeAttrs (sdAttrs sd) as }
-
--- addPragma :: Pragma -> SymbolData -> SymbolData
--- {-# INLINE addPragma #-}
--- addPragma pr sd = sd { sdAttrs = A.addPragma pr (sdAttrs sd) }
-
--- hasAttr :: SymbolData -> Attrs -> Bool
--- {-# INLINE hasAttr #-}
--- hasAttr = testAttrs . sdAttrs
+    typ vis pur (Just (varPos sym))
 
 undef :: SymbolData
 {-# INLINE undef #-}
@@ -67,26 +50,7 @@ undef = SymbolData {
     sdVisib = Nothing,
     sdPurity = Nothing,
     sdPos = Nothing
-    -- sdAttrs = emptyAttrs
 }
-
--- isWellDefined :: SymbolData-> Bool
--- {-# INLINABLE isWellDefined #-}
--- isWellDefined dta = isJust (sdVisib dta)
---              && isJust (sdPurity dta)
---              && isComplete (sdType dta)
---              && (isJust (sdPos dta)
---                 && posModule (fromJust $! sdPos dta)
---                      /= UnknownMod)
-
--- isUndefined :: SymbolData-> Bool
--- {-# INLINABLE isUndefined #-}
--- isUndefined dta = isNothing (sdVisib dta)
---                && isNothing (sdPurity dta)
---                && sdType dta == NoType
---                && (isNothing (sdPos dta)
---                 || posModule (fromJust $! sdPos dta)
---                      == UnknownMod)
 
 -- TEMPORARY
 ifDefined :: SymbolData -> Maybe SymbolData

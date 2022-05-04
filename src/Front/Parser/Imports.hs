@@ -1,9 +1,10 @@
-module Parser.Imports (
+module Front.Parser.Imports (
     Module(..),
     Import(..),
 ) where
+
 import Common.Var
-import Parser.Data (Visibility, Expr)
+import Front.Parser.Data (Visibility, Expr)
 import Pretty
 
 

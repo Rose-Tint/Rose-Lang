@@ -1,6 +1,6 @@
 {-# LANGUAGE FlexibleInstances #-}
 
-module Parser.Data (
+module Front.Parser.Data (
     Value(..),
     Purity(..),
     Mutability,

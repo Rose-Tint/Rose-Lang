@@ -1,5 +1,5 @@
 {
-module Parser.Lexer (
+module Front.Parser.Lexer (
     Token(..),
     Alex(..),
     runAlex,
@@ -14,8 +14,8 @@ import Text.Read (readMaybe)
 
 import Common.SrcPos
 import Common.Var
-import Parser.Data
-import Parser.Token
+import Front.Parser.Data
+import Front.Parser.Token
 import Pretty
 }
 

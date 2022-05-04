@@ -1,6 +1,6 @@
 {-# LANGUAGE Rank2Types #-}
 
-module Builder.Builder (
+module Builder.Internal (
     BuilderT, Builder, BuilderIO, BuilderM,
     State(..),
     buildM, buildM_,
@@ -16,9 +16,9 @@ import Control.Monad ((<$!>))
 import Data.Functor.Identity (Identity)
 import Data.Set (member, insert)
 
+import Builder.CmdLine.Internal
 import Builder.State
-import CmdLine (CmdLine(cmdBuildDir))
-import Utils (pathToModule, pathToDir)
+import Utils.Paths (pathToModule, pathToDir)
 
 
 -- TODO: Decide if this should also be in the

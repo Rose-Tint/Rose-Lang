@@ -3,10 +3,9 @@ module Main (main) where
 import Control.Monad (unless)
 import Data.Time (diffUTCTime, getCurrentTime)
 
-import Builder.Builder (buildM_)
-import CmdLine (CmdLine(..), getCmdLine)
+import Builder
+import Builder.CmdLine
 import Pretty (printf)
-import Build (build)
 
 
 default (Int, Double)
@@ -14,7 +13,7 @@ default (Int, Double)
 
 main :: IO ()
 main = do
-    cmd <- getCmdLine
+    cmd <- readCmdLine
     let errs = cmdErrors cmd
     unless (null errs) $
         putStrLn (concat errs)

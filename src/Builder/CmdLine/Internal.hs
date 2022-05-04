@@ -1,8 +1,6 @@
-module CmdLine (
-    module CmdLine.Flags,
-    module CmdLine.Warnings,
+module Builder.CmdLine.Internal (
     CmdLine(..),
-    getCmdLine
+    readCmdLine,
 ) where
 
 import System.Console.GetOpt
@@ -10,8 +8,9 @@ import System.Directory
 import System.Environment (getArgs)
 import System.Exit (exitSuccess)
 
-import CmdLine.Flags
-import CmdLine.Warnings
+import Builder.CmdLine.Flags
+import Builder.CmdLine.Warnings
+
 
 default (Int, Double)
 
@@ -105,8 +104,8 @@ mkCmdLine flgs fnames errs = do
         }
     return $! setFlags flgs' cmd
 
-getCmdLine :: IO CmdLine
-getCmdLine = do
+readCmdLine :: IO CmdLine
+readCmdLine = do
     args <- reverse <$> getArgs
     let (opts, nons, errs) = getOpt RequireOrder options args
     mkCmdLine (reverse <$> sequence opts) nons errs

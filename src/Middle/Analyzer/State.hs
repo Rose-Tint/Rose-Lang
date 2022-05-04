@@ -1,15 +1,15 @@
-module Analyzer.State (
+module Middle.Analyzer.State (
     State(..),
     newModuleState,
     newState,
 ) where
 
-import Analyzer.Error
 import Common.SrcPos
 import Common.Typing
 import Common.Var
-import Parser (Import)
-import SymbolTable
+import Front.Parser (Import)
+import Middle.Analyzer.Error
+import Middle.SymbolTable
 
 
 data State

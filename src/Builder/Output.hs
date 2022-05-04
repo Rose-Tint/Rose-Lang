@@ -7,7 +7,7 @@ module Builder.Output (
 import Control.Monad (when, (<$!>))
 import System.Exit
 
-import Builder.Builder
+import Builder.Internal
 import Builder.CmdLine(
     CmdLine(cmdTrace, cmdWarns),
     getVerbosity,

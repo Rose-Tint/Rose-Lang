@@ -1,5 +1,6 @@
-module Build (
+module Builder (
     build,
+    buildM_,
 ) where
 
 import Prelude hiding (readFile)
@@ -10,17 +11,14 @@ import qualified Data.Text as T (lines)
 import Data.Text.IO (readFile)
 import System.Directory
 
-import CmdLine.Flags
 import Common.Var
-import Analyzer.Analyzer (Analysis(..), analyze_)
-import Analyzer.Checker (infer_)
-import Analyzer.Error (prettyError)
-import Builder.Builder
+import Middle.Analyzer
+import Builder.Internal
 import Builder.CmdLine
 import Builder.Output
-import Parser
+import Front.Parser
 import Pretty
-import Utils (modToPath)
+import Utils.Paths (modToPath)
 
 
 default (Int, Double)
@@ -71,14 +69,14 @@ analyzeFile :: [Expr] -> BuilderIO Analysis
 analyzeFile es = do
     name <- getModule
     debug ("Analyzing ["+|name|+"]\n")
-    let !res = analyze_ $! mapM_ infer_ es
+    let !res = analyze es
     trace "Symbol-Table.txt" $
         detailed (arTable res)
     if null $ arErrors res then
         return res
     else do
         lns <- T.lines <$> getSource
-        forM_ (arErrors res) $ \em -> do
+        forM_ (arErrors res) $ \em ->
             message (prettyError lns em)
         flgs <- cmdFlags <$!> getCmdLine
         if f_fatal_errors `isFEnabled` flgs then fatal

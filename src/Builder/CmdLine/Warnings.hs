@@ -1,6 +1,6 @@
 {-# OPTIONS_GHC -Wno-missing-signatures #-}
 
-module CmdLine.Warnings (Warning,
+module Builder.CmdLine.Warnings (Warning,
     warningOptions,
     isWEnabledFor,
     enableWarningFor,

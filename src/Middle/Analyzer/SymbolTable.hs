@@ -1,4 +1,4 @@
-module Analyzer.SymbolTable (
+module Middle.Analyzer.SymbolTable (
     searchTypes, searchTraits, searchGlobals, searchScopeds,
     findType, findTrait, findGlobal, findScoped,
     modifyType, modifyTrait, modifyGlobal, modifyScoped,
@@ -9,9 +9,9 @@ import Prelude hiding (lookup)
 
 import Control.Monad ((<$!>))
 
-import Analyzer.Analyzer
 import Common.Typing.Type (Type(..))
-import SymbolTable
+import Middle.Analyzer.Internal
+import Middle.SymbolTable
 
 
 -- Thus is the convention for Symbol Table lookups:

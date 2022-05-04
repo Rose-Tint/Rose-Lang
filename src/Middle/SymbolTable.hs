@@ -1,4 +1,4 @@
-module SymbolTable (
+module Middle.SymbolTable (
     module S,
     SymbolTable(..),
     insertType,
@@ -12,11 +12,11 @@ module SymbolTable (
 import Data.Maybe (mapMaybe)
 
 import Common.Var
-import SymbolTable.SymbolData as S
-import SymbolTable.SymbolMap as S
-import SymbolTable.Trie (assocs)
+import Middle.SymbolTable.SymbolData as S
+import Middle.SymbolTable.SymbolMap as S
+import Middle.SymbolTable.Trie (assocs)
 import Pretty
-import Utils
+import Utils.String
 
 
 default (Int, Double)

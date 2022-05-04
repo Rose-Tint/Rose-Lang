@@ -1,4 +1,4 @@
-module Analyzer.Error (
+module Middle.Analyzer.Error (
     Error(..),
     Warning(..),
     ErrorMessage(..),

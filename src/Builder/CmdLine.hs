@@ -1,15 +1,21 @@
 module Builder.CmdLine (
-    module CmdLine,
-    getCmdLine,
+    module Builder.CmdLine.Flags,
+    module Builder.CmdLine.Internal,
+    module Builder.CmdLine.Warnings,
     getSourceFiles,
     getVerbosity,
     getBuildDir,
+    getCmdLine
 ) where
 
 import Control.Monad ((<$!>))
 
-import Builder.Builder
-import CmdLine hiding (getCmdLine)
+import Builder.Internal
+import Builder.CmdLine.Flags
+import Builder.CmdLine.Internal
+import Builder.CmdLine.Warnings
+
+default (Int, Double)
 
 
 getSourceFiles :: BuilderT m [FilePath]

@@ -1,14 +1,14 @@
 {
-module Parser.Parser (rose) where
+module Front.Parser.Parser (rose) where
 
 import Data.Array (listArray)
 
 import Common.Item
 import Common.Typing
 import Common.Var
-import Parser.Data
-import Parser.Imports
-import Parser.Lexer
+import Front.Parser.Data
+import Front.Parser.Imports
+import Front.Parser.Lexer
 import Pretty
 }
 
