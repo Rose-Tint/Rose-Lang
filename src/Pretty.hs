@@ -2,11 +2,13 @@
 {-# LANGUAGE FlexibleInstances #-}
 
 module Pretty (
-    module Color,
+    Color(..),
     Pretty(..),
+    color, uncolor, colored, reset,
     sepsT, seps, sepsD,
     indentLnsT, indentLns, indentLnsD,
     indentCatLnsT, indentCatLns, indentCatLnsD,
+    printf,
     (.<),(.^),(.>),
     (-|),(|-|),(|-),
     (+|),(|+|),(|+),
@@ -17,8 +19,12 @@ import Data.Char (isDigit, digitToInt)
 import Data.Int
 import Data.List (intercalate)
 import Data.Text (Text, unpack)
-
-import Color
+import Text.Printf (
+        PrintfType,
+        PrintfArg(..),
+        formatString
+    )
+import qualified Text.Printf (printf)
 
 
 default (Int, Double)
@@ -28,6 +34,17 @@ data Align a
     = AL Int Char a
     | AC Int Char a
     | AR Int Char a
+
+data Color
+    = Black
+    | Red
+    | Green
+    | Yellow
+    | Blue
+    | Purple
+    | Cyan
+    | White
+    | Reset
 
 
 class Pretty a where
@@ -111,10 +128,61 @@ alignR n pc str
     where
         strLen = length str
 
+color :: String -> String
+color [] = pretty Reset
+color [ch] = [ch]
+color ('\\':('$':rest)) = ('$':color rest)
+color ('$':(ch:rest)) = clrStr ++ color rest
+    where
+        clrStr = case ch of
+            'B' -> pretty Black
+            'r' -> pretty Red
+            'y' -> pretty Yellow
+            'g' -> pretty Green
+            'b' -> pretty Blue
+            'p' -> pretty Purple
+            'c' -> pretty Cyan
+            'w' -> pretty White
+            'R' -> pretty Reset
+            _   -> ['$', ch]
+color (c:cs) = (c:color cs)
+
+colored :: String -> Color -> String
+{-# INLINE colored #-}
+colored str clr = pretty clr ++ str ++ pretty Reset
+
+reset :: String -> String
+{-# INLINE reset #-}
+reset str = pretty Reset ++ str
+
+printf :: (PrintfType a) => String -> a
+printf = Text.Printf.printf . color
+
+uncolor :: String -> String
+uncolor [] = []
+uncolor ('\027':'[':'0':'m':str) = uncolor str
+uncolor ('\027':'[':'3':_:'m':str) = uncolor str
+uncolor (c:cs) = (c:uncolor cs)
+
+
+instance Pretty Color where
+    pretty Black  = "\027[30m"
+    pretty Red    = "\027[31m"
+    pretty Green  = "\027[32m"
+    pretty Yellow = "\027[33m"
+    pretty Blue   = "\027[34m"
+    pretty Purple = "\027[35m"
+    pretty Cyan   = "\027[36m"
+    pretty White  = "\027[37m"
+    pretty Reset  = "\027[0m"
+
+instance PrintfArg Color where
+    formatArg = formatString . pretty
+
+
 
 instance Pretty Int8
 instance Pretty Int
-instance Pretty Color
 
 instance Pretty Char where
     pretty = (:[])

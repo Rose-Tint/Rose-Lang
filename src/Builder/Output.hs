@@ -13,7 +13,7 @@ import Builder.CmdLine(
     getVerbosity,
     isWEnabledFor, w_error
     )
-import Color
+import Pretty
 
 
 default (Int, Double)

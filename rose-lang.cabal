@@ -29,7 +29,6 @@ common general
         CmdLine,
         CmdLine.Flags,
         CmdLine.Warnings,
-        Color,
         Common.Item,
         Common.SrcPos,
         Common.Typing,

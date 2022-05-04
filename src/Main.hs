@@ -5,7 +5,7 @@ import Data.Time (diffUTCTime, getCurrentTime)
 
 import Builder.Builder (buildM_)
 import CmdLine (CmdLine(..), getCmdLine)
-import Color (printf)
+import Pretty (printf)
 import Build (build)
 
 
