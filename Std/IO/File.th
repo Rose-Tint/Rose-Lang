@@ -1,6 +1,6 @@
+import Std.Low.Resource
 import Std.IO.Output
 import Std.IO.Input
-import Std.Resource
 
 
 using FilePath = String

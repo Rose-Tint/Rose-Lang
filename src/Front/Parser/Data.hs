@@ -35,8 +35,8 @@ data Value
     | VarVal !Var
     | Application Value [Value]
     | CtorCall !Var [Value]
-    | Tuple {-# UNPACK #-} !(Array Int Value)
-    | Array {-# UNPACK #-} !(Array Int Value)
+    | Tuple (Array Int Value)
+    | Array (Array Int Value)
     | Lambda [Var] Body
     | StmtVal Stmt
     | Hole SrcPos

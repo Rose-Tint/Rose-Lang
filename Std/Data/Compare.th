@@ -29,16 +29,18 @@ trait Logical a {
 pure min<Ord a : a -> a -> a>
 min a b {
     match (a <=> b) {
-        [LT, EQ] = a;
+        -- [LT, EQ] = a;
         [GT] = b;
+        _ = a;
     }
 }
 
 pure max<Ord a : a -> a -> a>
 max a b {
     match (a <=> b) {
-        [LT, EQ] = b;
+        -- [LT, EQ] = b;
         [GT] = a;
+        _ = b;
     }
 }
 

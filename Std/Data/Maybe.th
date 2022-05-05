@@ -1,5 +1,5 @@
+import Std.Control.Alternative
 import Std.Data.List
-import Std.Alternative
 
 
 data Maybe a

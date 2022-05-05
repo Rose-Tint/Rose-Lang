@@ -37,10 +37,13 @@ $symbol         = [\~\!\@\#\$\%\^\&\*\-\+\=\\\|\:\<\>\.\?\/]
                 | $sign? @decimal \. @decimal
                 | $sign? @hexa \.? (p|P) $sign? @decimal
 
-@character      = \\ @hexa
-                | \\ $oct_digit+
-                | \\ [\\abfnrtv\'\"]
-                | ~\"
+@special        = \\ @hexa
+                | \\ $oct_digit{0,3}
+                | \\ [\\abfnrtv\'\"] 
+@char_ch        = @special
+                | [^\']
+@string_ch      = @special
+                | [^\"]
 
 @big_id         = $big $id_char*
 @small_id       = $small $id_char*
@@ -50,15 +53,19 @@ $symbol         = [\~\!\@\#\$\%\^\&\*\-\+\=\\\|\:\<\>\.\?\/]
 
 tokens :-
     <ctx_> ":"                  { reserved TColon }
-    <ctx_,data_,func_,var_> "<" { reserved TLAngle }
-    <ctx_,var_> ">"             { reserved TRAngle `andBegin` 0 }
+    <ctx_, data_, var_> "<"     { reserved TLAngle }
+    <ctx_, var_> ">"            { reserved TRAngle `andBegin` 0 }
+    -- mainly for traits without a context
+    <ctx_> "{"                  { reserved TLBrace `andBegin` 0 }
     <data_> ">"                 { reserved TRAngle }
-    <data_> "}"                 { reserved TRBrace }
     <data_> "|"                 { reserved TPipe }
-    <func_> ";"                 { reserved TSemi `andBegin` 0 }
+    <var_> "="                  { reserved TEq `andBegin` 0 }
     <func_> @small_id           { mkVar TSmall `andBegin` ctx_ }
+    <func_> @operator           { mkVar TInfix `andBegin` ctx_ }
     <0>         '\''            { begin char_ }
     <0>         '"'             { begin string_ }
+    <char_> @char_ch            { char }
+    <string_> @string_ch*       { string }
     <string_>   '"'             { begin 0 }
     <char_>     '\''            { begin 0 }
 
@@ -100,8 +107,6 @@ tokens :-
     $sign? 0 @hexa              { integer 16 }
     @floating                   { float }
     @floating[Ff]               { double }
-    <char_> @character          { char }
-    <string_> @character*       { string }
     @qual @small_id             { mkVar TSmall }
     @qual @big_id               { mkVar TBig }
     @qual @operator             { mkVar TInfix }

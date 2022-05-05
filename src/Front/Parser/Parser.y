@@ -106,7 +106,7 @@ TopLevelExpr :: { Expr }
     : FuncDecl  { $1 }
     | FuncDef   { $1 }
     | DataDef   { $1 }
-    | TypeAlias   { $1 }
+    | TypeAlias { $1 }
     | TraitDecl { $1 }
     | TraitImpl { $1 }
 
@@ -161,11 +161,16 @@ Type :: { Type }
 --     Could do: reduce using:
 --         Types0 -> {- empty -}
 Types0 :: { [Type] }
-    : Types0_    { reverse $1 }
-
-Types0_ :: { [Type] }
-    : {- empty -}    { [] }
-    | Types0_ Type   { ($2:$1) }
+    : Types1_        { reverse $1 }
+    | {- empty -}    { [] }
+-- BUG?? moving the empty rule from `Types1_`
+-- (formerly `Types0_`) fixed an issue with
+-- the first two rules of `Type` not allowing
+-- "->" to follow when there was more than one
+-- type-parameter (see `Type`, rules 1 & 2)
+Types1_ :: { [Type] }
+    : Type           { [$1] }
+    | Types1_ Type   { ($2:$1) }
 
 CommaSepTypes2 :: { [Type] }
     : CommaSepTypes2_    { reverse $1 }
@@ -187,7 +192,7 @@ Params0_ :: { [Value] }
     | Params0_ Pattern  { ($2:$1) }
 
 BodyAssn :: { Body }
-    : "=" Stmt   { [$2] }
+    : "=" Stmt   { [Return (StmtVal $2)] }
     | Body       { $1   }
 
 -- TODO: labeled loops
@@ -204,13 +209,6 @@ IfElse :: { Stmt }
     : if Term StmtBody else StmtBody    { IfElse $2 $3 $5 }
     | if Term StmtBody                  { IfElse $2 $3 [] }
 
--- ALLOWED CONFLICT:
---     Does: shift according to:
---         "(" Lambda ")" . Terms0
---     Could do: reduce using:
---         Term -> Lambda
--- this is desired because we want to allow
--- a lambda to be able to call
 Term :: { Value }
     : literal               { $1 }
     | "[" ArrayTerms "]"    { mkArray $2 }
@@ -261,16 +259,19 @@ TuplePtrns :: { [Value] }
     | Pattern "," Pattern      { [$3, $1] }
 
 CtorPattern :: { Value }
-    : big_id Patterns   { CtorCall $1 $2 }
+    : big_id Patterns0   { CtorCall $1 $2 }
 
-Patterns :: { [Value] }
+Patterns0 :: { [Value] }
+    : Patterns0_ { reverse $1 }
+
+Patterns0_ :: { [Value] }
     : {- empty -}       { [] }
-    | Patterns Pattern  { ($2:$1) }
+    | Patterns0 Pattern  { ($2:$1) }
 
 Expr :: { Stmt }
     : NewVar                { $1 }
     | small_id "=" Term ";" { Reassignment $1 $3 }
-    | FuncCall ";"          { ValStmt $1 }
+    | Term ";"              { ValStmt $1 }
     | ";"                   { NullStmt }
 
 NewVar :: { Stmt }
@@ -283,37 +284,31 @@ VarType :: { TypeDecl }
 
 FuncCall :: { Value }
     : Term infix_id Term    { Application (VarVal $2) [$1, $3] }
+    | infix_id              { VarVal $1 }
     | CtorCall              { $1 }
     | Term Term %prec APP   { Application $1 [$2] }
 
--- ALLOWED CONFLICT:
---     Does: shift according to one of:
---         "(" . TupleTerms ")"
---         "(" . Term ")"
---         "(" . Lambda ")" Terms0
---         "(" . FuncCall ")" Terms0
---         "[" . ArrayTerms "]"
---         literal .
---         big_id . Terms0
---         small_id .
---         prefix_id . Terms0
---     Could do: reduce using:
---         Terms0 -> {- empty -}
 Terms0 :: { [Value] }
     : Terms0_    { reverse $1 }
+
 Terms0_ :: { [Value] }
     : {- empty -}   { []      }
     | Terms0_ Term    { ($2:$1) }
 
 Lambda :: { Value }
-    : ":" SmallIds0 "=>" StmtBody    { Lambda $2 $4 }
+    : SmallIds1 "=>" Body    { Lambda $1 $3 }
+    | SmallIds1 "=>" Term    { Lambda $1 [Return $3] }
 
 SmallIds0 :: { [Var] }
-    : SmallIds0_ { reverse $1 }
+    : SmallIds1_     { reverse $1 }
+    | {- empty -}    { [] }
 
-SmallIds0_ :: { [Var] }
-    : SmallIds0_ small_id    { ($2:$1) }
-    | {- empty -}            { [] }
+SmallIds1 :: { [Var] }
+    : SmallIds1_ { reverse $1 }
+
+SmallIds1_ :: { [Var] }
+    : SmallIds1_ small_id    { ($2:$1) }
+    | small_id               { [$1] }
 
 Loop :: { Stmt }
     : loop "(" Expr Expr Expr ")" StmtBody  { Loop $3 $4 $5 $7 }
@@ -345,16 +340,15 @@ TypeAlias :: { Expr }
     : using Vis Type "=" Type  { TypeAlias $2 $3 $5 }
 
 TraitDecl :: { Expr }
-    : trait Vis TraitCtx big_id small_id "{" MethodDecls0 "}"    { TraitDecl $2 $3 $4 [$5] $7 }
+    : trait Vis TraitCtx big_id SmallIds1 "{" MethodDecls1 "}"    { TraitDecl $2 $3 $4 $5 $7 }
 
 TraitCtx :: { Context }
     : {- empty -}       { [] }
     | "<" CtxSeq ">"    { $2 }
 
-MethodDecls0 :: { [Expr] }
-    : {- empty -}        { []      }
-    | MethodDecls0 FuncDecl   { ($2:$1) }
-    | MethodDecls0 FuncDef    { ($2:$1) }
+MethodDecls1 :: { [Expr] }
+    : FuncDecl                { [$1] }
+    | MethodDecls1 FuncDecl   { ($2:$1) }
 
 TraitImpl :: { Expr }
     : impl TraitCtx big_id Types0 "{" MethodImpls0 "}"    { TraitImpl $2 $3 $4 $6 }
