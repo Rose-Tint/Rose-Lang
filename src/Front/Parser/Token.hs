@@ -28,6 +28,7 @@ data Token
     | TRBracket
     | TLAngle
     | TRAngle
+    | TUsing
     | TPure
     | TImpure
     | TLet
@@ -70,6 +71,7 @@ instance Pretty Token where
     terse TRBracket = "']'"
     terse TLAngle = "'<'"
     terse TRAngle = "'>'"
+    terse TUsing = "keyword 'using'"
     terse TPure = "keyword 'pure'"
     terse TImpure = "keyword 'impure'"
     terse TLet = "keyword 'let'"
@@ -109,6 +111,7 @@ instance Pretty Token where
     pretty TRBracket = "]"
     pretty TLAngle = "<"
     pretty TRAngle = ">"
+    pretty TUsing = "using"
     pretty TPure = "pure"
     pretty TImpure = "impure"
     pretty TLet = "let"
@@ -148,6 +151,7 @@ instance Pretty Token where
     detailed TRBracket = "TRBracket"
     detailed TLAngle = "TLAngle"
     detailed TRAngle = "TRAngle"
+    detailed TUsing = "TUsing"
     detailed TPure = "TPure"
     detailed TImpure = "TImpure"
     detailed TLet = "TLet"

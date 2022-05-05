@@ -26,6 +26,7 @@ import Pretty
 %tokentype { Token }
 %token
     -- keywords
+    using           { TUsing      }
     pure            { TPure       }
     impure          { TImpure     }
     let             { TLet        }
@@ -105,6 +106,7 @@ TopLevelExpr :: { Expr }
     : FuncDecl  { $1 }
     | FuncDef   { $1 }
     | DataDef   { $1 }
+    | TypeAlias   { $1 }
     | TraitDecl { $1 }
     | TraitImpl { $1 }
 
@@ -123,10 +125,10 @@ Vis :: { Visibility }
 
 TypeDecl :: { TypeDecl }
     : "<" CtxSeq ArrowSepTypes1 ">" { TypeDecl $2 (Applied $3) }
+    | "<" ArrowSepTypes1 ">" { TypeDecl [] (Applied $2) }
 
 CtxSeq :: { Context }
-    : {- empty -}   { [] }
-    | CtxSeq_ ":"   { reverse $1 }
+    : CtxSeq_ ":"   { reverse $1 }
 
 CtxSeq_ :: { Context }
     : CtxSeq_ "," Constraint  { ($3:$1) }
@@ -139,8 +141,8 @@ ArrowSepTypes1 :: { [Type] }
     : ArrowSepTypes1_    { reverse $1 }
 
 ArrowSepTypes1_ :: { [Type] }
-    : ArrowSepTypes1_ "->" Type { ($3:$1) }
-    | Type                      { [$1]      }
+    : Type                      { [$1]      }
+    | ArrowSepTypes1_ "->" Type { ($3:$1) }
 
 Type :: { Type }
     : big_id Types0             { Type $1 $2 }
@@ -162,7 +164,7 @@ Types0 :: { [Type] }
     : Types0_    { reverse $1 }
 
 Types0_ :: { [Type] }
-    : {- empty -}   { [] }
+    : {- empty -}    { [] }
     | Types0_ Type   { ($2:$1) }
 
 CommaSepTypes2 :: { [Type] }
@@ -215,7 +217,6 @@ Term :: { Value }
     | "(" TupleTerms ")"    { mkTuple $2 }
     | small_id              { VarVal $1 }
     | Lambda                { $1 }
-    | CtorCall              { $1 }
     | FuncCall              { $1 }
     | "(" Term ")"          { $2 }
 
@@ -273,13 +274,16 @@ Expr :: { Stmt }
     | ";"                   { NullStmt }
 
 NewVar :: { Stmt }
-    : let small_id "=" Term ";"             { NewVar Pure $2 Delayed $4 }
-    | let small_id Type "=" Term ";"        { NewVar Pure $2 $3 $5 }
-    | let mut small_id "=" Term ";"         { NewVar Impure $3 Delayed $5 }
-    | let mut small_id Type "=" Term ";"    { NewVar Impure $3 $4 $6 }
+    : let small_id VarType "=" Term ";"        { NewVar Pure $2 $3 $5 }
+    | let mut small_id VarType "=" Term ";"    { NewVar Impure $3 $4 $6 }
+
+VarType :: { TypeDecl }
+    : TypeDecl      { $1 }
+    | {- empty -}   { TypeDecl [] Delayed }
 
 FuncCall :: { Value }
     : Term infix_id Term    { Application (VarVal $2) [$1, $3] }
+    | CtorCall              { $1 }
     | Term Term %prec APP   { Application $1 [$2] }
 
 -- ALLOWED CONFLICT:
@@ -336,6 +340,9 @@ CtorList :: { [Ctor] }
 CtorDef :: { Ctor }
     : Vis big_id                        { SumType $2 $1 [] }
     | Vis big_id "<" ArrowSepTypes1 ">" { SumType $2 $1 $4 }
+
+TypeAlias :: { Expr }
+    : using Vis Type "=" Type  { TypeAlias $2 $3 $5 }
 
 TraitDecl :: { Expr }
     : trait Vis TraitCtx big_id small_id "{" MethodDecls0 "}"    { TraitDecl $2 $3 $4 [$5] $7 }

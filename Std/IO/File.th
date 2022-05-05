@@ -3,7 +3,7 @@ import Std.IO.Input
 import Std.Resource
 
 
-using data FilePath = String;
+using FilePath = String
 
 data OpenMode
     = Write
@@ -23,10 +23,8 @@ impl Resource FilePath {
 }
 
 
-#[must_use(openFile)]
 impure openFile<FilePath -> OpenMode -> Handle>
 
-#[warn_unused(readFile)]
 impure readFile<FilePath -> String>
 readFile p = with p hGetContents;
 

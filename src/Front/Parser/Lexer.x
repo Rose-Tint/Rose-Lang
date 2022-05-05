@@ -50,11 +50,12 @@ $symbol         = [\~\!\@\#\$\%\^\&\*\-\+\=\\\|\:\<\>\.\?\/]
 
 tokens :-
     <ctx_> ":"                  { reserved TColon }
-    <ctx_, data_, func_> "<"    { reserved TLAngle }
-    <ctx_> ">"                  { reserved TRAngle `andBegin` 0 }
+    <ctx_,data_,func_,var_> "<" { reserved TLAngle }
+    <ctx_,var_> ">"             { reserved TRAngle `andBegin` 0 }
     <data_> ">"                 { reserved TRAngle }
     <data_> "}"                 { reserved TRBrace }
     <data_> "|"                 { reserved TPipe }
+    <func_> ";"                 { reserved TSemi `andBegin` 0 }
     <func_> @small_id           { mkVar TSmall `andBegin` ctx_ }
     <0>         '\''            { begin char_ }
     <0>         '"'             { begin string_ }
@@ -75,9 +76,10 @@ tokens :-
     "["                         { reserved TLBracket }
     "]"                         { reserved TRBracket }
     "_"                         { hole }
+    using                       { reserved TUsing }
     pure                        { reserved TPure `andBegin` func_ }
     impure                      { reserved TImpure `andBegin` func_ }
-    let                         { reserved TLet }
+    let                         { reserved TLet `andBegin` var_ }
     mut                         { reserved TMut }
     intern                      { reserved TIntern }
     export                      { reserved TExport }
