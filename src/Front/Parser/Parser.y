@@ -21,7 +21,7 @@ import Pretty
 -- explainations as to what the conflicts are,
 -- as well as why they are okay at each relevant
 -- production.
-%expect 15
+-- %expect 15
 
 %tokentype { Token }
 %token
@@ -31,9 +31,8 @@ import Pretty
     let             { TLet        }
     mut             { TMut        }
     intern          { TIntern     }
-    extern          { TExtern     }
+    export          { TExport     }
     import          { TImport     }
-    using           { TUsing      }
     return          { TReturn     }
     if              { TIf         }
     else            { TElse       }
@@ -67,11 +66,11 @@ import Pretty
     big_id          { TBig $$     }
     small_id        { TSmall $$   }
     infix_id        { TInfix $$   }
-    prefix_id       { TPrefix $$  }
+    -- prefix_id       { TPrefix $$  }
     "_"             { THole $$    }
 
 %nonassoc infix_id
-%left big_id small_id prefix_id
+%left big_id small_id -- prefix_id
 %right if else let
 %nonassoc match
 %right "="
@@ -79,6 +78,10 @@ import Pretty
 %right "=>" "," "->" return
 %left  ")" "}" "]" ">"
 %right "(" "{" "[" "<" ";"
+
+-- ghost precedence for function application
+-- https://stackoverflow.com/questions/27630269
+%nonassoc APP
 
 
 
@@ -92,9 +95,7 @@ Imports0 :: { [Import] }
     | Imports0 Import   { ($2:$1) }
 
 Import :: { Import }
-    : import big_id         { Import $2 Intern }
-    | import intern big_id  { Import $3 Intern }
-    | import extern big_id  { Import $3 Extern }
+    : import Vis big_id { Import $3 $2 }
 
 TopLevelExprs :: { [Expr] }
     : {- empty -}                   { [] }
@@ -104,19 +105,20 @@ TopLevelExpr :: { Expr }
     : FuncDecl  { $1 }
     | FuncDef   { $1 }
     | DataDef   { $1 }
-    | TypeAlias { $1 }
     | TraitDecl { $1 }
     | TraitImpl { $1 }
 
 FuncDecl :: { Expr }
-    : pure prefix_id TypeDecl         { FuncDecl Pure $2 $3 $4 }
-    | impure prefix_id TypeDecl       { FuncDecl Impure $2 $3 $4 }
-    | pure Vis prefix_id TypeDecl     { FuncDecl Pure $2 $3 $4 }
-    | impure Vis prefix_id TypeDecl   { FuncDecl Impure $2 $3 $4 }
+    : Pur Vis small_id TypeDecl            { FuncDecl $1 $2 $3 $4 }
+    | Pur Vis "(" infix_id ")" TypeDecl    { FuncDecl $1 $2 $4 $6 }
+
+Pur :: { Purity }
+    : pure      { Pure }
+    | impure    { Impure }
 
 Vis :: { Visibility }
-    -- : {- empty -}   { Extern }
-    : extern        { Extern }
+    : {- empty -}   { Extern }
+    | export        { Extern }
     | intern        { Intern }
 
 TypeDecl :: { TypeDecl }
@@ -124,24 +126,14 @@ TypeDecl :: { TypeDecl }
 
 CtxSeq :: { Context }
     : {- empty -}   { [] }
-    | CtxSeq_ ":" { reverse $1 }
+    | CtxSeq_ ":"   { reverse $1 }
 
 CtxSeq_ :: { Context }
     : CtxSeq_ "," Constraint  { ($3:$1) }
     | Constraint              { [$1]    }
 
 Constraint :: { Constraint }
-    : big_id SmallIds1   { Constraint $1 $2 }
-
-SmallIds1 :: { [Var] }
-    : small_id SmallIds0     { ($1:$2) }
-
-SmallIds0 :: { [Var] }
-    : SmallIds0_ { reverse $1 }
-
-SmallIds0_ :: { [Var] }
-    : SmallIds0_ small_id    { ($2:$1) }
-    | small_id               { [$1] }
+    : big_id small_id   { Constraint $1 [$2] }
 
 ArrowSepTypes1 :: { [Type] }
     : ArrowSepTypes1_    { reverse $1 }
@@ -181,15 +173,16 @@ CommaSepTypes2_ :: { [Type] }
     | Type "," Type           { [$3, $1] }
 
 FuncDef :: { Expr }
-    : Pattern infix_id Pattern BodyAssn  { FuncDef $2 [$1,$3] $4 }
-    | prefix_id PrefixParamSeq0 BodyAssn { FuncDef $1 $2 $3 }
+    : Pattern infix_id Pattern BodyAssn { FuncDef $2 [$1,$3] $4 }
+    | small_id Params0 BodyAssn         { FuncDef $1 $2 $3 }
+    | "(" infix_id ")" Params0 BodyAssn { FuncDef $2 $4 $5 }
 
-PrefixParamSeq0 :: { [Value] }
-    : PrefixParamSeq0_  { reverse $1 }
+Params0 :: { [Value] }
+    : Params0_  { reverse $1 }
 
-PrefixParamSeq0_ :: { [Value] }
+Params0_ :: { [Value] }
     : {- empty -}                { [] }
-    | PrefixParamSeq0_ Pattern  { ($2:$1) }
+    | Params0_ Pattern  { ($2:$1) }
 
 BodyAssn :: { Body }
     : "=" Stmt   { [$2] }
@@ -197,14 +190,13 @@ BodyAssn :: { Body }
 
 -- TODO: labeled loops
 Stmt :: { Stmt }
-    : Selection { $1 }
-    | JumpStmt  { $1 }
-    | Expr      { $1 }
-    | Loop      { $1 }
-
-Selection :: { Stmt }
-    : IfElse    { $1 }
-    | Match     { $1 }
+    : IfElse            { $1 }
+    | Match             { $1 }
+    | break ";"         { Break }
+    | continue ";"      { Continue }
+    | return Term ";"   { Return $2 }
+    | Expr              { $1 }
+    | Loop              { $1 }
 
 IfElse :: { Stmt }
     : if Term StmtBody else StmtBody    { IfElse $2 $3 $5 }
@@ -221,6 +213,7 @@ Term :: { Value }
     : literal               { $1 }
     | "[" ArrayTerms "]"    { mkArray $2 }
     | "(" TupleTerms ")"    { mkTuple $2 }
+    | small_id              { VarVal $1 }
     | Lambda                { $1 }
     | CtorCall              { $1 }
     | FuncCall              { $1 }
@@ -246,24 +239,18 @@ Match :: { Stmt }
     : match Term "{" Cases1 "}" { Match $2 $4 }
 
 Cases1 :: { [MatchCase] }
-    : Cases1_   { reverse $1 }
-
-Cases1_ :: { [MatchCase] }
-    : Cases1_ Case  { ($2:$1) }
-    | Case          { [$1]    }
-
-Case :: { MatchCase }
-    : Pattern BodyAssn    { ($1, $2) }
+    : Cases1 Pattern BodyAssn   { (($2,$3):$1) }
+    | Pattern BodyAssn          { [($1,$2)] }
 
 Pattern :: { Value }
-    : "_"                               { $1 }
-    | small_id                          { VarVal $1 }
-    | "[" PatternItem "]"               { $2 }
+    : "_"                   { $1 }
+    | small_id              { VarVal $1 }
+    | "[" PatternItem "]"   { $2 }
 
 PatternItem :: { Value }
-    : literal                            { $1 }
-    | TuplePattern                       { $1 }
-    | CtorPattern                        { $1 }
+    : literal       { $1 }
+    | TuplePattern  { $1 }
+    | CtorPattern   { $1 }
 
 TuplePattern :: { Value }
     : "(" TuplePtrns ")" { mkTuple (reverse $2) }
@@ -276,39 +263,24 @@ CtorPattern :: { Value }
     : big_id Patterns   { CtorCall $1 $2 }
 
 Patterns :: { [Value] }
-    : {- empty -}       { []      }
+    : {- empty -}       { [] }
     | Patterns Pattern  { ($2:$1) }
 
-JumpStmt :: { Stmt }
-    : break ";"        { Break }
-    | continue ";"     { Continue }
-    | return Term ";"  { Return $2 }
-
 Expr :: { Stmt }
-    : NewVar        { $1         }
-    | Reassignment  { $1         }
-    | FuncCall ";"  { ValStmt $1 }
-    | NullStmt      { $1         }
+    : NewVar                { $1 }
+    | small_id "=" Term ";" { Reassignment $1 $3 }
+    | FuncCall ";"          { ValStmt $1 }
+    | ";"                   { NullStmt }
 
 NewVar :: { Stmt }
-    : let Mut small_id Type "=" Term ";"    { NewVar $2 $3 $4 $6      }
-    | let Mut small_id "=" Term ";"         { NewVar $2 $3 Delayed $5 }
-
-Mut :: { Mutability }
-    : {- empty -}   { Pure   }
-    | mut           { Impure }
-
-Reassignment :: { Stmt }
-    : small_id "=" Term ";" { Reassignment $1 $3 }
+    : let small_id "=" Term ";"             { NewVar Pure $2 Delayed $4 }
+    | let small_id Type "=" Term ";"        { NewVar Pure $2 $3 $5 }
+    | let mut small_id "=" Term ";"         { NewVar Impure $3 Delayed $5 }
+    | let mut small_id Type "=" Term ";"    { NewVar Impure $3 $4 $6 }
 
 FuncCall :: { Value }
     : Term infix_id Term    { Application (VarVal $2) [$1, $3] }
-    | Caller Terms0         { if null $2 then $1 else Application $1 $2 }
-
-Caller :: { Value }
-    : prefix_id         { VarVal $1 }
-    | "(" Lambda ")"    { $2 }
-    | "(" FuncCall ")"  { $2 }
+    | Term Term %prec APP   { Application $1 [$2] }
 
 -- ALLOWED CONFLICT:
 --     Does: shift according to one of:
@@ -330,10 +302,14 @@ Terms0_ :: { [Value] }
     | Terms0_ Term    { ($2:$1) }
 
 Lambda :: { Value }
-    : SmallIds0 "=>" StmtBody    { Lambda $1 $3 }
+    : ":" SmallIds0 "=>" StmtBody    { Lambda $2 $4 }
 
-NullStmt :: { Stmt }
-    : ";"  { NullStmt }
+SmallIds0 :: { [Var] }
+    : SmallIds0_ { reverse $1 }
+
+SmallIds0_ :: { [Var] }
+    : SmallIds0_ small_id    { ($2:$1) }
+    | {- empty -}            { [] }
 
 Loop :: { Stmt }
     : loop "(" Expr Expr Expr ")" StmtBody  { Loop $3 $4 $5 $7 }
@@ -360,24 +336,9 @@ CtorList :: { [Ctor] }
 CtorDef :: { Ctor }
     : Vis big_id                        { SumType $2 $1 [] }
     | Vis big_id "<" ArrowSepTypes1 ">" { SumType $2 $1 $4 }
-    | Vis big_id "{" DataFields1 "}"    { Record $2 $1 $4 }
-
-DataFields1 :: { [Field] }
-    : DataFields1_  { reverse $1 }
-
-DataFields1_ :: { [Field] }
-    : DataFields1_ "," DataField    { ($3:$1) }
-    | DataFields1_ ","              { $1 }
-    | DataField                     { [$1] }
-
-DataField :: { Field }
-    : small_id "<" ArrowSepTypes1 ">" { Field $1 (normalize (Applied $3)) }
-
-TypeAlias :: { Expr }
-    : using Vis Type "=" Type  { TypeAlias $2 $3 $5 }
 
 TraitDecl :: { Expr }
-    : trait Vis TraitCtx big_id SmallIds1 "{" MethodDecls0 "}"    { TraitDecl $2 $3 $4 $5 $7 }
+    : trait Vis TraitCtx big_id small_id "{" MethodDecls0 "}"    { TraitDecl $2 $3 $4 [$5] $7 }
 
 TraitCtx :: { Context }
     : {- empty -}       { [] }

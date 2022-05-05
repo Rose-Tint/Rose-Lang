@@ -50,19 +50,16 @@ $symbol         = [\~\!\@\#\$\%\^\&\*\-\+\=\\\|\:\<\>\.\?\/]
 
 tokens :-
     <ctx_> ":"                  { reserved TColon }
-    <ctx_, data_> "<"           { reserved TLAngle }
+    <ctx_, data_, func_> "<"    { reserved TLAngle }
     <ctx_> ">"                  { reserved TRAngle `andBegin` 0 }
     <data_> ">"                 { reserved TRAngle }
     <data_> "}"                 { reserved TRBrace }
     <data_> "|"                 { reserved TPipe }
-    <data_> pure                { reserved TPure `andBegin` 0 }
-    <data_> impure              { reserved TImpure `andBegin` 0 }
+    <func_> @small_id           { mkVar TSmall `andBegin` ctx_ }
     <0>         '\''            { begin char_ }
     <0>         '"'             { begin string_ }
-    <0>         '`'             { begin infix_ }
     <string_>   '"'             { begin 0 }
     <char_>     '\''            { begin 0 }
-    <infix_>      '`'           { begin 0 }
 
     $white+                     { skip }
     @comment+                   { skip }
@@ -78,15 +75,13 @@ tokens :-
     "["                         { reserved TLBracket }
     "]"                         { reserved TRBracket }
     "_"                         { hole }
-    pure                        { reserved TPure }
-    impure                      { reserved TImpure }
+    pure                        { reserved TPure `andBegin` func_ }
+    impure                      { reserved TImpure `andBegin` func_ }
     let                         { reserved TLet }
     mut                         { reserved TMut }
     intern                      { reserved TIntern }
-    export                      { reserved TExtern }
-    extern                      { reserved TExtern }
+    export                      { reserved TExport }
     import                      { reserved TImport }
-    using                       { reserved TUsing }
     return                      { reserved TReturn }
     if                          { reserved TIf }
     else                        { reserved TElse }
@@ -108,8 +103,6 @@ tokens :-
     @qual @small_id             { mkVar TSmall }
     @qual @big_id               { mkVar TBig }
     @qual @operator             { mkVar TInfix }
-    <infix_> @qual @small_id    { mkVar TInfix }
-    "(" @qual @operator ")"     { prefixOper }
 
 
 {
@@ -126,15 +119,6 @@ fromAlexPosn (AlexPn off ln col) =
 mkVar :: (Var -> Token) -> TokenAction
 mkVar ctor (pos, _, _, str) len = return
     (ctor (Var (take len str) (fromAlexPosn pos)))
-
-prefixOper :: TokenAction
-prefixOper (pos, _, _, ('(':str)) len = return
-    (TPrefix (Var 
-        -- `len - 2` accounts for the parens
-        (take (len - 2) str)
-        (fromAlexPosn pos)))
-prefixOper (_, _, _, str) len = lexError $
-    "'prefix' variable ("+|take len str|+")"
 
 hole :: TokenAction
 hole (pos, _, _, _) _ = return

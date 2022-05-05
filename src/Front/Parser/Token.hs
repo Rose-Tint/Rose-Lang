@@ -12,7 +12,6 @@ data Token
     | TBig Var
     | TSmall Var
     | TInfix Var
-    | TPrefix Var
     | THole Value
     | TEq
     | TColon
@@ -34,9 +33,8 @@ data Token
     | TLet
     | TMut
     | TIntern
-    | TExtern
+    | TExport
     | TImport
-    | TUsing
     | TReturn
     | TIf
     | TElse
@@ -55,7 +53,7 @@ instance Pretty Token where
     terse (TBig var) = "'big' variable ("+|var|+")"
     terse (TSmall var) = "'small' variable ("+|var|+")"
     terse (TInfix var) = "'infix' variable ("+|var|+")"
-    terse (TPrefix var) = "'prefix' variable ("+|var|+")"
+    -- terse (TPrefix var) = "'prefix' variable ("+|var|+")"
     terse (THole _) = "hole"
     terse TEq = "'='"
     terse TColon = "':'"
@@ -77,9 +75,8 @@ instance Pretty Token where
     terse TLet = "keyword 'let'"
     terse TMut = "keyword 'mut'"
     terse TIntern = "keyword 'intern'"
-    terse TExtern = "keyword 'extern'"
+    terse TExport = "keyword 'export'"
     terse TImport = "keyword 'import'"
-    terse TUsing = "keyword 'using'"
     terse TReturn = "keyword 'return'"
     terse TIf = "keyword 'if'"
     terse TElse = "keyword 'else'"
@@ -95,7 +92,7 @@ instance Pretty Token where
     pretty (TBig var) = pretty var
     pretty (TSmall var) = pretty var
     pretty (TInfix var) = pretty var
-    pretty (TPrefix var) = pretty var
+    -- pretty (TPrefix var) = pretty var
     pretty (THole hole) = pretty hole
     pretty TEq = "="
     pretty TColon = ":"
@@ -117,9 +114,8 @@ instance Pretty Token where
     pretty TLet = "let"
     pretty TMut = "mut"
     pretty TIntern = "intern"
-    pretty TExtern = "extern"
+    pretty TExport = "export"
     pretty TImport = "import"
-    pretty TUsing = "using"
     pretty TReturn = "return"
     pretty TIf = "if"
     pretty TElse = "else"
@@ -135,7 +131,7 @@ instance Pretty Token where
     detailed (TBig var) = "TBig ("+|var|+")"
     detailed (TSmall var) = "TSmall ("+|var|+")"
     detailed (TInfix var) = "TInfix ("+|var|+")"
-    detailed (TPrefix var) = "TPrefix ("+|var|+")"
+    -- detailed (TPrefix var) = "TPrefix ("+|var|+")"
     detailed (THole hole) = "THole ("+|hole|+")"
     detailed TEq = "TEq"
     detailed TColon = "TColon"
@@ -157,9 +153,8 @@ instance Pretty Token where
     detailed TLet = "TLet"
     detailed TMut = "TMut"
     detailed TIntern = "TIntern"
-    detailed TExtern = "TExtern"
+    detailed TExport = "TExport"
     detailed TImport = "TImport"
-    detailed TUsing = "TUsing"
     detailed TReturn = "TReturn"
     detailed TIf = "TIf"
     detailed TElse = "TElse"

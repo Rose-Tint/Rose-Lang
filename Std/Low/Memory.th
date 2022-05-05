@@ -1,7 +1,7 @@
 data Pointer a = intern Ptr<Int>
 
 
-impure malloc<Int -> Pointer a>
+-- impure malloc<Int -> Pointer a>
 
 impure new<a -> Pointer a>
 new a {
@@ -14,13 +14,13 @@ new a {
 -- on the input?
 impure memSizeOf<a -> Int>
 
-impure deref<Pointer a -> a>
+-- impure deref<Pointer a -> a>
 
-impure (*=)<Pointer a -> a -> Void>
+-- impure (*=)<Pointer a -> a -> Void>
 
-impure free<Pointer a -> Void>
+-- impure free<Pointer a -> Void>
 
 impure addressOf<a -> Pointer a>
 
-pure nullptr => Pointer a;
+pure nullptr<Pointer a>
 nullptr = Ptr 0;
