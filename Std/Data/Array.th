@@ -1,15 +1,8 @@
-module Std.Data.Array where
+pure set<Int -> a -> [a] -> [a]>
 
-
-pure set => [a], Int, a, [a];
-
-pure fill => a, [a], [a];
+pure fill<a -> [a] -> [a]>
 fill a arr {
-    let mut arr'<[a]> := arr;
-    let mut i<Int> := 0;
-    loop (
-        let mut i<Int> := 0,
-        i < length arr',
-        i = i + 1
-    ) set arr' i a;
+    loop (let mut i = 0; i < length arr; i = i + 1;)
+        set arr i a;
+    return arr;
 }

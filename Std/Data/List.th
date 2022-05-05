@@ -1,15 +1,3 @@
-module Std.Data.List where
-
-
 data List a
-    := Empty
-    |= List => a, List a
-
-
-pure head => List a, a;
-head [List a _] := a;
-
-#[inline(tail)]
-pure tail => List a, List a;
-tail [Empty] := Empty;
-tail [List _ l] := l;
+    = Empty
+    | List<a -> List a>

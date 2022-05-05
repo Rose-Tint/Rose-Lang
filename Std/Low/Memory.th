@@ -1,36 +1,26 @@
-module Std.Low.Memory where
+data Pointer a = intern Ptr<Int>
 
 
-data Pointer a := intern Ptr => Int
+impure malloc<Int -> Pointer a>
 
-
-#[must_use(malloc)]
-impure malloc => Int, Pointer a;
-malloc := rose_malloc__;
-
-#[must_use(alloc)]
-impure alloc => a, Pointer a;
-alloc a {
-    let ptr<Pointer a> := Ptr (malloc (memSizeOf a));
+impure new<a -> Pointer a>
+new a {
+    let mut ptr = malloc (memSizeOf a);
     setPtr a ptr;
     return ptr;
 }
 
-impure deref => Pointer a, a;
-deref [Ptr p] := rose_ptr_deref__ p;
+-- is this pure due to depending only
+-- on the input?
+impure memSizeOf<a -> Int>
 
-#[allow_unused((*=))]
-impure (*=) => Pointer a, a, Void;
-[Ptr p] *= a := rose_mem_set__ p a;
+impure deref<Pointer a -> a>
 
-impure free => Pointer a, Void;
-free [Ptr p] {
-    rose_free__ p;
-    return Void;
-}
+impure (*=)<Pointer a -> a -> Void>
 
-impure addressOf => a, Pointer a;
-addressOf := rose_addres_of__;
+impure free<Pointer a -> Void>
 
-pure nullptr => Pointer a;
-nullptr := Ptr 0;
+impure addressOf<a -> Pointer a>
+
+pure nullptr<Pointer>
+nullptr = Ptr 0;

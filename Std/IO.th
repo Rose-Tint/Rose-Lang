@@ -1,6 +1,3 @@
-module Std.IO where
-
-
 import export Std.IO.File
 import export Std.IO.Handle
 import export Std.IO.Input

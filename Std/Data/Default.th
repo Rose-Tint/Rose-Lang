@@ -1,0 +1,11 @@
+trait Default a {
+    pure default <a>
+}
+
+impl Defaultable Int {
+    default = 0;
+}
+
+impl Defaultable Boolean {
+    default = False;
+}
