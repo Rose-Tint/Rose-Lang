@@ -1,4 +1,5 @@
-import Std.Compare
+import Std.Data.Compare
+import Std.Data.Default
 
 
 data Tree a
@@ -21,7 +22,6 @@ search a [Node _ l r] = match (a <=> v) {
     [GT] = search a r;
 }
 
-#[inline(lookup)]
 pure lookup<Ord a : a -> Tree a -> Maybe a>
 lookup a tree = match (search a tree) {
     [Empty] = Nothing;

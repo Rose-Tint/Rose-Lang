@@ -37,10 +37,13 @@ $symbol         = [\~\!\@\#\$\%\^\&\*\-\+\=\\\|\:\<\>\.\?\/]
                 | $sign? @decimal \. @decimal
                 | $sign? @hexa \.? (p|P) $sign? @decimal
 
-@character      = \\ @hexa
-                | \\ $oct_digit+
-                | \\ [\\abfnrtv\'\"]
-                | ~\"
+@special        = \\ @hexa
+                | \\ $oct_digit{0,3}
+                | \\ [\\abfnrtv\'\"] 
+@char_ch        = @special
+                | [^\']
+@string_ch      = @special
+                | [^\"]
 
 @big_id         = $big $id_char*
 @small_id       = $small $id_char*
@@ -50,19 +53,21 @@ $symbol         = [\~\!\@\#\$\%\^\&\*\-\+\=\\\|\:\<\>\.\?\/]
 
 tokens :-
     <ctx_> ":"                  { reserved TColon }
-    <ctx_, data_> "<"           { reserved TLAngle }
-    <ctx_> ">"                  { reserved TRAngle `andBegin` 0 }
+    <ctx_, data_, var_> "<"     { reserved TLAngle }
+    <ctx_, var_> ">"            { reserved TRAngle `andBegin` 0 }
+    -- mainly for traits without a context
+    <ctx_> "{"                  { reserved TLBrace `andBegin` 0 }
     <data_> ">"                 { reserved TRAngle }
-    <data_> "}"                 { reserved TRBrace }
     <data_> "|"                 { reserved TPipe }
-    <data_> pure                { reserved TPure `andBegin` 0 }
-    <data_> impure              { reserved TImpure `andBegin` 0 }
+    <var_> "="                  { reserved TEq `andBegin` 0 }
+    <func_> @small_id           { mkVar TSmall `andBegin` ctx_ }
+    <func_> @operator           { mkVar TInfix `andBegin` ctx_ }
     <0>         '\''            { begin char_ }
     <0>         '"'             { begin string_ }
-    <0>         '`'             { begin infix_ }
+    <char_> @char_ch            { char }
+    <string_> @string_ch*       { string }
     <string_>   '"'             { begin 0 }
     <char_>     '\''            { begin 0 }
-    <infix_>      '`'           { begin 0 }
 
     $white+                     { skip }
     @comment+                   { skip }
@@ -78,15 +83,14 @@ tokens :-
     "["                         { reserved TLBracket }
     "]"                         { reserved TRBracket }
     "_"                         { hole }
-    pure                        { reserved TPure }
-    impure                      { reserved TImpure }
-    let                         { reserved TLet }
+    using                       { reserved TUsing }
+    pure                        { reserved TPure `andBegin` func_ }
+    impure                      { reserved TImpure `andBegin` func_ }
+    let                         { reserved TLet `andBegin` var_ }
     mut                         { reserved TMut }
     intern                      { reserved TIntern }
-    export                      { reserved TExtern }
-    extern                      { reserved TExtern }
+    export                      { reserved TExport }
     import                      { reserved TImport }
-    using                       { reserved TUsing }
     return                      { reserved TReturn }
     if                          { reserved TIf }
     else                        { reserved TElse }
@@ -103,13 +107,9 @@ tokens :-
     $sign? 0 @hexa              { integer 16 }
     @floating                   { float }
     @floating[Ff]               { double }
-    <char_> @character          { char }
-    <string_> @character*       { string }
     @qual @small_id             { mkVar TSmall }
     @qual @big_id               { mkVar TBig }
     @qual @operator             { mkVar TInfix }
-    <infix_> @qual @small_id    { mkVar TInfix }
-    "(" @qual @operator ")"     { prefixOper }
 
 
 {
@@ -126,15 +126,6 @@ fromAlexPosn (AlexPn off ln col) =
 mkVar :: (Var -> Token) -> TokenAction
 mkVar ctor (pos, _, _, str) len = return
     (ctor (Var (take len str) (fromAlexPosn pos)))
-
-prefixOper :: TokenAction
-prefixOper (pos, _, _, ('(':str)) len = return
-    (TPrefix (Var 
-        -- `len - 2` accounts for the parens
-        (take (len - 2) str)
-        (fromAlexPosn pos)))
-prefixOper (_, _, _, str) len = lexError $
-    "'prefix' variable ("+|take len str|+")"
 
 hole :: TokenAction
 hole (pos, _, _, _) _ = return

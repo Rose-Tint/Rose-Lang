@@ -32,11 +32,11 @@ data Value
     | DoubleLit {-# UNPACK #-} !Double SrcPos
     | CharLit {-# UNPACK #-} !Char SrcPos
     | StringLit String SrcPos
-    | VarVal {-# UNPACK #-} !Var
+    | VarVal !Var
     | Application Value [Value]
-    | CtorCall {-# UNPACK #-} !Var [Value]
-    | Tuple {-# UNPACK #-} !(Array Int Value)
-    | Array {-# UNPACK #-} !(Array Int Value)
+    | CtorCall !Var [Value]
+    | Tuple (Array Int Value)
+    | Array (Array Int Value)
     | Lambda [Var] Body
     | StmtVal Stmt
     | Hole SrcPos
@@ -50,30 +50,20 @@ type Mutability = Purity
 data Visibility = Extern | Intern
     deriving (Show, Eq)
 
-data Field = Field {-# UNPACK #-} !Var Type
+data Field = Field !Var Type
     deriving (Eq)
 
 data Ctor
-    = Record
-        {-# UNPACK #-} !Var
-        Visibility
-        [Field]
-    | SumType
-        {-# UNPACK #-} !Var
-        Visibility
-        [Type]
+    = Record !Var Visibility [Field]
+    | SumType !Var Visibility [Type]
     deriving (Eq)
 
 data Stmt
     = IfElse Value Body Body
     | Loop Stmt Stmt Stmt Body
     | Match Value [(Value, Body)]
-    | NewVar
-        Mutability
-        {-# UNPACK #-} !Var
-        Type
-        Value
-    | Reassignment {-# UNPACK #-} !Var Value
+    | NewVar Mutability !Var TypeDecl Value
+    | Reassignment !Var Value
     | Return Value
     | ValStmt Value
     | Break
@@ -89,33 +79,29 @@ data Expr
     = FuncDecl {
         exprPurity :: Purity,
         exprVisib :: Visibility,
-        exprName :: {-# UNPACK #-} !Var,
+        exprName :: !Var,
         exprType :: {-# UNPACK #-} !TypeDecl
-    }
-    | FuncDef {
-        exprName :: {-# UNPACK #-} !Var,
-        exprPars :: [Value],
-        exprBody :: Body
     }
     | DataDef {
         exprVisib :: Visibility,
-        exprName :: {-# UNPACK #-} !Var,
+        exprName :: !Var,
         exprParams :: [Var],
         exprCtors :: [Ctor]
     }
     | TraitDecl {
         exprVisib :: Visibility,
         exprCtx :: Context,
-        exprName :: {-# UNPACK #-} !Var,
+        exprName :: !Var,
         exprParams :: [Var],
         exprFuncs :: [Expr]
     }
     | TraitImpl {
         exprCtx :: Context,
-        exprName :: {-# UNPACK #-} !Var,
+        exprName :: !Var,
         exprTypes :: [Type],
         exprFuncs :: [Expr]
     }
+    | FuncDef !Var [Value] Body
     | TypeAlias Visibility Type Type
     deriving (Eq)
 

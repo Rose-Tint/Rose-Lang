@@ -1,3 +1,4 @@
+import Std.Data.Default
 import Std.Function
 
 
@@ -17,7 +18,7 @@ pure (|+)<Pretty a : a -> String -> String>
 a |+ str = pretty a ++ str;
 
 pure (|+|)<Pretty a, Pretty b : a -> b -> String>
-(|+|) = (++) .. pretty;
+a |+| b = pretty a ++ pretty b;
 
 pure (.|)<Pretty a : Int -> a -> String>
 n .| a = fmt (Fmt n) a;
@@ -40,7 +41,7 @@ impl Pretty Int {
     pretty n = fmt (Fmt n) n;
     fmt [Fmt p] n {
         let mut x<Int> = n % (10 * p);
-        let mut str = "";
+        let mut str = default;
         loop (x < 10) {
             let mut rem = x % 10;
             x = x / 10;

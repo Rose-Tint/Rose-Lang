@@ -22,5 +22,5 @@ impure free<Pointer a -> Void>
 
 impure addressOf<a -> Pointer a>
 
-pure nullptr => Pointer a;
+pure nullptr<Pointer>
 nullptr = Ptr 0;
