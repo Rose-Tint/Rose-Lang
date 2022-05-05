@@ -1,9 +1,5 @@
-module Std.Pretty where
-
-import Std.Function using {
-    id,
-    (..),
-}
+import Std.Data.Default
+import Std.Function
 
 
 trait Pretty a {
@@ -15,19 +11,15 @@ trait Pretty a {
 data Fmt = Fmt<Int>
 
 
-#[inline((+|))]
 pure (+|)<Pretty a : String -> a -> String>
 str +| a = str ++ pretty a;
 
-#[inline((|+))]
 pure (|+)<Pretty a : a -> String -> String>
 a |+ str = pretty a ++ str;
 
-#[inline((|+|))]
 pure (|+|)<Pretty a, Pretty b : a -> b -> String>
-(|+|) = (++) .. pretty;
+a |+| b = pretty a ++ pretty b;
 
-#[inline((.|))]
 pure (.|)<Pretty a : Int -> a -> String>
 n .| a = fmt (Fmt n) a;
 
@@ -49,7 +41,7 @@ impl Pretty Int {
     pretty n = fmt (Fmt n) n;
     fmt [Fmt p] n {
         let mut x<Int> = n % (10 * p);
-        let mut str = "";
+        let mut str = default;
         loop (x < 10) {
             let mut rem = x % 10;
             x = x / 10;

@@ -3,8 +3,8 @@ cabal-version: 2.4
 name:               rose-lang
 version:            0.1.0.0
 synopsis:           a new language written in haskell
-author:             Rose Aetherius: roseaetherius@gmail.com
-maintainer:         Rose Aetherius: roseaetherius@gmail.com
+author:             Rose Aetherius<roseaetherius@gmail.com>
+maintainer:         Rose Aetherius<roseaetherius@gmail.com>
 category:           Language
 license:            MIT
 license-file:       LICENSE
@@ -14,75 +14,72 @@ build-type:         Simple
 
 
 common general
+    hs-source-dirs: src
     other-modules:
-        Analyzer.Analyzer,
-        Analyzer.Checker,
-        Analyzer.Error,
-        Analyzer.State,
-        Analyzer.SymbolTable,
-        Build,
-        Builder.Builder,
+        Builder,
         Builder.CmdLine,
+        Builder.CmdLine.Flags,
+        Builder.CmdLine.Internal,
+        Builder.CmdLine.Warnings,
+        Builder.Internal,
         Builder.Output,
         Builder.State,
-        CmdLine,
-        CmdLine.Flags,
-        CmdLine.Warnings,
-        Color,
         Common.Item,
         Common.SrcPos,
         Common.Typing,
         Common.Typing.Constraint,
         Common.Typing.Type,
         Common.Var,
-        Parser,
-        Parser.Components.Datatypes,
-        Parser.Components.Functions,
-        Parser.Components.Identifiers,
-        Parser.Components.Imports,
-        Parser.Components.Internal.LangDef,
-        Parser.Components.Patterns,
-        Parser.Components.Pragmas,
-        Parser.Components.Specifiers,
-        Parser.Components.Statements,
-        Parser.Components.Terms,
-        Parser.Components.Terms.Literals,
-        Parser.Components.Terms.Literals.Numeric,
-        Parser.Components.Traits,
-        Parser.Components.Types,
-        Parser.Data,
-        Parser.Error,
+        Front.Parser,
+        Front.Parser.Imports,
+        Front.Parser.Data,
+        Front.Parser.Lexer,
+        Front.Parser.Parser,
+        Front.Parser.Token,
+        Middle.Analyzer,
+        Middle.Analyzer.Internal,
+        Middle.Analyzer.Checker,
+        Middle.Analyzer.Error,
+        Middle.Analyzer.State,
+        Middle.Analyzer.SymbolTable,
+        Middle.SymbolTable,
+        Middle.SymbolTable.SymbolData,
+        Middle.SymbolTable.SymbolMap,
+        Middle.SymbolTable.Trie,
         Pretty,
-        SymbolTable,
-        -- SymbolTable.Attrs,
-        SymbolTable.SymbolData,
-        SymbolTable.SymbolMap,
-        SymbolTable.Trie,
         Threading,
-        Utils
+        Utils.Paths,
+        Utils.String
+
+    build-tool-depends:
+        alex:alex   >= 3.2,
+        happy:happy >= 1.20
     build-depends:
-        base >= 4.7.0.0,
+        array       >= 0.5,
+        base        >= 4.7,
+        containers  >= 0.6,
+        directory   >= 1.3,
+        time        >= 1.8,
         -- i tried bytestring, but observed 0
         -- performance improvement, so text is
         -- better because of unicode support
-        text,
-        parsec,
-        containers,
-        time,
-        array,
-        directory
+        text        >= 1.2
+
     default-language:
         Haskell2010
+
     default-extensions:
         BangPatterns
+
     other-extensions:
         Rank2Types,
+        FlexibleInstances,
         DefaultSignatures,
         TypeSynonymInstances
+
     ghc-options:
         -threaded
         -fhide-source-paths
-        -fshow-warning-groups
         -Wall
         -Wextra
         -Wcompat
@@ -90,8 +87,6 @@ common general
         -Wmissing-export-lists
         -Wno-unused-do-bind
         -Werror
-        -Wwarn=unused-imports
-        -Wwarn=unused-top-binds
 
 
 executable Rose
@@ -105,6 +100,8 @@ executable Rose-Dev
     main-is: Main.hs
     ghc-options:
         -O0
+        -Wwarn=unused-imports
+        -Wwarn=unused-top-binds
 
 executable Rose-Profile
     import: general

@@ -1,6 +1,3 @@
-module Std.Resource where
-
-
 trait Resource a {
     impure open<a -> Void>
     impure close<a -> Void>

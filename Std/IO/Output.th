@@ -1,6 +1,3 @@
-module Std.IO.Output where
-
-
 import Std.IO.Handle
 
 

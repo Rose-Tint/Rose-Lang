@@ -1,0 +1,17 @@
+trait Hashable a {
+    pure hash <a -> Int>
+    pure salted <Int -> a -> Int>
+}
+
+
+pure combine<Int -> Int -> Int>
+combine a b = a ^ ((b + (a << 6)) + (a >> 2));
+
+
+impl Hashable {
+    salted s a = combine s (hash a);
+}
+
+impl Hashable Int {
+    hash n = n;
+}

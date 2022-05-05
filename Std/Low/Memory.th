@@ -1,13 +1,8 @@
-module Std.Low.Memory where
-
-
 data Pointer a = intern Ptr<Int>
 
 
-#[must_use(malloc)]
-impure malloc<Int -> Pointer a>;
+impure malloc<Int -> Pointer a>
 
-#[must_use(new)]
 impure new<a -> Pointer a>
 new a {
     let mut ptr = malloc (memSizeOf a);
@@ -15,17 +10,17 @@ new a {
     return ptr;
 }
 
--- is this pure due depending only on the input?
+-- is this pure due to depending only
+-- on the input?
 impure memSizeOf<a -> Int>
 
 impure deref<Pointer a -> a>
 
-#[allow_unused((*=))]
 impure (*=)<Pointer a -> a -> Void>
 
 impure free<Pointer a -> Void>
 
 impure addressOf<a -> Pointer a>
 
-pure nullptr => Pointer a;
+pure nullptr<Pointer>
 nullptr = Ptr 0;

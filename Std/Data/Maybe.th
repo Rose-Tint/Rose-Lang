@@ -1,0 +1,40 @@
+import Std.Control.Alternative
+import Std.Data.List
+
+
+data Maybe a
+    = Nothing
+    | Just<a>
+
+
+impl Alternative Maybe {
+    vacant = Nothing;
+    [Nothing] <|> m = m;
+    m <|> _ = m;
+}
+
+
+pure maybe<(a -> b) -> Maybe a -> Maybe b>
+maybe _ [Nothing] = Nothing;
+maybe f [Just a] = Just (f a);
+
+pure maybeApply<b -> Maybe a -> (a -> b) -> b>
+maybeApply b [Nothing] f = b;
+maybeApply _ [Just a] f = f a;
+
+pure exists<Maybe a -> Boolean>
+exists [Nothing] = False;
+exists _ = True;
+
+pure (:?)<Maybe a -> (a -> b) -> Maybe b>
+[Nothing] :? _ = Nothing;
+[Just a] :? f = Just (f a);
+
+pure filterMaybes<List (Maybe a) -> List a>
+filterMaybes [Null] = Null;
+filterMaybes [List head tail] {
+    if (head == Nothing)
+        return filterMaybes tail;
+    else
+        return List head (filterMaybes tail);
+}
