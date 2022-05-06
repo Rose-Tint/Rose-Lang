@@ -16,6 +16,7 @@ module Front.Parser.Data (
 ) where
 
 import Data.Array (Array, elems)
+import Data.Char (isAlphaNum)
 import Data.Int (Int64)
 
 import Common.SrcPos
@@ -180,16 +181,21 @@ instance Pretty Value where
     pretty (DoubleLit n _) = show n
     pretty (CharLit c _) = show c
     pretty (StringLit s _) = show s
-    pretty (VarVal var) = pretty var
+    pretty (VarVal (Var name _))
+        | all isIdChar name = name
+        | otherwise = "("+|name|+")"
+        where
+            isIdChar c = isAlphaNum c || c == '_'
     pretty (Application val args) =
         "("+|val|+" "+|" "`seps`args|+")"
     pretty (CtorCall name args) =
         "("+|name|+" "+|" "`seps`args|+")"
     pretty (Tuple arr) = "("+|", "`seps`elems arr|+")"
     pretty (Array arr) = "[ "+|", "`seps`elems arr|+" ]"
-    pretty (Lambda ps stmts) = " "`seps`ps|+" => "+|indentCatLns stmts
+    pretty (Lambda ps stmts) =  " "`seps`ps|+" => {\n"
+        +|indentCatLns stmts|+"}"
     pretty (StmtVal stmt) = "("+|stmt|+")"
-    pretty (Hole _) = "_"    
+    pretty (Hole _) = "_"
 
 instance Pretty (Value, Body) where
     pretty (ptrn, body) = prettyPtrn ptrn|+
@@ -215,7 +221,7 @@ instance Pretty Stmt where
         +|indentCatLns body|+"}"
     pretty (Match val cases) = "match ("+|val|+") {\n"
         +|indentCatLns cases|+"}"
-    pretty (NewVar mut typ name val) =
+    pretty (NewVar mut name typ val) =
         "let "+|mut|+" "+|name|+|typ|+" = "+|val|+";"
     pretty (Reassignment var val) = var|+" = "+|val|+";"
     pretty Continue = "continue"
@@ -241,10 +247,10 @@ instance Pretty Stmt where
     detailed (Match val cases) =
         "Match: "*|val|*"\n"+|
             (indentCatLns $ fmap ("Case: "*|) cases)
-    detailed (NewVar mut typ name val) =
+    detailed (NewVar mut name typ val) =
         "New Variable:\n    Mutab.: "*|mut|*
         "\n    Type: "*|typ|*
-        "\n    Name: "*|name|*
+        "\n    Name: "+|name|+
         "\n    Value: "*|val
     detailed (Reassignment var val) =
         "Reassignment:\n    Variable: "*|var|*
@@ -253,7 +259,7 @@ instance Pretty Stmt where
     detailed Break = "Break"
     detailed (Return val) = "Return: "*|val
     detailed (ValStmt val) =
-        "Value-Statement: "*|val
+        "Expr: "*|val
     detailed NullStmt = "Null Statement"
 
 instance Pretty Expr where
@@ -286,29 +292,27 @@ instance Pretty Expr where
     detailed (FuncDef name pars body) =
         "Function Definition:\n    Name: "*|name|*
         "\n    Params: "*|","`sepsD`pars|*
-        "\n    Body:\n"*|indentLns (indentCatLns body)
+        "\n    Body:\n"*|indentLns (indentCatLnsD body)
     detailed (DataDef vis name pars ctors) =
         "Datatype Definition:\n    Visib.: "*|vis|*
         "\n    Name: "*|name|*
         "\n    Type-Vars: "+|", "`sepsD`pars|+
         "\n    Constructors:\n"
-            +|indentLns (indentCatLns ctors)
+            +|indentLns (indentCatLnsD ctors)
     detailed (TraitDecl vis ctx name pars fns) =
         "Trait Declaration:\n    Visib.: "*|vis|*
-        "\n    Context:\n"
-            +|indentLns (indentCatLns ctx)|+
+        "\n    Context: "*|ctx|*
         "\n    Name: "*|name|*
         "\n    Type-Vars: "+|", "`sepsD`pars|+
         "\n    Methods:\n"
-            +|indentLns (indentCatLns fns)
+            +|indentLns (indentCatLnsD fns)
     detailed (TraitImpl ctx name types fns) =
-        "Trait Implementation:\n    Context:\n"
-            +|indentLns (indentCatLns ctx)|+
+        "Trait Impl.:\n    Context: "*|ctx|*
         "\n    Name: "*|name|*
-        "\n    Types: "
-            +|indentLns (indentCatLns types)|+
-        "\n    Methods:\n"
-            +|indentLns (indentCatLns fns)
+        "\n    Types:\n"
+            +|indentLns (indentCatLnsD types)|+
+          "    Methods:\n"
+            +|indentLns (indentCatLnsD fns)
     detailed (TypeAlias vis name typ) =
         "Type Alias:\n    Visib.: "*|vis|*
         "\n    Name: "*|name|*

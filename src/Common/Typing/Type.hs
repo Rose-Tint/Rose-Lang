@@ -121,8 +121,13 @@ instance Pretty Type where
     terse Delayed = "*"
     terse NoType = "_"
     terse t = pretty t
+    pretty (Type name []) = pretty name
     pretty (Type name types) = name|+" "+|" "`seps`types
+    pretty (Param name []) = pretty name
     pretty (Param name types) = name|+" "+|" "`seps`types
-    pretty (Applied types) = "("+|" "`seps`types|+")"
+    pretty (Applied types) = "("+|" -> "`seps`types|+")"
     pretty Delayed = "(DELAYED)"
     pretty NoType = "(NOTYPE)"
+    detailed Delayed = "a*"
+    detailed NoType = "NOTYPE"
+    detailed t = pretty t
