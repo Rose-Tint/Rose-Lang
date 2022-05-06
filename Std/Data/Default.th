@@ -1,11 +1,19 @@
 trait Default a {
-    pure default <a>
+    pure default<a>
 }
 
-impl Defaultable Int {
+impl Default Int {
     default = 0;
 }
 
-impl Defaultable Boolean {
+impl Default Boolean {
     default = False;
+}
+
+impl Default Char {
+    default = '\0';
+}
+
+impl Default String {
+    default = "";
 }

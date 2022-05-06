@@ -4,11 +4,7 @@ import Std.Function
 
 trait Pretty a {
     pure pretty<a -> String>
-    pure fmt<a -> Fmt -> String>
 }
-
-
-data Fmt = Fmt<Int>
 
 
 pure (+|)<Pretty a : String -> a -> String>
@@ -20,13 +16,6 @@ a |+ str = pretty a ++ str;
 pure (|+|)<Pretty a, Pretty b : a -> b -> String>
 a |+| b = pretty a ++ pretty b;
 
-pure (.|)<Pretty a : Int -> a -> String>
-n .| a = fmt (Fmt n) a;
-
-
-impl Pretty {
-    fmt _ = pretty;
-}
 
 impl Pretty Char {
     pretty = charToString;
@@ -34,18 +23,15 @@ impl Pretty Char {
 
 impl Pretty String {
     pretty = id;
-    fmt [Fmt p] s = take p s;
 }
 
 impl Pretty Int {
-    pretty n = fmt (Fmt n) n;
-    fmt [Fmt p] n {
-        let mut x<Int> = n % (10 * p);
-        let mut str = default;
+    pretty n {
+        let mut x<Int> = n;
+        let mut str<String> = default;
         loop (x < 10) {
-            let mut rem = x % 10;
-            x = x / 10;
             str = append (intToChar (x % 10)) str;
+            x = x / 10;
         }
         return str;
     }
