@@ -18,7 +18,7 @@ main = do
     unless (null errs) $
         putStrLn (concat errs)
     timeStart <- getCurrentTime
-    buildM_ build cmd
+    buildM build cmd
     timeEnd <- getCurrentTime
     unless (cmdVerb cmd <= 0) $ printf
         "Finished in %s\n"

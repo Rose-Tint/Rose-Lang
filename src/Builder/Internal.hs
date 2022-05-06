@@ -3,22 +3,20 @@
 module Builder.Internal (
     BuilderT, Builder, BuilderIO, BuilderM,
     State(..),
-    buildM, buildM_,
+    buildM,
     liftBuild, (<#>),
-    getCmdLine, getModule,
-    getFilePath, setFilePath,
-    setSource, getSource,
-    setBuildDir, getBuildDir,
-    addUTDModule, isUpToDate,
+    getState, updateState,
+    getModule, getSource,
+    hasBeenVisited,
+    finalizeVisit,
 ) where
 
 import Control.Monad ((<$!>))
 import Data.Functor.Identity (Identity)
-import Data.Set (member, insert)
+import Data.Set (insert, member)
 
 import Builder.CmdLine.Internal
 import Builder.State
-import Utils.Paths (pathToModule, pathToDir)
 
 
 -- TODO: Decide if this should also be in the
@@ -44,108 +42,50 @@ type BuilderM = BuilderT Maybe
 
 
 instance Functor (BuilderT m) where
-    {-# INLINE fmap #-}
     fmap f b = Builder $ \ !s go ->
         unB b s (go . f)
 
 instance Applicative (BuilderT m) where
-    {-# INLINE pure #-}
     pure a = Builder $ \ !s !go -> go a s
-    {-# INLINE (<*>) #-}
     fb <*> ab = fb >>= (<$!> ab)
 
 instance Monad (BuilderT m) where
     -- :: Builder m a -> (a -> Builder m b) -> Builder m b
-    {-# INLINE (>>=) #-}
     b >>= m = Builder $ \ !s !go ->
         let go' x s' = let !x' = m x in unB x' s' go
         in unB b s go'
 
 
 buildM :: Monad m => BuilderT m a -> CmdLine -> m a
-{-# INLINE buildM #-}
 buildM (Builder b) !cmd = b (mkState cmd) go
     where
         go x _ = return x
 
-buildM_ :: Monad m => BuilderT m a -> CmdLine -> m ()
-{-# INLINE buildM_ #-}
-buildM_ (Builder b) !cmd = b (mkState cmd) go
-    where
-        go _ _ = return ()
-
 liftBuild :: Monad m => m a -> BuilderT m a
-{-# INLINE liftBuild #-}
 liftBuild m = Builder $ \ !s go -> m >>= (`go` s)
 
 (<#>) :: Monad m => (a -> m b) -> a -> BuilderT m b
-{-# INLINE (<#>) #-}
 (<#>) = (liftBuild .)
 
 getState :: BuilderT m State
-{-# INLINE getState #-}
 getState = Builder $ \ !s go -> go s s
 
-modifyState :: (State -> State) -> BuilderT m ()
-{-# INLINE modifyState #-}
-modifyState f = Builder $ \ !s go -> go () (f s)
-
-getCmdLine :: BuilderT m CmdLine
-{-# INLINE getCmdLine #-}
-getCmdLine = stCmdLine <$!> getState
-
-getFilePath :: BuilderT m FilePath
-{-# INLINE getFilePath #-}
-getFilePath = stFile <$!> getState
+updateState :: (State -> State) -> BuilderT m ()
+updateState f = Builder $ \ !s go -> go () (f s)
 
 getModule :: BuilderT m String
-{-# INLINE getModule #-}
 getModule = stModule <$!> getState
 
-setFilePath :: FilePath -> BuilderT m ()
-{-# INLINE setFilePath #-}
-setFilePath p = modifyState (\s -> s {
-        stFile = p,
-        stModule = pathToModule p
-    })
-
-setBuildDir :: FilePath -> BuilderT m ()
-{-# INLINE setBuildDir #-}
-setBuildDir path = do
-    base <- cmdBuildDir <$> getCmdLine
-    modifyState (\s -> s {
-            stBuildDir = base ++ pathToDir path
-        })
-
-getBuildDir :: BuilderT m FilePath
-{-# INLINE getBuildDir #-}
-getBuildDir = stBuildDir <$!> getState
-
-setSource :: Stream -> BuilderT m ()
-{-# INLINE setSource #-}
-setSource t = modifyState (\s -> s { stSource = t })
-
 getSource :: BuilderT m Stream
-{-# INLINE getSource #-}
 getSource = stSource <$!> getState
 
-addUTDModule :: String -> BuilderT m ()
-{-# INLINE addUTDModule #-}
-addUTDModule name = modifyState $ \s ->
-    s { stUTDModules = insert name (stUTDModules s) }
+hasBeenVisited :: FilePath -> BuilderT m Bool
+hasBeenVisited path = do
+    visited <- stVisited <$> getState
+    return (path `member` visited)
 
--- filterUTDs :: [String] -> BuilderT m [String]
--- {-# INLINABLE filterUTDs #-}
--- filterUTDs names = do
---     utds <- stUTDModules <$!> getState
---     return $! go names utds
---     where
---         go [] _ = []
---         go (m:ms) utds = if member m utds then
---                 go ms utds
---             else
---                 (m:go ms utds)
-
-isUpToDate :: String -> BuilderT m Bool
-{-# INLINE isUpToDate #-}
-isUpToDate name = member name . stUTDModules <$> getState
+finalizeVisit :: BuilderT m ()
+finalizeVisit = do
+    path <- stFile <$> getState
+    updateState $ \s ->
+        s { stVisited = insert path (stVisited s) }

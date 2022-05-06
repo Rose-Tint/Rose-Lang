@@ -4,29 +4,26 @@ module Builder.State (
     mkState,
 ) where
 
-import Data.Set as S (Set, empty)
-import Data.Text as T (Text, empty)
+import Data.Set (Set, empty)
 
 import Builder.CmdLine.Internal
 
 
-type Stream = Text
+type Stream = String
 
 data State = State {
-        stCmdLine :: {-# UNPACK #-} !CmdLine,
-        stFile :: !FilePath,
-        stModule :: !String,
+        stCmdLine :: CmdLine,
+        stFile :: FilePath,
+        stModule :: String,
         -- current build directory, as opposed to
         -- cmdBuildDir, which is the base
-        stBuildDir :: !FilePath,
-        -- list of Up-To-Date modules, whether it's
-        -- because they were already built, or because
-        -- (in the future) they dont need to be
-        stUTDModules :: Set String,
-        stSource :: Text
+        stBuildDir :: FilePath,
+        -- list of visited files
+        stVisited :: Set FilePath,
+        stSource :: String
     }
 
 
 mkState :: CmdLine -> State
 {-# INLINE mkState #-}
-mkState cmd = State cmd [] [] [] S.empty T.empty
+mkState cmd = State cmd [] [] [] empty ""

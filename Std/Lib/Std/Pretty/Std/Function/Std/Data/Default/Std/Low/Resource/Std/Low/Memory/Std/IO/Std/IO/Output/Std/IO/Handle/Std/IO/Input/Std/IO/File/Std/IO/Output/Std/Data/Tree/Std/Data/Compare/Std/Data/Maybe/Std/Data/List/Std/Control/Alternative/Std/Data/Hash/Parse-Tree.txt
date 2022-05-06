@@ -1,0 +1,21 @@
+
+
+impl <> Hashable Int  {
+    hash n {
+        return(n;);
+    }
+}
+impl <> Hashable  {
+    salted s a {
+        return(((combine s) (hash a)););
+    }
+}
+combine a b {
+    return((^ a (+ (+ b (<< a 6)) (>> a 2))););
+}
+pure export combine<(Int  Int  Int )>
+export trait <> Hashable a {
+    pure export salted<(Int  a  Int )>
+    pure export hash<(a  Int )>
+}
+

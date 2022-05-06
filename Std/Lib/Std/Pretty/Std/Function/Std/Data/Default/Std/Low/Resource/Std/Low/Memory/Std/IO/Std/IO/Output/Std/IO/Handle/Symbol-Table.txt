@@ -1,0 +1,19 @@
+Type Table:
++-Symbol#6-+-Type#22-+-Visib.-+
+
++#17-+#27-+#8-+
+
+Trait Table:
++-Symbol#6-+-Type#22-+-Visib.-+
+
++#17-+#27-+#8-+
+
+Top-Level Table:
++-Symbol#6-+-Type#22-+-Visib.-+
+
++#17-+#27-+#8-+
+
+Function-Local Table:
++-Symbol-------------+-Type--------------------------------+-Visib.-+-Purity-+
++--------------------+-------------------------------------+--------+--------+
+

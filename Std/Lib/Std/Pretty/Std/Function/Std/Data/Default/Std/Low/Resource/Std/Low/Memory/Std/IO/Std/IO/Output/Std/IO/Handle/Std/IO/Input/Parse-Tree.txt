@@ -1,0 +1,7 @@
+import export Std.IO.Handle
+
+impure export hGetContents<(Handle  String )>
+impure export hGetLine<(Handle  Char )>
+impure export hGetWord<(Handle  String )>
+impure export hGetChar<(Handle  Char )>
+

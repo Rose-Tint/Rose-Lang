@@ -1,20 +1,15 @@
 module Builder (
     build,
-    buildM_,
+    buildM,
 ) where
 
-import Prelude hiding (readFile)
-
-import Control.Monad ((<$!>), when, forM_)
-import Data.Text (unpack)
-import qualified Data.Text as T (lines)
-import Data.Text.IO (readFile)
-import System.Directory
+import Control.Monad (forM_)
 
 import Common.Var
 import Middle.Analyzer
-import Builder.Internal
 import Builder.CmdLine
+import Builder.Internal
+import Builder.IO
 import Builder.Output
 import Front.Parser
 import Pretty
@@ -25,41 +20,28 @@ default (Int, Double)
 
 
 build :: BuilderIO ()
-build = do
-    files <- getSourceFiles
-    forM_ files buildFile
-    status "Finished building\n"
+build = getSourceFiles >>= mapM_ buildFile
 
 buildFile :: FilePath -> BuilderIO ()
-buildFile path = do
-    setFilePath path
-    name <- getModule
-    isUTD <- isUpToDate name
-    if isUTD then return () else do
-        setBuildDir (modToPath name)
-        message ("Building Module ["*|name|*"]\n")
-        dir <- getBuildDir
-        doTrace <- cmdTrace <$!> getCmdLine
-        when doTrace <#>
-            createDirectoryIfMissing True dir
-        src <- readFile <#> path
-        setSource src
+buildFile [] = return ()
+buildFile path = hasBeenVisited path >>= \skip ->
+    if skip then return () else do
+        mReadFile path
+        name <- stModule <$> getState
+        message ("Building Module ["+|name|+"]\n")
         Module imports tree <- parseFile
         forM_ imports $ \(Import (Var modName _) _) ->
             buildFile (modToPath modName)
-        analyzeFile tree
-        addUTDModule name
+        _ <- analyzeFile tree
+        finalizeVisit
 
 parseFile :: BuilderIO Module
 parseFile = do
     name <- getModule
-    src <- getSource
     debug ("Parsing   ["+|name|+"]\n")
-    case parse (unpack src) of
-        Left msg -> fatal $
-            Red|+|name|+|msg|+"\n"+|Red|+
-            "Failed while parsing module '"
-            +|name|+"'\n"
+    src <- getSource
+    case parse src of
+        Left msg -> fatal $ Red|+|name|+|msg|+"\n"
         Right parseTree -> do
             trace "Parse-Tree.txt" parseTree
             return parseTree
@@ -70,15 +52,10 @@ analyzeFile es = do
     debug ("Analyzing ["+|name|+"]\n")
     let !res = analyze es
     trace "Symbol-Table.txt" (arTable res)
-    if null $ arErrors res then
-        return res
-    else do
-        lns <- T.lines <$> getSource
-        forM_ (arErrors res) $ \em ->
-            message (prettyError lns em)
-        flgs <- cmdFlags <$!> getCmdLine
-        if f_fatal_errors `isFEnabled` flgs then fatal
-            ("Failed while analyzing module ("+|
-                name|+")\n")
-        else
-            return res
+    printAnalysisErrors $ arErrors res
+    return res
+
+printAnalysisErrors :: [ErrInfo] -> BuilderIO ()
+printAnalysisErrors es = do
+    lns <- lines <$> getSource
+    mapM_ (\e -> message (lns, e)) es

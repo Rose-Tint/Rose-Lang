@@ -1,0 +1,58 @@
+import export Std.Data.List
+import export Std.Control.Alternative
+
+filterMaybes [(List head tail)] {
+    if ((== head (Nothing ))) {
+        return(filterMaybes tail);
+    
+        else {
+        return(List (head (filterMaybes tail)));
+    }
+}
+filterMaybes [(Null )] {
+    return((Null ););
+}
+pure export filterMaybes<(List (Maybe a ) List a )>
+:? [(Just a)] f {
+    return((Just (f a)););
+}
+:? [(Nothing )] _ {
+    return((Nothing ););
+}
+pure export :?<(Maybe a  (a  b ) Maybe b )>
+exists _ {
+    return((True ););
+}
+exists [(Nothing )] {
+    return((False ););
+}
+pure export exists<(Maybe a  Boolean )>
+maybeApply _ [(Just a)] f {
+    return((f a););
+}
+maybeApply b [(Nothing )] f {
+    return(b;);
+}
+pure export maybeApply<(b  Maybe a  (a  b ) b )>
+maybe f [(Just a)] {
+    return((Just (f a)););
+}
+maybe _ [(Nothing )] {
+    return((Nothing ););
+}
+pure export maybe<((a  b ) Maybe a  Maybe b )>
+impl <> Alternative Maybe  {
+    <|> m _ {
+        return(m;);
+    }
+    <|> [(Nothing )] m {
+        return(m;);
+    }
+    vacant  {
+        return((Nothing ););
+    }
+}
+export data Maybe a    = Just exporta 
+    | Nothing export
+
+

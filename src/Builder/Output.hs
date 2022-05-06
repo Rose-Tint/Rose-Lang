@@ -4,13 +4,12 @@ module Builder.Output (
     warn, fatal,
 ) where
 
-import Control.Monad (when, (<$!>))
+import Control.Monad (when)
 import System.Exit
 
 import Builder.Internal
 import Builder.CmdLine(
-    CmdLine(cmdTrace, cmdWarns),
-    getVerbosity,
+    CmdLine(..),
     isWEnabledFor, w_error
     )
 import Pretty
@@ -19,15 +18,16 @@ import Pretty
 default (Int, Double)
 
 
-success, message, status, debug :: String -> BuilderIO ()
-success = myPutStr 1
-message = myPutStr 1
-status = myPutStr 2
-debug = myPutStr 3
+success, message, status, debug
+    :: Pretty a => a -> BuilderIO ()
+success = myPutStr 1 . terse
+message = myPutStr 1 . terse
+status = myPutStr 2 . pretty
+debug = myPutStr 3 . detailed
 
 warn :: String -> BuilderIO ()
 warn str = do
-    ws <- cmdWarns <$!> getCmdLine
+    ws <- cmdWarns . stCmdLine <$> getState
     -- -Werror sets negative
     if w_error `isWEnabledFor` ws then
         fatal str
@@ -42,14 +42,14 @@ fatal str = do
 
 trace :: Pretty a => FilePath -> a -> BuilderIO ()
 trace path a = do
-    doTrace <- cmdTrace <$!> getCmdLine
-    dir <- getBuildDir
+    doTrace <- cmdTrace . stCmdLine <$> getState
+    dir <- stBuildDir <$> getState
     when doTrace <#> writeFile
         (dir ++ path)
         (uncolor (detailed a))
 
 myPutStr :: Int -> String -> BuilderIO ()
 myPutStr thresh str = do
-    verb <- getVerbosity
+    verb <- cmdVerb . stCmdLine <$> getState
     when (verb >= thresh) $
-        putStr <#> color str
+        putStr <#> processString str

@@ -1,0 +1,27 @@
+
+
+flip f a b {
+    return(((f b) a););
+}
+pure export flip<((a  b  c ) b  a  c )>
+const a _ {
+    return(a;);
+}
+pure export const<(a  b  a )>
+id a {
+    return(a;);
+}
+pure export id<(a  a )>
+.. bf uf {
+    return((a b =>     return((bf (uf a)) (uf b));
+    ););
+}
+pure export ..<((a  a  c ) (a  b ) (b  b  c ))>
+. f g {
+    return(a =>     return(f (g a));
+    ;);
+}
+pure export .<((b  c ) (a  b ) (a  c ))>
+pure export uncurry<((a  b  c ) , a  b  c )>
+pure export curry<((, a  b  c ) a  b  c )>
+

@@ -43,7 +43,7 @@ newtype Analyzer a
 
 data Analysis
     = Analysis {
-        arErrors :: ![ErrorMessage],
+        arErrors :: ![ErrInfo],
         arTable :: !SymbolTable,
         arImports :: ![Import]
     }
@@ -171,7 +171,7 @@ throw :: Error -> Analyzer a
 throw FalseError = Analyzer $ \ !s _ err -> err FalseError s
 throw e = Analyzer $ \ s _ err ->
     let es = stErrors s
-        em = ErrorMessage {
+        em = ErrInfo {
                 emPos = stPos s,
                 emDefName = stDefName s,
                 emError = Right e
@@ -179,7 +179,7 @@ throw e = Analyzer $ \ s _ err ->
     in err e (s { stErrors = (em:es) })
 
 warn :: Warning -> Analyzer ()
-warn w = modifyState_ $ \s -> s { stErrors = ((ErrorMessage {
+warn w = modifyState_ $ \s -> s { stErrors = ((ErrInfo {
         emPos = stPos s,
         emDefName = stDefName s,
         emError = Left w

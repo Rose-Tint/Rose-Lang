@@ -1,0 +1,23 @@
+
+
+>>  {
+    return(rose_shiftr__;);
+}
+pure export >><Integral n: (n  n  n )>
+^  {
+    return(rose_xor__;);
+}
+pure export ^<Integral n: (n  n  n )>
+|  {
+    return(rose_or__;);
+}
+pure export |<Integral n: (n  n  n )>
+&  {
+    return(rose_and__;);
+}
+pure export &<Integral n: (n  n  n )>
+<<  {
+    return(rose_shiftl__;);
+}
+pure export <<<Integral n: (n  n  n )>
+

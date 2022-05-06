@@ -16,7 +16,7 @@ data State
     = State {
         stModule :: {-# UNPACK #-} !Var,
         stExpType :: [Type],
-        stErrors :: [ErrorMessage],
+        stErrors :: [ErrInfo],
         stTable :: SymbolTable,
         stImports :: [Import],
         stDefName :: Maybe Symbol,

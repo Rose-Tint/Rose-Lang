@@ -8,23 +8,20 @@ module Pretty (
     sepsT, seps, sepsD,
     indentLnsT, indentLns, indentLnsD,
     indentCatLnsT, indentCatLns, indentCatLnsD,
-    printf,
+    printf, processString,
     (.<),(.^),(.>),
     (-|),(|-|),(|-),
     (+|),(|+|),(|+),
     (*|),(|*|),(|*),
 ) where
 
-import Data.Char (isDigit, digitToInt)
+import Text.Printf hiding (printf)
+import qualified Text.Printf as P
+
+import Data.Char (isDigit)
 import Data.Int
 import Data.List (intercalate)
-import Data.Text (Text, unpack)
-import Text.Printf (
-        PrintfType,
-        PrintfArg(..),
-        formatString
-    )
-import qualified Text.Printf (printf)
+import Utils.String
 
 
 default (Int, Double)
@@ -156,13 +153,40 @@ reset :: String -> String
 reset str = pretty Reset ++ str
 
 printf :: (PrintfType a) => String -> a
-printf = Text.Printf.printf . color
+printf = P.printf . color
 
 uncolor :: String -> String
 uncolor [] = []
 uncolor ('\027':'[':'0':'m':str) = uncolor str
 uncolor ('\027':'[':'3':_:'m':str) = uncolor str
 uncolor (c:cs) = (c:uncolor cs)
+
+-- |Does some formatting, such as repeating characters
+processString :: String -> String
+processString [] = []
+processString (ch:chs) = case ch of
+    '\\' -> case chs of
+        [] -> []
+        (ch':chs') -> (ch':processString chs')
+    '#' -> case span isDigit chs of
+        (numStr, (ch':chs')) ->
+            let count = unsafeReadInt numStr
+            in replicate count ch' ++ processString chs'
+        _ -> ('#':processString chs)
+    '$' -> case chs of
+        [] -> ('$':processString chs)
+        (ch':_) -> case ch' of
+            'B' -> pretty Black
+            'r' -> pretty Red
+            'y' -> pretty Yellow
+            'g' -> pretty Green
+            'b' -> pretty Blue
+            'p' -> pretty Purple
+            'c' -> pretty Cyan
+            'w' -> pretty White
+            'R' -> pretty Reset
+            _   -> ('$':processString chs)
+    _ -> (ch:processString chs)
 
 
 instance Pretty Color where
@@ -179,8 +203,6 @@ instance Pretty Color where
 instance PrintfArg Color where
     formatArg = formatString . pretty
 
-
-
 instance Pretty Int8
 instance Pretty Int
 
@@ -188,26 +210,8 @@ instance Pretty Char where
     pretty = (:[])
 
 instance Pretty String where
-    -- |Does some formatting, such as repeating characters
-    pretty [] = []
-    pretty ('\\':'#':rest) = ('#':pretty rest)
-    pretty ('#':n1:n2:n3:ch:rest)
-        | isDigit n1 && isDigit n2 && isDigit n3 =
-            let n = 100 * digitToInt n1 +
-                    10 * digitToInt n2 +
-                    digitToInt n3
-            in replicate n ch ++ pretty rest
-        | isDigit n1 && isDigit n2 =
-            let n = 10 * digitToInt n1 +
-                    digitToInt n2
-            in replicate n n3 ++ pretty rest
-        | isDigit n1 =
-            replicate (digitToInt n1) n2 ++ (ch:pretty rest)
-        | otherwise = ('#':pretty (n1:n2:ch:rest))
-    pretty (c:cs) = (c:pretty cs)
+    pretty = id
 
-instance Pretty Text where
-    pretty = unpack
 
 instance Pretty a => Pretty (Align a) where
     terse (AL n c a) = alignL n c (terse a)

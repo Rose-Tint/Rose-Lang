@@ -1,12 +1,12 @@
+{-# LANGUAGE FlexibleInstances #-}
+
 module Middle.Analyzer.Error (
     Error(..),
     Warning(..),
-    ErrorMessage(..),
-    prettyError,
+    ErrInfo(..),
 ) where
 
-import Data.Text (Text)
-
+import Builder.State (Stream)
 import Common.SrcPos
 import Common.Typing
 import Common.Var
@@ -21,71 +21,70 @@ data Error
     = TypeMismatch
         Type -- expected
         Type -- found
-    | Undefined Var [Var]
-    | Redefinition Var Var
+    | Undefined
+        Var -- name
+        [Var] -- similar names
+    | Redefinition
+        Var -- original
+        Var -- new
     | OtherError String
     | FalseError
     deriving (Eq)
 
 data Warning
-    = ShadowsName Var Var
+    = ShadowsName
+        Var -- original
+        Var -- new
     deriving (Eq)
 
-data ErrorMessage
-    = ErrorMessage {
+data ErrInfo
+    = ErrInfo {
         emPos :: SrcPos,
         emDefName :: Maybe Var,
         emError :: Either Warning Error
     }
 
 
-prettyError :: [Text] -> ErrorMessage -> String
-prettyError _ _ = ""
--- prettyError lns em = printf
---     "%s\n%s\n       $R%s$r%s$R\n"
---     (pretty em) src caretStart caretRed
---     where
---         pos = emPos em
---         lno = min (length lns) (max 0 (posLine pos))
---         mainLine = unpack $ lns !! (lno - 1)
---         caretStart = replicate (max 0 (posStart pos)) ' '
---         caretRed = replicate (posEnd pos - posStart pos) '^'
---         src | lno <= 0 = "   0 | " ++ unpack (head lns)
---             | otherwise = printf "$b%5d | $R%s\n$b%5d | $R"
---                     (lno - 1) (unpack (lns !! (lno - 2)))
---                     lno ++ mainLine
+instance Pretty ([Stream], ErrInfo) where
+    pretty (lns, (ErrInfo pos _ werr)) = case werr of
+        Left wrn -> pos|-"$yWarning: $R"+|wrn|+
+            "\n$p"+|4.>lno|+" | $R"+|line|+
+            "\n#7 $y#"+|col|+"~$r^$R\n"
+        Right err -> pos|-"$rError: $R"+|err|+
+            "\n$p"+|4.>lno|+" | $R"+|line|+
+            "\n#7 $y#"+|col|+"~$r^$R\n"
+        where
+            col = srcCol pos
+            lno = srcLine pos
+            line| lno < 0 = "(NEGATIVE LINE NUMBER)"
+                | lno > length lns = "(EOF)"
+                | otherwise = lns !! (lno - 1)
 
+instance Pretty Warning where
+    pretty (ShadowsName orig new) =
+        "`"+|new|+"`<ln "+|newLine|+
+        "> shadows `"
+        +|orig|+"`<ln "+|origLine|+">\n"
+        where
+            newLine = srcLine (varPos new)
+            origLine = srcLine (varPos orig)
 
-instance Pretty ErrorMessage where
-    pretty _ = ""
---     pretty em = printf
---         -- "%s\n    Position: %s\n    Location: %s\n"
---         -- err pos def
---         "%s: %s\n    Position: Line %d, Column %d (to %d?)"
---             (pretty $! posModule pos) err (posLine pos)
---             (posStart pos) (posEnd pos)
---         where
---             pos = emPos em
---             -- def = case emDefName em of
---             --     Nothing -> "most likely at the top level"
---             --     Just name -> "in the definition of " ++ detailed name
---             err = case emError em of
---                 Left (ShadowsName new orig) -> printf
---                     "$yWarning:$R `%s` shadows existing binding `%s`"
---                         (pretty new) (pretty orig)
---                 Right (TypeMismatch got ex) -> printf
---                     "$rError:$y Type mismatch\n\
---                     \    $rExpected: $R%s\n\
---                     \       $rFound: $R%s"
---                     (pretty got) (pretty ex)
---                 Right (Undefined sym syms) -> printf
---                     "$rError:$y Undefined reference to `$R%s$y`\n\
---                     \    Possible replacements:\n%s"
---                     (pretty sym) (indentAllUsing pretty syms)
---                 Right (Redefinition new orig) -> printf
---                     "$rError:$y Redefinition of symbol `%s`\n\
---                     \    Originally defined here: %s"
---                     (pretty new) (pretty (varPos orig))
---                 Right (OtherError msg) -> printf
---                     "$rError:$y Other error?\n    $R%s\n" msg
---                 _ -> "_"
+instance Pretty Error where
+    pretty (TypeMismatch ex fnd) =
+        "Type discrepency\n    Expected: "+|ex|+
+                        "\n       Found: "+|fnd|+"\n"
+    pretty (Undefined var []) =
+        "Undefined reference to `"+|var|+"`\n"
+    pretty (Undefined var simils) =
+        "Undefined reference to `"+|var|+
+        "`\n    Did you mean one of these?:\n"+|
+        indentCatLns simils
+    pretty (Redefinition orig new) =
+        "Redefinition of `"-|new|-"`\n"++
+        "\n    Originally defined on line "+|origLine|+
+        "\n    But later defined on line "+|newLine|+"\n"
+        where
+            newLine = srcLine (varPos new)
+            origLine = srcLine (varPos orig)
+    pretty (OtherError msg) = show msg ++ "\n"
+    pretty FalseError = ""

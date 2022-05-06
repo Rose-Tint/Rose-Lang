@@ -1,0 +1,16 @@
+
+
+impl <> Defaultable Boolean  {
+    default  {
+        return((False ););
+    }
+}
+impl <> Defaultable Int  {
+    default  {
+        return(0;);
+    }
+}
+export trait <> Default a {
+    pure export default<(a )>
+}
+

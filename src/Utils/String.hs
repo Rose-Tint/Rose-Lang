@@ -1,8 +1,25 @@
 module Utils.String (
+    readInt,
+    unsafeReadInt,
     areSimilar,
     similarity,
 ) where
 
+import Data.Char (digitToInt, isDigit)
+import Data.List (foldl')
+
+
+readInt :: Integral n => String -> Maybe n
+readInt str = case takeWhile isDigit str of
+    [] -> Nothing
+    str' -> Just (foldl' (\ !n ch ->
+        n * 10 + fromIntegral (digitToInt ch))
+        0 str')
+
+unsafeReadInt :: Integral n => String -> n
+unsafeReadInt = foldl' (\ !n ch ->
+    n * 10 + fromIntegral (digitToInt ch))
+    0 . takeWhile isDigit
 
 similarity :: String -> String -> Int
 {-# INLINABLE similarity #-}
