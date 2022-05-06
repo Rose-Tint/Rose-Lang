@@ -88,7 +88,6 @@ tokens :-
     "["                         { reserved TLBracket }
     "]"                         { reserved TRBracket }
     "_"                         { hole }
-    "\"\""                      { emptyString }
     using                       { reserved TUsing }
     pure                        { reserved TPure `andBegin` func_ }
     impure                      { reserved TImpure `andBegin` func_ }
@@ -194,10 +193,6 @@ char (pos, _, _, ('\\':ch:_)) _len =
 char (pos, _, _, (ch:_)) 1 = return
     (TValue (CharLit ch (fromAlexPosn pos)))
 char _ _ = lexError "character literal"
-
-emptyString :: TokenAction
-emptyString (pos, _, _, _) _ = return
-    (TValue (StringLit "" (fromAlexPosn pos)))
 
 string :: TokenAction
 string (pos, _, _, str) len = return
