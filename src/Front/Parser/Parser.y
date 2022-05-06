@@ -359,6 +359,7 @@ MethodImpls0 :: { [Expr] }
 
 
 {
+
 parseError :: Token -> Alex a
 parseError = lexError . terse
 
@@ -368,13 +369,17 @@ whileLoop stmt = Loop NullStmt (ValStmt stmt) NullStmt
 foreverLoop :: Body -> Stmt
 foreverLoop  = Loop NullStmt NullStmt NullStmt
 
+mkRevValArray :: [Value] -> ValArray
+mkRevValArray vals = listArray
+    -- without the `- 1`, i get an error saying
+    -- "(Array.!): undefined array element". idk.
+    (0, length vals - 1)
+    (reverse vals)
+
 mkTuple :: [Value] -> Value
-mkTuple vals = Tuple
-    (listArray (0, length vals)
-    (reverse vals))
+mkTuple = Tuple . mkRevValArray
 
 mkArray :: [Value] -> Value
-mkArray vals = Array
-    (listArray (0, length vals)
-    (reverse vals))
+mkArray = Array . mkRevValArray
+
 }

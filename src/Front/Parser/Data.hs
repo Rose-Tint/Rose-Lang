@@ -1,6 +1,7 @@
 {-# LANGUAGE FlexibleInstances #-}
 
 module Front.Parser.Data (
+    ValArray,
     Value(..),
     Purity(..),
     Mutability,
@@ -26,6 +27,8 @@ import Pretty
 default (Int, Double)
 
 
+type ValArray = Array Int Value
+
 data Value
     = IntLit {-# UNPACK #-} !Int64 SrcPos
     | FloatLit {-# UNPACK #-} !Float SrcPos
@@ -35,8 +38,8 @@ data Value
     | VarVal !Var
     | Application Value [Value]
     | CtorCall !Var [Value]
-    | Tuple (Array Int Value)
-    | Array (Array Int Value)
+    | Tuple ValArray
+    | Array ValArray
     | Lambda [Var] Body
     | StmtVal Stmt
     | Hole SrcPos

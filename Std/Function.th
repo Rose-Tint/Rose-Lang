@@ -1,8 +1,8 @@
-pure curry<((a,b) -> c) -> a -> b -> c>
--- curry f a b = f (a, b);
+pure curry<((a, b) -> c) -> a -> b -> c>
+curry f a b = f (a, b);
 
-pure uncurry<(a -> b -> c) -> (a,b) -> c>
--- uncurry f [(a, b)] = f a b;
+pure uncurry<(a -> b -> c) -> (a, b) -> c>
+uncurry f [(a, b)] = f a b;
 
 pure (.)<(b -> c) -> (a -> b) -> (a -> c)>
 f . g = (a => f (g a));
