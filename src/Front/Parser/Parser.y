@@ -12,6 +12,12 @@ import Front.Parser.Lexer
 import Pretty
 }
 
+{- TODO:
+ - FFI
+ - 2 reduce/reduce conflicts
+     - caused by SmallIds1 when it encounters a small_id
+ -}
+
 %name rose Module
 %error { parseError }
 %lexer { lexer } { TEOF }
