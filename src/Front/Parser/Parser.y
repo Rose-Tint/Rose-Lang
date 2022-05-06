@@ -25,12 +25,6 @@ import Pretty
 %lexer { lexer } { TEOF }
 %monad { Alex }
 
--- I am almost positive about this. I will give
--- explainations as to what the conflicts are,
--- as well as why they are okay at each relevant
--- production.
--- %expect 15
-
 %tokentype { Token }
 %token
     -- keywords
@@ -91,7 +85,6 @@ import Pretty
 -- ghost precedence for function application
 -- https://stackoverflow.com/questions/27630269
 %nonassoc APP
-
 
 
 %%

@@ -9,6 +9,7 @@ import Front.Parser.Imports
 import Front.Parser.Data
 import Front.Parser.Lexer
 import Front.Parser.Parser
+import Pretty
 
 
 parse :: String -> Either String Module

@@ -21,7 +21,14 @@ instance Pretty Module where
     pretty (Module imps exprs) =
         "\n"`seps`imps|+"\n\n"+|
         unlines (pretty <$> exprs)|+"\n"
+    detailed (Module imports exprs) =
+        "Imports:\n"
+            +|indentCatLnsD imports|+
+        "Top-Level Expressions:\n"
+            +|indentCatLnsD exprs
 
 instance Pretty Import where
     pretty (Import name vis) =
         "import "+|vis|+" "+|name
+    detailed (Import name vis) =
+        "("*|vis|*") "*|name

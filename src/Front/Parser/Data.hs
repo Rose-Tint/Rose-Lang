@@ -141,6 +141,7 @@ instance Pretty Purity where
     pretty Pure = "pure"
     pretty Impure = "impure"
     pretty Unsafe = "unsafe"
+    detailed = show
 
 instance Pretty Visibility where
     terse Extern = "ex"
@@ -151,12 +152,22 @@ instance Pretty Visibility where
 
 instance Pretty Field where
     pretty (Field name typ) = name|+|TypeDecl [] typ
+    detailed (Field name typ) =
+        "Field: "+|name|+|TypeDecl [] typ
 
 instance Pretty Ctor where
     pretty (SumType vis name types) =
         vis|+" "+|name|+" "`seps`types
     pretty (Record vis name flds) =
         vis|+" "+|name|+" {\n"+|indentCatLns flds|+"\n}"
+    detailed (SumType vis name types) =
+        "Constructor (SumType):\n    "*|vis|*
+        "\n    Name: "*|name|*
+        "\n    Types:\n"+|indentCatLnsD types
+    detailed (Record vis name flds) =
+        "Constructor (Record):\n    "*|vis|*
+        "\n    Name:"*|name|*
+        "\n    Fields:\n"*|indentCatLns flds
 
 instance Pretty Value where
     terse (FloatLit n _) = show n
@@ -178,7 +189,7 @@ instance Pretty Value where
     pretty (Array arr) = "[ "+|", "`seps`elems arr|+" ]"
     pretty (Lambda ps stmts) = " "`seps`ps|+" => "+|indentCatLns stmts
     pretty (StmtVal stmt) = "("+|stmt|+")"
-    pretty (Hole _) = "_"
+    pretty (Hole _) = "_"    
 
 instance Pretty (Value, Body) where
     pretty (ptrn, body) = prettyPtrn ptrn|+
@@ -208,10 +219,42 @@ instance Pretty Stmt where
         "let "+|mut|+" "+|name|+|typ|+" = "+|val|+";"
     pretty (Reassignment var val) = var|+" = "+|val|+";"
     pretty Continue = "continue"
-    pretty Break = "Break"
-    pretty (Return val) = "return"+|val|+";"
+    pretty Break = "break"
+    pretty (Return val) = "return "+|val|+";"
     pretty (ValStmt val) = val|+";"
     pretty NullStmt = ";"
+    detailed (IfElse val tb []) =
+        "If: "*|val
+            |*|indentLns (indentCatLnsD tb)|+
+        "Else:"
+    detailed (IfElse val tb fb) =
+        "If: "*|val
+            |*|indentLns (indentCatLnsD tb)|+
+        "Else:\n"
+            +|indentLns (indentCatLnsD fb)
+    detailed (Loop init' cond iter body) =
+        "Loop:\n    Initial: "*|init'|*
+        "\n    Condition: "*|cond|*
+        "\n    Iteration: "*|iter|*
+        "\n    Body:\n"
+            +|indentLns (indentCatLnsD body)
+    detailed (Match val cases) =
+        "Match: "*|val|*"\n"+|
+            (indentCatLns $ fmap ("Case: "*|) cases)
+    detailed (NewVar mut typ name val) =
+        "New Variable:\n    Mutab.: "*|mut|*
+        "\n    Type: "*|typ|*
+        "\n    Name: "*|name|*
+        "\n    Value: "*|val
+    detailed (Reassignment var val) =
+        "Reassignment:\n    Variable: "*|var|*
+        "\n    Value: "*|val
+    detailed Continue = "Continue"
+    detailed Break = "Break"
+    detailed (Return val) = "Return: "*|val
+    detailed (ValStmt val) =
+        "Value-Statement: "*|val
+    detailed NullStmt = "Null Statement"
 
 instance Pretty Expr where
     pretty (FuncDecl vis pur name typ) =
@@ -235,3 +278,38 @@ instance Pretty Expr where
         " {\n"+|indentCatLns fns|+"}"
     pretty (TypeAlias vis alias typ) =
         vis|+" using "+|alias|+" = "+|typ
+    detailed (FuncDecl vis pur name typ) =
+        "Function Declaration:\n    Visib.: "*|vis|*
+        "\n    Purity: "*|pur|*
+        "\n    Name: "*|name|*
+        "\n    Type: "*|typ
+    detailed (FuncDef name pars body) =
+        "Function Definition:\n    Name: "*|name|*
+        "\n    Params: "*|","`sepsD`pars|*
+        "\n    Body:\n"*|indentLns (indentCatLns body)
+    detailed (DataDef vis name pars ctors) =
+        "Datatype Definition:\n    Visib.: "*|vis|*
+        "\n    Name: "*|name|*
+        "\n    Type-Vars: "+|", "`sepsD`pars|+
+        "\n    Constructors:\n"
+            +|indentLns (indentCatLns ctors)
+    detailed (TraitDecl vis ctx name pars fns) =
+        "Trait Declaration:\n    Visib.: "*|vis|*
+        "\n    Context:\n"
+            +|indentLns (indentCatLns ctx)|+
+        "\n    Name: "*|name|*
+        "\n    Type-Vars: "+|", "`sepsD`pars|+
+        "\n    Methods:\n"
+            +|indentLns (indentCatLns fns)
+    detailed (TraitImpl ctx name types fns) =
+        "Trait Implementation:\n    Context:\n"
+            +|indentLns (indentCatLns ctx)|+
+        "\n    Name: "*|name|*
+        "\n    Types: "
+            +|indentLns (indentCatLns types)|+
+        "\n    Methods:\n"
+            +|indentLns (indentCatLns fns)
+    detailed (TypeAlias vis name typ) =
+        "Type Alias:\n    Visib.: "*|vis|*
+        "\n    Name: "*|name|*
+        "\n    Type: "*|typ

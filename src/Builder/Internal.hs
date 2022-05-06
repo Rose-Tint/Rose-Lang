@@ -86,6 +86,9 @@ hasBeenVisited path = do
 
 finalizeVisit :: BuilderT m ()
 finalizeVisit = do
-    path <- stFile <$> getState
-    updateState $ \s ->
-        s { stVisited = insert path (stVisited s) }
+    baseDir <- cmdBuildDir . stCmdLine <$> getState
+    updateState $ \s -> s {
+        stVisited = insert (stFile s) (stVisited s),
+        stSource = "",
+        stBuildDir = baseDir
+        }
