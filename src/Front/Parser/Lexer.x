@@ -22,6 +22,7 @@ import Pretty
 %wrapper "monad"
 
 $oct_digit      = [0-7]
+$hex_digit      =[A-Fa-f0-9]
 $sign           = [\- \+]
 $big            = [A-Z]
 $small          = [a-z \_]
@@ -31,15 +32,18 @@ $symbol         = [\~\!\@\#\$\%\^\&\*\-\+\=\\\|\:\<\>\.\?\/]
 @comment        = "--" .*
                 | "{-" .* "-}"
 
-@hexa           = (x|X) [A-Fa-f0-9]+
+@hex            = [Xx] $hex_digit+
+@octal          = [Oo] $oct_digit+
 @decimal        = [0-9]+
-@floating       = $sign? @decimal \.? (e|E) $sign? @decimal
+@floating       = $sign? @decimal \.? [Ee] $sign? @decimal
                 | $sign? @decimal \. @decimal
-                | $sign? @hexa \.? (p|P) $sign? @decimal
+                | $sign? @hex \.? [Pp] $sign? @decimal
 
-@special        = \\ @hexa
-                | \\ $oct_digit{0,3}
-                | \\ [\\abfnrtv\'\"] 
+@special        = \\ @decimal
+                | \\ [Oo] $oct_digit{0,3}
+                | \\ [Xx] $hex_digit{0,2}
+                | \\ [Uu] $hex_digit{4}
+                | \\ [abfnrtv\\\'\"]
 @char_ch        = @special
                 | [^\']
 @string_ch      = @special
@@ -62,12 +66,13 @@ tokens :-
     <var_> "="                  { reserved TEq `andBegin` 0 }
     <func_> @small_id           { mkVar TSmall `andBegin` ctx_ }
     <func_> @operator           { mkVar TInfix `andBegin` ctx_ }
-    <0>         '\''            { begin char_ }
-    <0>         '"'             { begin string_ }
+
+    <0> \'                      { begin char_ }
     <char_> @char_ch            { char }
+    <char_> \'                  { begin 0 }
+    <0> \"                      { begin string_ }
     <string_> @string_ch*       { string }
-    <string_>   '"'             { begin 0 }
-    <char_>     '\''            { begin 0 }
+    <string_> \"                { begin 0 }
 
     $white+                     { skip }
     @comment+                   { skip }
@@ -83,6 +88,7 @@ tokens :-
     "["                         { reserved TLBracket }
     "]"                         { reserved TRBracket }
     "_"                         { hole }
+    "\"\""                      { emptyString }
     using                       { reserved TUsing }
     pure                        { reserved TPure `andBegin` func_ }
     impure                      { reserved TImpure `andBegin` func_ }
@@ -104,7 +110,7 @@ tokens :-
     $sign? 0 [Bb] [01]+         { integer 2 }
     $sign? 0 [Oo] $oct_digit+   { integer 8 }
     $sign? @decimal             { integer 10 }
-    $sign? 0 @hexa              { integer 16 }
+    $sign? 0 @hex              { integer 16 }
     @floating                   { float }
     @floating[Ff]               { double }
     @qual @small_id             { mkVar TSmall }
@@ -188,6 +194,10 @@ char (pos, _, _, ('\\':ch:_)) _len =
 char (pos, _, _, (ch:_)) 1 = return
     (TValue (CharLit ch (fromAlexPosn pos)))
 char _ _ = lexError "character literal"
+
+emptyString :: TokenAction
+emptyString (pos, _, _, _) _ = return
+    (TValue (StringLit "" (fromAlexPosn pos)))
 
 string :: TokenAction
 string (pos, _, _, str) len = return
