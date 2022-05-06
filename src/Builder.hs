@@ -30,10 +30,10 @@ buildFile path = hasBeenVisited path >>= \skip ->
         name <- stModule <$> getState
         message ("Building Module ["+|name|+"]\n")
         Module imports tree <- parseFile
-        forM_ imports $ \(Import (Var modName _) _) ->
-            buildFile (modToPath modName)
         _ <- analyzeFile tree
         finalizeVisit
+        forM_ imports $ \(Import (Var modName _) _) ->
+            buildFile (modToPath modName)
 
 parseFile :: BuilderIO Module
 parseFile = do
