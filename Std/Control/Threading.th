@@ -1,0 +1,6 @@
+data Thread = Thread<Int>
+
+impure branch<a -> Thread>
+impure launch<a -> Thread>
+impure join<Thread -> Void>
+impure ready<Thread -> Boolean>
