@@ -16,6 +16,8 @@ import Pretty
  - FFI
  - 2 reduce/reduce conflicts
      - caused by SmallIds1 when it encounters a small_id
+     - currently parses just fine tho, so idk :shrug:
+ - seperate imports from top-level expressions
  -}
 
 %name rose Module
@@ -74,11 +76,10 @@ import Pretty
     big_id          { TBig $$     }
     small_id        { TSmall $$   }
     infix_id        { TInfix $$   }
-    -- prefix_id       { TPrefix $$  }
     "_"             { THole $$    }
 
 %nonassoc infix_id
-%left big_id small_id -- prefix_id
+%left big_id small_id
 %right if else let
 %nonassoc match
 %right "="
@@ -96,7 +97,7 @@ import Pretty
 %%
 
 Module :: { Module }
-    : Imports0 TopLevelExprs  { Module $1 $2 }
+    : Imports0 TopLevelExprs0  { Module $1 $2 }
 
 Imports0 :: { [Import] }
     : {- empty -}       { [] }
@@ -105,9 +106,9 @@ Imports0 :: { [Import] }
 Import :: { Import }
     : import Vis big_id { Import $3 $2 }
 
-TopLevelExprs :: { [Expr] }
+TopLevelExprs0 :: { [Expr] }
     : {- empty -}                   { [] }
-    | TopLevelExprs TopLevelExpr    { ($2:$1) }
+    | TopLevelExprs0 TopLevelExpr    { ($2:$1) }
 
 TopLevelExpr :: { Expr }
     : FuncDecl  { $1 }
@@ -143,7 +144,7 @@ CtxSeq_ :: { Context }
     | Constraint              { [$1]    }
 
 Constraint :: { Constraint }
-    : big_id small_id   { Constraint $1 [$2] }
+    : big_id SmallIds0   { Constraint $1 $2 }
 
 ArrowSepTypes1 :: { [Type] }
     : ArrowSepTypes1_    { reverse $1 }
@@ -159,15 +160,6 @@ Type :: { Type }
     | "(" CommaSepTypes2 ")"    { Type (prim ",") $2 }
     | "(" ArrowSepTypes1 ")"    { Applied $2 }
 
--- ALLOWED CONFLICT:
---     Does: shift according to one of:
---         "(" . CommaSepTypes2 ")"
---         "(" . ArrowSepTypes1 ")"
---         "[" . Types "]"
---         big_id . Types0
---         small_id . Types0
---     Could do: reduce using:
---         Types0 -> {- empty -}
 Types0 :: { [Type] }
     : Types1_        { reverse $1 }
     | {- empty -}    { [] }
@@ -175,7 +167,8 @@ Types0 :: { [Type] }
 -- (formerly `Types0_`) fixed an issue with
 -- the first two rules of `Type` not allowing
 -- "->" to follow when there was more than one
--- type-parameter (see `Type`, rules 1 & 2)
+-- type-parameter (see `Type`, rules 1 & 2),
+-- but added ~15 s/r conflicts
 Types1_ :: { [Type] }
     : Type           { [$1] }
     | Types1_ Type   { ($2:$1) }
@@ -219,20 +212,20 @@ IfElse :: { Stmt }
 
 Term :: { Value }
     : literal               { $1 }
-    | "[" ArrayTerms "]"    { mkArray $2 }
-    | "(" TupleTerms ")"    { mkTuple $2 }
+    | "[" ArrayTerms1 "]"   { mkArray $2 }
+    | "(" TupleTerms2 ")"   { mkTuple $2 }
     | small_id              { VarVal $1 }
     | Lambda                { $1 }
     | FuncCall              { $1 }
     | "(" Term ")"          { $2 }
 
-ArrayTerms :: { [Value] }
-    : ArrayTerms "," Term   { ($3:$1) }
-    | ArrayTerms ","        { $1      }
+ArrayTerms1 :: { [Value] }
+    : ArrayTerms1 "," Term   { ($3:$1) }
+    | ArrayTerms1 ","        { $1      }
     | Term                  { [$1]    }
 
-TupleTerms :: { [Value] }
-    : TupleTerms "," Term   { ($3:$1) }
+TupleTerms2 :: { [Value] }
+    : TupleTerms2 "," Term   { ($3:$1) }
     | Term "," Term         { [$1] }
 
 CtorCall :: { Value }
@@ -260,10 +253,10 @@ PatternItem :: { Value }
     | CtorPattern   { $1 }
 
 TuplePattern :: { Value }
-    : "(" TuplePtrns ")" { mkTuple (reverse $2) }
+    : "(" TuplePtrns2_ ")" { mkTuple (reverse $2) }
 
-TuplePtrns :: { [Value] }
-    : TuplePtrns "," Pattern   { ($3:$1)  }
+TuplePtrns2_ :: { [Value] }
+    : TuplePtrns2_ "," Pattern   { ($3:$1)  }
     | Pattern "," Pattern      { [$3, $1] }
 
 CtorPattern :: { Value }
@@ -279,7 +272,7 @@ Patterns0_ :: { [Value] }
 Expr :: { Stmt }
     : NewVar                { $1 }
     | small_id "=" Term ";" { Reassignment $1 $3 }
-    | Term ";"              { ValStmt $1 }
+    | Term ";"          { ValStmt $1 }
     | ";"                   { NullStmt }
 
 NewVar :: { Stmt }
@@ -307,16 +300,16 @@ Lambda :: { Value }
     : SmallIds1 "=>" Body    { Lambda $1 $3 }
     | SmallIds1 "=>" Term    { Lambda $1 [Return $3] }
 
-SmallIds0 :: { [Var] }
-    : SmallIds1_     { reverse $1 }
-    | {- empty -}    { [] }
-
 SmallIds1 :: { [Var] }
     : SmallIds1_ { reverse $1 }
 
 SmallIds1_ :: { [Var] }
     : SmallIds1_ small_id    { ($2:$1) }
     | small_id               { [$1] }
+
+SmallIds0 :: { [Var] }
+    : SmallIds1_    { reverse $1 }
+    | {- empty -}   { [] }
 
 Loop :: { Stmt }
     : loop "(" Expr Expr Expr ")" StmtBody  { Loop $3 $4 $5 $7 }
