@@ -35,6 +35,7 @@ data Token
     | TMut
     | TIntern
     | TExport
+    | TExtern
     | TImport
     | TReturn
     | TIf
@@ -78,6 +79,7 @@ instance Pretty Token where
     terse TMut = "keyword 'mut'"
     terse TIntern = "keyword 'intern'"
     terse TExport = "keyword 'export'"
+    terse TExtern = "keyword 'extern'"
     terse TImport = "keyword 'import'"
     terse TReturn = "keyword 'return'"
     terse TIf = "keyword 'if'"
@@ -118,6 +120,7 @@ instance Pretty Token where
     pretty TMut = "mut"
     pretty TIntern = "intern"
     pretty TExport = "export"
+    pretty TExtern = "extern"
     pretty TImport = "import"
     pretty TReturn = "return"
     pretty TIf = "if"
@@ -158,6 +161,7 @@ instance Pretty Token where
     detailed TMut = "TMut"
     detailed TIntern = "TIntern"
     detailed TExport = "TExport"
+    detailed TExtern = "TExtern"
     detailed TImport = "TImport"
     detailed TReturn = "TReturn"
     detailed TIf = "TIf"

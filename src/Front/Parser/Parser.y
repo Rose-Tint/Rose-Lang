@@ -33,6 +33,7 @@ import Pretty
     mut             { TMut        }
     intern          { TIntern     }
     export          { TExport     }
+    extern          { TExtern     }
     import          { TImport     }
     return          { TReturn     }
     if              { TIf         }
@@ -113,6 +114,7 @@ TopLevelExpr :: { Expr }
 FuncDecl :: { Expr }
     : Pur Vis small_id TypeDecl            { FuncDecl $1 $2 $3 $4 }
     | Pur Vis "(" infix_id ")" TypeDecl    { FuncDecl $1 $2 $4 $6 }
+    | extern Pur Vis small_id TypeDecl     { FuncDecl $2 $3 $4 $5 }
 
 Pur :: { Purity }
     : pure      { Pure }
@@ -357,6 +359,16 @@ MethodImpls0 :: { [Expr] }
     : {- empty -}            { []      }
     | MethodImpls0 FuncDef    { ($2:$1) }
 
+
+
+{- FOREIGN FUNCTION INTERFACE
+
+ForeignFunc :: { () }
+    : extern Pur small_id
+
+
+
+-}
 
 {
 

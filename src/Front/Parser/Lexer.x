@@ -95,6 +95,7 @@ tokens :-
     mut                         { reserved TMut }
     intern                      { reserved TIntern }
     export                      { reserved TExport }
+    extern                      { reserved TExtern }
     import                      { reserved TImport }
     return                      { reserved TReturn }
     if                          { reserved TIf }
