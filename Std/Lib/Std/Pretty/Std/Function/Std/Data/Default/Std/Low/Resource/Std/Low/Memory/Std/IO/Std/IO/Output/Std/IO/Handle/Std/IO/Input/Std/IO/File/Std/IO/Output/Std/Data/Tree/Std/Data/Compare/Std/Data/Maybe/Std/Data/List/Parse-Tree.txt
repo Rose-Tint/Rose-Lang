@@ -1,6 +1,0 @@
-
-
-export data List a    = List exporta  List a 
-    | Empty export
-
-

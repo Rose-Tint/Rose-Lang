@@ -1,6 +1,0 @@
-import export Std.IO.Handle
-
-impure export hPrintLn<(String  Void )>
-impure export hPrint<(String  Void )>
-impure export hPutChar<(Char  Void )>
-

@@ -19,11 +19,11 @@ mReadFile path = do
         return Nothing
     else do
         src <- readFile <#> path
-        dir <- stBuildDir <$> getState
+        baseDir <- cmdBuildDir . stCmdLine <$> getState
         updateState $ \s -> s {
             stFile = path,
             stModule = pathToModule path,
-            stBuildDir = dir ++ pathToDir path,
+            stBuildDir = baseDir ++ pathToDir path,
             stSource = src
             }
         createTraceDir
