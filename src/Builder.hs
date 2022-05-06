@@ -58,4 +58,6 @@ analyzeFile es = do
 printAnalysisErrors :: [ErrInfo] -> BuilderIO ()
 printAnalysisErrors es = do
     lns <- lines <$> getSource
-    mapM_ (\e -> message (lns, e)) es
+    name <- stModule <$> getState
+    forM_ es $ \e ->
+        message $ name|+|(lns, e)

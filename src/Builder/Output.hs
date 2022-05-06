@@ -46,7 +46,7 @@ trace path a = do
     dir <- stBuildDir <$> getState
     when doTrace <#> writeFile
         (dir ++ path)
-        (uncolor (detailed a))
+        (uncolor (processString (detailed a)))
 
 myPutStr :: Int -> String -> BuilderIO ()
 myPutStr thresh str = do
