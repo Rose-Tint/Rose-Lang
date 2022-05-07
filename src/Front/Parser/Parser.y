@@ -14,9 +14,6 @@ import Pretty
 
 {- TODO:
  - FFI
- - 2 reduce/reduce conflicts
-     - caused by SmallIds1 when it encounters a small_id
-     - currently parses just fine tho, so idk :shrug:
  - seperate imports from top-level expressions
  -}
 
@@ -74,13 +71,8 @@ import Pretty
 
 %nonassoc infix_id
 %left big_id small_id
-%right if else let
-%nonassoc match
-%right "="
-%nonassoc ":"
-%right "=>" "," "->" return
-%left  ")" "}" "]" ">"
-%right "(" "{" "[" "<" ";"
+%nonassoc literal
+%right if else "=>" "(" "[" ";"
 
 -- ghost precedence for function application
 -- https://stackoverflow.com/questions/27630269
@@ -207,7 +199,12 @@ Term :: { Value }
     : literal               { $1 }
     | "[" ArrayTerms1 "]"   { mkArray $2 }
     | "(" TupleTerms2 ")"   { mkTuple $2 }
-    | small_id              { VarVal $1 }
+    | SmallIds1             {
+        let (var:vars) = fmap VarVal $1
+        in case vars of
+                [] -> var
+                _ -> Application var vars
+        }
     | Lambda                { $1 }
     | FuncCall              { $1 }
     | "(" Term ")"          { $2 }
@@ -294,7 +291,7 @@ Lambda :: { Value }
     | SmallIds1 "=>" Term    { Lambda $1 [Return $3] }
 
 SmallIds1 :: { [Var] }
-    : SmallIds1_ { reverse $1 }
+    : SmallIds1_ %prec APP { reverse $1 }
 
 SmallIds1_ :: { [Var] }
     : SmallIds1_ small_id    { ($2:$1) }
