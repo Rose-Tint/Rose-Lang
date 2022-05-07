@@ -61,10 +61,7 @@ ifDefined = Just
 
 -- Key-Value pair
 instance Pretty (String, SymbolData) where
-    terse (sym, SymbolData typ _ _ _) =
-        "| "-|10.<sym|-" | "-|25.<typ|-" |"
-    pretty (sym, SymbolData typ vis _ _) =
-        "| "+|15.<sym|+" | "+|30.<typ|+" | "+|6.<vis|+" |"
+    pretty = detailed
     detailed (sym, SymbolData typ vis pur pos) =
-         "| "*|20.<sym|*" | "*|10.<pos|*" | "*|35.<typ|*
+         "| "*|15.<detailed sym|*" | "+|9.<terse pos|+" | "*|35.<typ|*
         " | "*|6.<vis|*" | "*|6.<pur|*" |"

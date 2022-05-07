@@ -72,10 +72,10 @@ newtype ScopedTable = ScpTbl [SymbolMap]
 
 instance Pretty ScopedTable where
     pretty (ScpTbl scps) =
-        "+-Symbol#13-+-Type#32-+-Visib.-+-Purity-+\n"
-        +|(unlines $! pretty <$> concatMap assocs scps)|+
-        "+#20-+#37-+#8-+#8-+"
-        
+        "+-Symbol#10-+-Position--+-Type#32-+-Visib.-+-Purity-+\n"
+        +|(unlines $! detailed <$> concatMap assocs scps)|+
+        "+#17-+#11-+#37-+#8-+#8-+"
+
 
 instance Pretty SymbolTable where
     pretty (SymbolTable typs trts glbs scps) =
