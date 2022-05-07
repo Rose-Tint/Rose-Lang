@@ -65,15 +65,15 @@ isMemberOf = T.isMemberOf . varName
 
 
 instance Pretty SymbolMap where
-    terse sm =
-        "+-Symbol-----+-Type#17-+\n"
-        +|(unlines $! terse <$> T.assocs sm)|+
-        "\n+#12-+#22-+"
+    -- terse sm =
+    --     "+-Symbol-----+-Type#17-+\n"
+    --     +|(unlines $! terse <$> T.assocs sm)|+
+    --     "\n+#12-+#22-+"
+    -- pretty sm =
+    --     "+-Symbol#6-+-Type#22-+-Visib.-+\n"
+    --     +|(unlines $! pretty <$> T.assocs sm)|+
+    --     "\n+#17-+#27-+#8-+"
     pretty sm =
-        "+-Symbol#6-+-Type#22-+-Visib.-+\n"
-        +|(unlines $! pretty <$> T.assocs sm)|+
-        "\n+#17-+#27-+#8-+"
-    detailed sm =
         "+-Symbol#11-+-Position---+-Type#27-+-Visib.-+-Purity-+\n"
         +|(unlines $! detailed <$> T.assocs sm)|+
-        "\n+#17-+#12-+#32-+#8-+#8-+"
+        "\n+#22-+#12-+#32-+#8-+#8-+"

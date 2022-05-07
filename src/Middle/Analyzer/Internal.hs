@@ -8,7 +8,7 @@ module Middle.Analyzer.Internal (
     getTable, setTable, modifyTable, modifyTable_,
     getModuleName,
     pushScope, popScope,
-    peekExpType, expect,
+    peekExpType, expect, expect',
     define,
     addImport,
     updatePos, updatePosVar,

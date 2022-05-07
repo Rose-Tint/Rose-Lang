@@ -98,9 +98,9 @@ a |*| b = detailed a ++ detailed b
 
 alignL :: Int -> Char -> String -> String
 alignL n pc [] = replicate n pc
-alignL n _ str = drop n str
--- | n <= 0 = []
--- | otherwise = c:alignL (n - 1) pc cs
+alignL n pc str
+    | length str > n = drop (length str - n) str
+    | otherwise = replicate (n - length str) pc ++ str
 
 alignC :: Int -> Char -> String -> String
 alignC n pc str = case compare padLen 0 of
