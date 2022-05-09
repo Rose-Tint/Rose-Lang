@@ -92,7 +92,9 @@ instance Checker Stmt where
             --     vals are of the same type
             inferBody bdy
         return (foldr (<::>) Delayed bTs)
-    infer (NewVar _mut _name _typ _val) =
+    infer (NewVar mut name typ val) = do
+        pushScoped mut name typ
+        expectCheck typ val
         return NoType
     infer (Reassignment name val) = do
         -- TODO: assert mutability

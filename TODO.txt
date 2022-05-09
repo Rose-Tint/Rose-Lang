@@ -4,4 +4,5 @@ TODO:
     - to ".ro" or ".rose"
 
 IN-PROGRESS:
-  - LLVM backend
+  - LLVM back-end
+  - MAJOR rework to middle-end

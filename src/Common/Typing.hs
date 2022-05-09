@@ -1,9 +1,11 @@
 module Common.Typing (
-    module Common.Typing,
+    module T,
+    TypeDecl(..),
 ) where
 
-import Common.Typing.Constraint as Common.Typing
-import Common.Typing.Type as Common.Typing
+import Common.Typing.Constraint as T
+import Common.Typing.Kind as T
+import Common.Typing.Type as T
 import Pretty
 
 

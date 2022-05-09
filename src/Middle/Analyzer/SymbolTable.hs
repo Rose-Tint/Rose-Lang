@@ -131,11 +131,19 @@ modifyScoped sym f = do
     dta <- searchScopeds sym
     pushScoped sym $! f dta
 
-pushType :: Symbol -> SymbolData -> Analyzer ()
-pushType sym = modifyTable_ . insertType sym
+pushType :: Symbol -> Visib -> Type -> Analyzer SymbolData
+pushType sym vis typ =
+    let dta = SymbolData typ vis Nothing (varPos sym)
+    modifyTable (insertType sym dta)
+    return dta
 
-pushTrait :: Symbol -> SymbolData -> Analyzer ()
-pushTrait sym = modifyTable_ . insertTrait sym
+pushTrait :: Symbol -> Visib -> Type -> Analyzer SymbolData
+pushTrait sym vis typ =
+    let dta = SymbolData typ vis Nothing (varPos sym)
+    modifyTable (insertType sym dta)
+    return dta
+
+pushFunction :: Symbol -> Purity -> Visib -> Type -> Analyzer SymbolData
 
 pushGlobal :: Symbol -> SymbolData -> Analyzer ()
 pushGlobal sym = modifyTable_ . insertGlobal sym
