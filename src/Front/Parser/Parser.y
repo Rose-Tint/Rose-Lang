@@ -328,7 +328,7 @@ CtorDef :: { Ctor }
     | Vis big_id "<" ArrowSepTypes1 ">" { SumType $2 $1 $4 }
 
 TypeAlias :: { Expr }
-    : using Vis Type "=" Type  { TypeAlias $2 $3 $5 }
+    : using Vis big_id "=" Type  { TypeAlias $2 $3 $5 }
 
 TraitDecl :: { Expr }
     : trait Vis TraitCtx big_id SmallIds1 "{" MethodDecls1 "}"    { TraitDecl $2 $3 $4 $5 $7 }

@@ -106,7 +106,7 @@ data Expr
         exprFuncs :: [Expr]
     }
     | FuncDef !Var [Value] Body
-    | TypeAlias Visibility Type Type
+    | TypeAlias Visibility !Var Type
     deriving (Eq)
 
 valPos :: Value -> SrcPos
