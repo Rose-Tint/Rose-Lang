@@ -27,5 +27,3 @@ data State = State {
 mkState :: CmdLine -> State
 {-# INLINE mkState #-}
 mkState cmd = State cmd [] [] [] empty ""
-
- :: 
