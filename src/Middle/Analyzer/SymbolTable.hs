@@ -10,7 +10,7 @@ import Prelude hiding (lookup)
 
 import Control.Monad ((<$!>))
 
-import Common.Typing.Type (Type(..))
+import Common.Typing.Type
 import Middle.Analyzer.Internal
 import Middle.SymbolTable
 
@@ -28,7 +28,7 @@ searchTypes sym = do
     typs <- tblTypes <$!> getTable
     case lookup sym typs of
         Nothing -> do
-            let dta = undefined sym
+            let dta = undef
             modifyTable (insertType sym dta)
             return dta
         Just dta -> return $! dta
@@ -38,7 +38,7 @@ searchTraits sym = do
     trts <- tblTraits <$!> getTable
     case lookup sym trts of
         Nothing -> do
-            let dta = undefined sym
+            let dta = undef
             modifyTable (insertTrait sym dta)
             return dta
         Just dta -> return $! dta
@@ -53,7 +53,8 @@ searchGlobals sym = do
             expType <- peekExpType
             dta' <- case expType of
                 NoType -> return dta
-                typ -> return $! dta { sdType = typ }
+                typ -> return $! dta
+                    { sdType = typ <::> sdType dta }
             modifyTable (insertGlobal sym dta')
             return dta
         Just dta -> return $! dta

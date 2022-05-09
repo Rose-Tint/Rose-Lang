@@ -11,4 +11,4 @@ import Front.Parser.Data (Expr)
 
 
 analyze :: [Expr] -> Analysis
-analyze = runAnalyzer . mapM_ infer_
+analyze = runAnalyzer . mapM infer

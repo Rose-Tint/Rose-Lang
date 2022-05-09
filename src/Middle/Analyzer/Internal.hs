@@ -8,10 +8,10 @@ module Middle.Analyzer.Internal (
     getTable, setTable, modifyTable, modifyTable_,
     getModuleName,
     pushScope, popScope,
-    peekExpType, expect, expect',
+    peekExpType, expect,
     define,
     addImport,
-    updatePos, updatePosVar,
+    updatePos, updatePosVar, updatePosVal,
     option, optional,
     throw, warn, catch, throwUndefined,
 ) where
@@ -24,7 +24,7 @@ import Data.Functor ((<&>))
 import Common.SrcPos
 import Common.Typing
 import Common.Var
-import Front.Parser (Import)
+import Front.Parser (Import, Value, valPos)
 import Middle.Analyzer.Error
 import Middle.Analyzer.State
 import Middle.SymbolTable
@@ -88,8 +88,7 @@ modifyTable f = do
 
 modifyTable_ :: (SymbolTable -> SymbolTable) -> Analyzer ()
 modifyTable_ f = do
-    tbl <- f <$!> getTable
-    modifyState (\s -> s { stTable = tbl })
+    modifyState (\s -> s { stTable = f (stTable s) })
     return ()
 
 getModuleName :: Analyzer Var
@@ -106,11 +105,11 @@ pushScope = modifyTable_ $ \tbl ->
     tbl { tblScopeds = (empty:tblScopeds tbl) }
 
 popScope :: Analyzer ()
-popScope = modifyTable_ $ \tbl ->
-    tbl { tblScopeds = case tblScopeds tbl of
-            [] -> []
-            (_:scps) -> scps
-        }
+popScope = modifyTable_ $ \tbl -> tbl {
+    tblScopeds = case tblScopeds tbl of
+        [] -> []
+        (_:scps) -> scps
+    }
 
 pushExpType :: Type -> Analyzer ()
 pushExpType NoType = return ()
@@ -130,13 +129,8 @@ peekExpType = Analyzer $ \ !s okay _ ->
     in okay typ s
 
 expect :: Type -> Analyzer a -> Analyzer a
-expect NoType = id
-expect t = expect' t
-
--- `expect'` is 'strict' in the sense that, unlike
--- `expect`, `expect'` allows `NoType`s to be pushed
-expect' :: Type -> Analyzer a -> Analyzer a
-expect' t a = do
+expect NoType a = a
+expect t a = do
     pushExpType t
     x <- a
     popExpType
@@ -144,7 +138,7 @@ expect' t a = do
 
 define :: Symbol -> Analyzer a -> Analyzer Type
 define !name analyzer = do
-    updatePos $ varPos name
+    updatePosVar name
     enterDef name
     analyzer
     exitDef
@@ -156,6 +150,9 @@ updatePos p = modifyState_ $ \s -> s { stPos = p }
 
 updatePosVar :: Var -> Analyzer ()
 updatePosVar (Var _ p) = updatePos p
+
+updatePosVal :: Value -> Analyzer ()
+updatePosVal val = updatePos (valPos val)
 
 addImport :: Import -> Analyzer ()
 addImport imp = modifyState_ $ \s ->

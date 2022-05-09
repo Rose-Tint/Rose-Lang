@@ -1,5 +1,5 @@
 module Middle.Analyzer.Checker (
-    infer_,
+    infer,
 ) where
 
 import Prelude hiding (fail)
@@ -67,6 +67,7 @@ instance Checker Value where
             ) eT arr
         return $! arrayOf typ
     infer (Lambda params bdy) = do
+        updatePosVar (head params)
         let pTs = (Delayed:(Delayed <$ params))
             apT = Applied pTs
         bT <- expect apT (inferBody bdy)
@@ -99,6 +100,7 @@ instance Checker Stmt where
         let typ = sdType dta
         expectCheck' typ val
     infer (Return val) = do
+        updatePosVal val
         eT <- peekExpType
         case eT of
             -- NoType -> {- set return-type if Delayed -}
@@ -113,31 +115,31 @@ instance Checker Stmt where
     infer NullStmt = return NoType
 
 instance Checker Expr where
-    infer (FuncDecl pur vis name (TypeDecl _ typ)) = do
+    infer (FuncDecl pur vis name (TypeDecl _ typ)) = define name $! do
         pushGlobal name $ mkSymbolData
             name typ (Just vis) (Just pur)
         return NoType
-    infer (FuncDef name params bdy) = do
-        dta <- findGlobal name
+    infer (FuncDef name params bdy) = define name $! do
+        dta <- searchGlobals name
         let typ = sdType dta
         pushParams params
         bT <- inferBody bdy
         expectCheck typ bT
         return NoType
-    infer (DataDef vis name tps ctors) = do
+    infer (DataDef vis name tps ctors) = define name $! do
         pushType name $ mkSymbolData name
             (Type name ((`Param` []) <$> tps))
             (Just vis) (Just Pure)
-        mapM_ infer_ ctors
+        mapM_ infer ctors
         return NoType
-    infer (TraitDecl vis _ctx name _tps fns) = do
+    infer (TraitDecl vis _ctx name _tps fns) = define name $! do
         pushTrait name $ mkSymbolData
             name Delayed (Just vis) (Just Pure)
-        mapM_ infer_ fns
+        mapM_ infer fns
         return NoType
-    infer (TraitImpl _ctx name _types fns) = do
-        _ <- findTrait name
-        mapM_ infer_ fns
+    infer (TraitImpl _ctx name _types fns) = define name $! do
+        _ <- searchTraits name
+        mapM_ infer fns
         return NoType
     infer (TypeAlias _vis _alias _typ) = do
         -- pushType alias $ mkSymbolData
@@ -145,12 +147,12 @@ instance Checker Expr where
         return NoType
 
 instance Checker Ctor where
-    infer (SumType name vis types) = do
+    infer (SumType name vis types) = define name $! do
         pushGlobal name $ mkSymbolData name
             (Applied types) (Just vis) (Just Pure)
         return NoType
-    infer (Record cName vis flds) = do
-        types <- forM flds $ \(Field fName typ) -> do
+    infer (Record cName vis flds) = define cName $! do
+        types <- forM flds $ \(Field fName typ) -> define fName $! do
             pushGlobal fName $ mkSymbolData fName
                 (Applied [Delayed, typ])
                 (Just vis) (Just Pure)
@@ -173,17 +175,14 @@ pushParams _ = return NoType
 apply :: Type -> [Value] -> Analyzer Type
 apply ft [] = return ft
 apply ft (val:vals) = do
-    updatePos (valPos val)
+    updatePosVal val
     vT <- infer val
     eT <- peekExpType
     areSame <- isOfType vT eT
     if areSame then
         apply ft vals
-    else 
+    else
         throw $ TypeMismatch vT eT
-
-infer_ :: Checker a => a -> Analyzer ()
-infer_ = optional . infer
 
 inferBody :: Body -> Analyzer Type
 inferBody body = do
@@ -202,7 +201,11 @@ inferBody body = do
 --     return ()
 
 expectCheck :: Checker a => Type -> a -> Analyzer Type
-expectCheck typ a = do
+expectCheck NoType = infer
+expectCheck t = expectCheck' t
+
+expectCheck' :: Checker a => Type -> a -> Analyzer Type
+expectCheck' typ a = do
     aT <- expect typ (infer a)
     if typ == NoType then
         return aT
@@ -212,12 +215,3 @@ expectCheck typ a = do
             return (typ <:> aT)
         else
             throw $ TypeMismatch typ aT
-
-expectCheck' :: Checker a => Type -> a -> Analyzer Type
-expectCheck' typ a = do
-    aT <- expect' typ (infer a)
-    same <- isOfType aT typ
-    if same then
-        return (typ <:> aT)
-    else
-        throw $ TypeMismatch typ aT
