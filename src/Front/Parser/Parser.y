@@ -82,7 +82,7 @@ import Pretty
 %%
 
 Module :: { Module }
-    : Imports0 TopLevelExprs0  { Module $1 $2 }
+    : Imports0 TopLevelExprs0  { Module (reverse $1) (reverse $2) }
 
 Imports0 :: { [Import] }
     : {- empty -}       { [] }
