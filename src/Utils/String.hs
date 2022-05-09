@@ -8,7 +8,7 @@ module Utils.String (
 
 import Data.ByteString.Char8 (pack)
 import Data.ByteString.Short (ShortByteString, toShort)
-import Data.Char (digitToInt, isDigit, ord)
+import Data.Char (digitToInt, isDigit)
 import Data.List (foldl')
 
 
@@ -29,7 +29,7 @@ similarity :: String -> String -> Int
 similarity [] s = length s
 similarity s [] = length s
 similarity (lc:lcs) (rc:rcs) =
-    ord (lc /= rc) + similarity lcs rcs
+    fromEnum (lc /= rc) + similarity lcs rcs
 
 areSimilar :: String -> String -> Bool
 {-# INLINE areSimilar #-}
