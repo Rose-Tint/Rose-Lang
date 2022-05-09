@@ -73,7 +73,7 @@ zipTypes [] (_:_) = Nothing
 zipTypes (_:_) [] = Nothing
 zipTypes (t1:ts1) (t2:ts2) = do
     typs <- zipTypes ts1 ts2
-    case t1 <:> t2 of
+    case t1 <::> t2 of
         NoType -> Nothing
         typ -> return (typ:typs)
 
@@ -121,13 +121,16 @@ instance Pretty Type where
     terse Delayed = "*"
     terse NoType = "_"
     terse t = pretty t
+    -- tuples
+    pretty (Type (Var "," _) types) = "("+|", "`seps`types|+")"
+    -- tuples
+    pretty (Type (Var "[]" _) types) = "["+|", "`seps`types|+"]"
     pretty (Type name []) = pretty name
     pretty (Type name types) = name|+" "+|" "`seps`types
     pretty (Param name []) = pretty name
     pretty (Param name types) = name|+" "+|" "`seps`types
     pretty (Applied types) = "("+|" -> "`seps`types|+")"
-    pretty Delayed = "(DELAYED)"
-    pretty NoType = "(NOTYPE)"
+    pretty Delayed = "DELAYED"
+    pretty NoType = "NOTYPE"
     detailed Delayed = "a*"
-    detailed NoType = "NOTYPE"
     detailed t = pretty t

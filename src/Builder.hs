@@ -56,8 +56,10 @@ analyzeFile es = do
     return res
 
 printAnalysisErrors :: [ErrInfo] -> BuilderIO ()
+printAnalysisErrors [] = return ()
 printAnalysisErrors es = do
     lns <- lines <$> getSource
     name <- stModule <$> getState
-    forM_ es $ \e ->
-        message $ name|+|(lns, e)
+    forM_ es $ \e -> case emError e of
+        Right FalseError -> return ()
+        _ -> message $ "\n"+|name|+|(lns, e)|+"\n"

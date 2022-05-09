@@ -121,7 +121,7 @@ alignR :: Int -> Char -> String -> String
 alignR n pc str
     | n < strLen = drop (strLen - n) str
     | n == 0 = []
-    | otherwise = replicate n pc ++ str
+    | otherwise = replicate (n - strLen) pc ++ str
     where
         strLen = length str
 
@@ -175,7 +175,7 @@ processString (ch:chs) = case ch of
         _ -> ('#':processString chs)
     '$' -> case chs of
         [] -> ('$':processString chs)
-        (ch':_) -> case ch' of
+        (ch':chs') -> ((case ch' of
             'B' -> pretty Black
             'r' -> pretty Red
             'y' -> pretty Yellow
@@ -185,7 +185,7 @@ processString (ch:chs) = case ch of
             'c' -> pretty Cyan
             'w' -> pretty White
             'R' -> pretty Reset
-            _   -> ('$':processString chs)
+            _   -> "$") ++ processString chs')
     _ -> (ch:processString chs)
 
 
@@ -204,6 +204,7 @@ instance PrintfArg Color where
     formatArg = formatString . pretty
 
 instance Pretty Int8
+
 instance Pretty Int
 
 instance Pretty Char where
@@ -212,6 +213,13 @@ instance Pretty Char where
 instance Pretty String where
     pretty = id
 
+instance (Pretty a, Pretty b) => Pretty (Either a b) where
+    terse (Left a) = terse a
+    terse (Right b) = terse b
+    pretty (Left a) = pretty a
+    pretty (Right b) = pretty b
+    detailed (Left a) = detailed a
+    detailed (Right b) = detailed b
 
 instance Pretty a => Pretty (Align a) where
     terse (AL n c a) = alignL n c (terse a)

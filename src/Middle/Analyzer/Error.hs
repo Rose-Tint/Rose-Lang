@@ -47,14 +47,15 @@ data ErrInfo
 
 instance Pretty ([Stream], ErrInfo) where
     pretty (lns, (ErrInfo pos _ werr)) = case werr of
-        Left wrn -> pos|-"$yWarning: $R"+|wrn|+
-            "\n$p"+|4.>lno|+" | $R"+|line|+
-            "\n#7 $y#"+|col|+"~$r^$R\n"
-        Right err -> pos|-"$rError: $R"+|err|+
-            "\n$p"+|4.>lno|+" | $R"+|line|+
-            "\n#7 $y#"+|col|+"~$r^$R\n"
+        Left wrn -> "::"-|pos|-":$yWarning: $R"+|wrn|+
+            "\n$p"+|5.>lno|+" | $R"+|line|+
+            "\n#8 $y#"+|col|+"~$r^$R\n"
+        Right err -> "::"-|pos|-": $rError: $R"+|err|+
+            "\n$p"+|5.>lno|+" | $R"+|line|+
+            "\n#8 $y#"+|col|+"~$r^$R\n"
         where
-            col = srcCol pos
+            -- columns are WAY off
+            col = srcCol pos - 1
             lno = srcLine pos
             line| lno < 0 = "(NEGATIVE LINE NUMBER)"
                 | lno > length lns = "(EOF)"
@@ -71,18 +72,18 @@ instance Pretty Warning where
 
 instance Pretty Error where
     pretty (TypeMismatch ex fnd) =
-        "Type discrepency\n    Expected: "+|ex|+
-                        "\n       Found: "+|fnd|+"\n"
+        "Type discrepency$R\n    Expected: "+|ex|+
+                          "\n       Found: "+|fnd
     pretty (Undefined var []) =
-        "Undefined reference to `"+|var|+"`\n"
+        "Undefined reference to `$y"+|var|+"$R`"
     pretty (Undefined var simils) =
-        "Undefined reference to `"+|var|+
-        "`\n    Did you mean one of these?:\n"+|
-        indentCatLns simils
+        "Undefined reference to `$y"+|var|+
+        "$R`\n    Did you mean one of these?:\n        '$y"
+            +|"$R`, `$y"`sepsD`simils|+"$R'"
     pretty (Redefinition orig new) =
-        "Redefinition of `"-|new|-"`\n"++
+        "Redefinition of `$y"-|new|-"$R`\n"++
         "\n    Originally defined on line "+|origLine|+
-        "\n    But later defined on line "+|newLine|+"\n"
+        "\n    But later defined on line "+|newLine
         where
             newLine = srcLine (varPos new)
             origLine = srcLine (varPos orig)
