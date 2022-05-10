@@ -1,4 +1,4 @@
-module Middle.SymbolTable.Trie (Trie,
+module Middle.Table.Trie (Trie,
     -- Construction
     empty, singleton, fromList,
     -- Insertion

@@ -112,9 +112,9 @@ Pur :: { Purity }
     : pure      { Pure }
     | impure    { Impure }
 
-Vis :: { Visibility }
-    : {- empty -}   { Extern }
-    | export        { Extern }
+Vis :: { Visib }
+    : {- empty -}   { Export }
+    | export        { Export }
     | intern        { Intern }
 
 TypeDecl :: { TypeDecl }
@@ -266,8 +266,8 @@ Expr :: { Stmt }
     | ";"                   { NullStmt }
 
 NewVar :: { Stmt }
-    : let small_id VarType "=" Term ";"        { NewVar Pure $2 $3 $5 }
-    | let mut small_id VarType "=" Term ";"    { NewVar Impure $3 $4 $6 }
+    : let small_id VarType "=" Term ";"        { NewVar Mut $2 $3 $5 }
+    | let mut small_id VarType "=" Term ";"    { NewVar Imut $3 $4 $6 }
 
 VarType :: { TypeDecl }
     : TypeDecl      { $1 }
