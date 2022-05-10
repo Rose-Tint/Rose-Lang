@@ -9,7 +9,7 @@ module Middle.Analyzer.Internal (
     getTable, setTable, modifyTable, modifyTable_,
     getModuleName,
     pushScope, popScope,
-    peekExpType, expect,
+    peekExpType, peekExpType', expect,
     getTopDef, getCurrDef, getCurrDef', getDefs,
     define,
     updatePos, updatePosVar, updatePosVal,
@@ -143,7 +143,14 @@ peekExpType :: Analyzer Type
 peekExpType = do
     eTs <- stExpType <$!> getState
     case eTs of
-        [] -> fail "peekExpType: expected type"
+        [] -> return Delayed
+        (typ:_) -> return typ
+
+peekExpType' :: Analyzer Type
+peekExpType' = do
+    eTs <- stExpType <$!> getState
+    case eTs of
+        [] -> fail "peekExpType': expected type"
         (typ:_) -> return typ
 
 expect :: Type -> Analyzer a -> Analyzer a

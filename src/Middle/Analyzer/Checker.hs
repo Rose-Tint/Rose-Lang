@@ -25,16 +25,15 @@ class Checker a where
     infer :: a -> Analyzer Type
     -- |Checks that something is infered to be
     -- compatable with the given type
-    isOfType :: a -> Type -> Analyzer Bool
-    isOfType a expected = do
-        typ <- infer a
-        return (typ == expected)
+    -- isOfType :: a -> Type -> Analyzer Bool
+    -- isOfType a ex = do
+    --     typ <- infer a
+    --     return ((typ <::> ex) == NoType)
 
 
 instance Checker Type where
     infer Delayed = peekExpType
     infer t = return t
-    isOfType t = return . (t ==)
 
 instance Checker Value where
     infer (IntLit _ p) = updatePos p >>
@@ -69,12 +68,13 @@ instance Checker Value where
         mData <- lookupGlobal name
         case mData of
             Nothing -> do
-                typ <- expect Delayed (apply Delayed args)
+                typ <- expect Delayed (apply (Delayed <$ args) args)
                 dta <- pushUndefCtor name typ
                 let TypeDecl _ typ' = glbType dta
                 return typ'
-            Just (Constructor (TypeDecl _ typ) _vis _parent _) ->
-                expect typ (apply typ args)
+            Just (Constructor (TypeDecl _ typ@(Applied types)) _ _ _) ->
+                expect typ (apply types args)
+            Just (Constructor (TypeDecl _ typ) _ _ _) -> return typ
             Just dta -> throw $ Redefinition (name{varPos=glbPos dta}) name
         -- TODO: Verify that `findGlobals` returns a `Constructor`
     infer (Tuple arr) = do
@@ -196,19 +196,28 @@ instance Checker Ctor where
 
 
 pushParams :: [Value] -> Analyzer Type
-pushParams _ = return NoType
+pushParams [] = return NoType
+pushParams (val:vals) = do
+    case val of
+        VarVal var -> do
+            pushScoped var (TypeDecl [] Delayed) Imut
+            return ()
+        Hole p -> do
+            updatePos p
+            return ()
+        _ -> return ()-- "pushParams: Not yet implemented"
+    pushParams vals
 
-apply :: Type -> [Value] -> Analyzer Type
-apply ft [] = return ft
-apply ft (val:vals) = do
+apply :: [Type] -> [Value] -> Analyzer Type
+apply fTs [] = return (Applied fTs)
+apply (t:ts) (val:vals) = do
     updatePosVal val
-    vT <- infer val
+    expectCheck t val
+    apply ts vals
+apply [] vals = do
     eT <- peekExpType
-    areSame <- isOfType vT eT
-    if areSame then
-        apply ft vals
-    else
-        throw $ TypeMismatch vT eT
+    throw $ TypeMismatch eT (Applied (Delayed <$ vals))
+
 
 inferBody :: Body -> Analyzer Type
 inferBody body = do
@@ -232,14 +241,10 @@ expectCheck Delayed = infer
 expectCheck t = expectCheck' t
 
 expectCheck' :: Checker a => Type -> a -> Analyzer Type
-expectCheck' typ a = do
-    aT <- expect typ (infer a)
-    let typ' = typ <::> aT
-    if typ' == NoType then
-        throw $ TypeMismatch typ aT
-    else do
-        same <- isOfType aT typ
-        if same then
-            return typ'
-        else
-            throw $ TypeMismatch typ aT
+expectCheck' typ_ a = do
+    let typ = normalize typ_
+    aT_ <- expect typ (infer a)
+    let aT = normalize aT_
+    case typ <::> aT of
+        NoType -> throw $ TypeMismatch typ aT
+        typ' -> return (normalize typ')
