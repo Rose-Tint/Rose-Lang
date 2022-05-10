@@ -29,6 +29,7 @@ common general
         Common.SrcPos,
         Common.Typing,
         Common.Typing.Constraint,
+        Common.Typing.Kind,
         Common.Typing.Type,
         Common.Var,
         Front.Parser,
