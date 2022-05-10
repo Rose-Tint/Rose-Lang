@@ -36,33 +36,57 @@ instance Eq Type where
 -- are incompatible, or either are `NoType`.
 infixl 7 <:>
 (<:>) :: Type -> Type -> Type
-typ <:> Delayed = normalize typ
-Delayed <:> typ =  normalize typ
-Applied [] <:> _ = NoType
-_ <:> Applied [] = NoType
-Applied [t1] <:> t2 = t1 <:> t2
-t1 <:> Applied [t2] = t1 <:> t2
-Applied ts1 <:> Applied ts2 =
-    maybe NoType Applied (zipTypes ts1 ts2)
-Type n1 ts1 <:> Type n2 ts2
-    | n1 /= n2 = NoType
-    | otherwise = case zipTypes ts1 ts2 of
-        Nothing -> NoType
-        Just subs -> Type n1 subs
-Param _ ts1 <:> Type nm ts2 =
-    case zipTypes ts1 ts2 of
-        Nothing -> NoType
-        Just subs -> Type nm subs
-t@(Type _ _) <:> p@(Param _ _) = p <:> t
-_ <:> _ = NoType
+(<:>) = (<::>)
+-- typ <:> Delayed = typ
+-- Delayed <:> typ =  typ
+-- Applied [] <:> _ = NoType
+-- _ <:> Applied [] = NoType
+-- Applied [t1] <:> t2 = t1 <:> t2
+-- t1 <:> Applied [t2] = t1 <:> t2
+-- Applied ts1 <:> Applied ts2 =
+--     maybe NoType Applied (zipTypes ts1 ts2)
+-- Type n1 ts1 <:> Type n2 ts2
+--     | n1 /= n2 = NoType
+--     | otherwise = case zipTypes ts1 ts2 of
+--         Nothing -> NoType
+--         Just subs -> Type n1 subs
+-- Param _ ts1 <:> Type nm ts2 =
+--     case zipTypes ts1 ts2 of
+--         Nothing -> NoType
+--         Just subs -> Type nm subs
+-- t@(Type _ _) <:> p@(Param _ _) = p <:> t
+-- _ <:> _ = NoType
 
 -- |Essentially `(<:>)`, but treats `NoType` as
 -- `Delayed`. `(<:>)` should be preferred
 infixl 7 <::>
 (<::>) :: Type -> Type -> Type
-typ <::> NoType = normalize typ
-NoType <::> typ = normalize typ
-t1 <::> t2 = t1 <:> t2
+typ <::> NoType = typ
+NoType <::> typ = typ
+typ <::> Delayed = typ
+Delayed <::> typ =  typ
+Applied [] <::> typ = typ
+typ <::> Applied [] = typ
+Applied [t1] <::> t2 = t1 <::> t2
+t1 <::> Applied [t2] = t1 <::> t2
+Applied ts1 <::> Applied ts2 =
+    maybe NoType Applied (zipTypes ts1 ts2)
+Applied _ <::> _ = NoType
+_ <::> Applied _ = NoType
+Type n1 ts1 <::> Type n2 ts2
+    | n1 /= n2 = NoType
+    | otherwise = case zipTypes ts1 ts2 of
+        Nothing -> NoType
+        Just subs -> Type n1 subs
+Param _ ts1 <::> Type nm ts2 =
+    case zipTypes ts1 ts2 of
+        Nothing -> NoType
+        Just subs -> Type nm subs
+Param nm ts1 <::> Param _ ts2 =
+    case zipTypes ts1 ts2 of
+        Nothing -> NoType
+        Just subs -> Param nm subs
+t@(Type _ _) <::> p@(Param _ _) = p <:> t
 
 -- |Zips Types using `(<:>)`. Returns `Nothing` if
 -- one list is longer than the other, or `(<:>)`
@@ -80,7 +104,6 @@ zipTypes (t1:ts1) (t2:ts2) = do
 -- |Turns `Applied` types with only one type-argument
 -- into just that type
 normalize :: Type -> Type
-normalize (Applied []) = NoType
 normalize (Applied [t]) = normalize t
 normalize (Applied ts) = Applied (normalize <$> ts)
 normalize (Type nm ts) = Type nm (normalize <$> ts)
@@ -118,19 +141,16 @@ tupleOf = Type (prim "(,)")
 
 
 instance Pretty Type where
-    terse Delayed = "*"
     terse NoType = "_"
     terse t = pretty t
-    -- tuples
-    pretty (Type (Var "," _) types) = "("+|", "`seps`types|+")"
-    -- tuples
+    -- Tuple
+    pretty (Type (Var "(,)" _) types) = "("+|", "`seps`types|+")"
+    -- Array
     pretty (Type (Var "[]" _) types) = "["+|", "`seps`types|+"]"
     pretty (Type name []) = pretty name
     pretty (Type name types) = name|+" "+|" "`seps`types
     pretty (Param name []) = pretty name
     pretty (Param name types) = name|+" "+|" "`seps`types
     pretty (Applied types) = "("+|" -> "`seps`types|+")"
-    pretty Delayed = "DELAYED"
+    pretty Delayed = "."
     pretty NoType = "NOTYPE"
-    detailed Delayed = "a*"
-    detailed t = pretty t

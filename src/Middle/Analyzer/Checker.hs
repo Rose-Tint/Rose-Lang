@@ -1,3 +1,5 @@
+{-# LANGUAGE LambdaCase #-}
+
 module Middle.Analyzer.Checker (
     infer,
 ) where
@@ -12,8 +14,8 @@ import Common.Var
 import Front.Parser
 import Middle.Analyzer.Error
 import Middle.Analyzer.Internal
-import Middle.Analyzer.SymbolTable
-import Middle.SymbolTable
+import Middle.Analyzer.Table
+import Middle.Table
 
 
 default (Int, Double)
@@ -47,13 +49,34 @@ instance Checker Value where
         return stringType
     infer (VarVal var) = do
         updatePosVar var
-        sdType <$> searchScopeds var
+        -- TODO: add if not found
+        mData <- lookupScoped var
+        case mData of
+            Nothing -> do
+                eT <- peekExpType
+                dta <- pushUndefFunc var eT
+                -- TODO: dont ignore constraints
+                let TypeDecl _ typ = glbType dta
+                return typ
+            Just dta ->
+                -- TODO: dont ignore constraints
+                let TypeDecl _ typ = scpType dta
+                in return typ
     infer (Application val vals) =
         Applied <$> mapM infer (val:vals)
     infer (CtorCall name args) = do
         updatePosVar name
-        typ <- sdType <$> searchGlobals name
-        expect typ (apply typ args)
+        mData <- lookupGlobal name
+        case mData of
+            Nothing -> do
+                typ <- expect Delayed (apply Delayed args)
+                dta <- pushUndefCtor name typ
+                let TypeDecl _ typ' = glbType dta
+                return typ'
+            Just (Constructor (TypeDecl _ typ) _vis _parent _) ->
+                expect typ (apply typ args)
+            Just dta -> throw $ Redefinition (name{varPos=glbPos dta}) name
+        -- TODO: Verify that `findGlobals` returns a `Constructor`
     infer (Tuple arr) = do
         typs <- elems <$> mapM infer arr
         return $! tupleOf typs
@@ -92,14 +115,14 @@ instance Checker Stmt where
             --     vals are of the same type
             inferBody bdy
         return (foldr (<::>) Delayed bTs)
-    infer (NewVar mut name typ val) = do
-        pushScoped mut name typ
+    infer (NewVar mut name td@(TypeDecl _ typ) val) = do
+        pushScoped name td mut
         expectCheck typ val
         return NoType
     infer (Reassignment name val) = do
         -- TODO: assert mutability
         dta <- findScoped name
-        let typ = sdType dta
+        let TypeDecl _ typ = scpType dta
         expectCheck' typ val
     infer (Return val) = do
         updatePosVal val
@@ -117,30 +140,35 @@ instance Checker Stmt where
     infer NullStmt = return NoType
 
 instance Checker Expr where
-    infer (FuncDecl pur vis name (TypeDecl _ typ)) = define name $! do
-        pushGlobal name $ mkSymbolData
-            name typ (Just vis) (Just pur)
+    infer (FuncDecl pur vis name typ) = define name $! do
+        pushFunction' name typ vis pur
         return NoType
     infer (FuncDef name params bdy) = define name $! do
-        dta <- searchGlobals name
-        let typ = sdType dta
+        mData <- lookupGlobal name
+        dta <- case mData of
+            Nothing -> pushUndefFunc name Delayed
+            Just dta -> return dta
         pushParams params
+        let TypeDecl _ typ = glbType dta
         bT <- inferBody bdy
         expectCheck typ bT
         return NoType
     infer (DataDef vis name tps ctors) = define name $! do
-        pushType name $ mkSymbolData name
-            (Type name ((`Param` []) <$> tps))
-            (Just vis) (Just Pure)
+        pushDatatype name tps vis
         mapM_ infer ctors
         return NoType
-    infer (TraitDecl vis _ctx name _tps fns) = define name $! do
-        pushTrait name $ mkSymbolData
-            name Delayed (Just vis) (Just Pure)
+    infer (TraitDecl vis _ctx name tps fns) = define name $! do
+        pushTrait name tps vis
         mapM_ infer fns
         return NoType
-    infer (TraitImpl _ctx name _types fns) = define name $! do
-        _ <- searchTraits name
+    -- TODO:
+    infer (TraitImpl _ctx name types fns) = define name $! do
+        mData <- lookupTrait name
+        case mData of
+            Nothing -> do
+                pushUndefTrait name types
+                return ()
+            Just _ -> return ()
         mapM_ infer fns
         return NoType
     infer (TypeAlias _vis _alias _typ) = do
@@ -149,26 +177,22 @@ instance Checker Expr where
         return NoType
 
 instance Checker Ctor where
-    infer (SumType name vis types) = define name $! do
-        pushGlobal name $ mkSymbolData name
-            (Applied types) (Just vis) (Just Pure)
+    infer (SumType name vis types) = do
+        parent <- getCurrDef'
+        define name $! pushCtor name (Applied types) vis parent
         return NoType
-    infer (Record cName vis flds) = define cName $! do
-        types <- forM flds $ \(Field fName typ) -> define fName $! do
-            pushGlobal fName $ mkSymbolData fName
-                (Applied [Delayed, typ])
-                (Just vis) (Just Pure)
-            return typ
-        pushGlobal cName $ mkSymbolData cName
-            (Applied (types ++ [Delayed]))
-            (Just vis) (Just Pure)
-        return NoType
-
-instance Checker Var where
-    infer var = sdType <$> findScoped var
-
-instance Checker SymbolData where
-    infer = return . sdType
+    infer (Record _name _vis _flds) = fail
+        "Checker.infer: `Record`s are not yet implemented"
+        -- types <- forM flds $ \(Field fName typ) -> define fName $! do
+        --     pushGlobal fName $ mkSymbolData fName
+        --         (Applied [Delayed, typ])
+        --         (Just vis) (Just Pure)
+        --     return typ
+        -- pushCtor name (Applied types) vis
+        -- pushGlobal name $ mkSymbolData name
+        --     (Applied (types ++ [Delayed]))
+        --     (Just vis) (Just Pure)
+        -- return NoType
 
 
 pushParams :: [Value] -> Analyzer Type
@@ -204,16 +228,18 @@ inferBody body = do
 
 expectCheck :: Checker a => Type -> a -> Analyzer Type
 expectCheck NoType = infer
+expectCheck Delayed = infer
 expectCheck t = expectCheck' t
 
 expectCheck' :: Checker a => Type -> a -> Analyzer Type
 expectCheck' typ a = do
     aT <- expect typ (infer a)
-    if typ == NoType then
-        return aT
+    let typ' = typ <::> aT
+    if typ' == NoType then
+        throw $ TypeMismatch typ aT
     else do
         same <- isOfType aT typ
         if same then
-            return (typ <:> aT)
+            return typ'
         else
             throw $ TypeMismatch typ aT

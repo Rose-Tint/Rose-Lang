@@ -1,37 +1,37 @@
 {-# LANGUAGE FlexibleInstances #-}
 
-module Middle.Table.Datatype (
+module Middle.Table.Data.Datatype (
     Datatype(..),
+    undefFromType,
 ) where
 
 import Common.SrcPos
-import Common.Typing.Type
+import Common.Typing
 import Common.Var
-import Middle.Trie
+import Front.Parser
 import Pretty
 
 
 data Datatype = Datatype {
         dtKind :: Kind,
-        dtVis :: Visibility,
-        dtCtors :: [Var]
+        dtVis :: Visib,
+        dtCtors :: [Var],
         dtPos :: SrcPos
     }
     deriving (Eq)
 
 
 instance Pretty Datatype where
-    pretty (Datatype kind vis _ctors pos) =
-        "Datatype ("+|vis|+"): (kind ("+|kind|+"))"
+    pretty = detailed
     detailed (Datatype kind vis _ctors pos) =
          "| "+|9.>terse pos|+
         " | "+|6.<vis|+
         " | "+|15.<kind|+
         " |"
 
-instance Pretty (String, Datatype) where
-    pretty = detailed
-    detailed (str, dt) = "| "+|15.>str|+" "*|dt
+-- instance Pretty (String, Datatype) where
+--     pretty = detailed
+--     detailed (str, dt) = "| "+|15.>str|+" "*|dt
 
 
 -- | Initialized a new, undefined `Datatype`.
@@ -44,3 +44,7 @@ undefFromType typ = Datatype {
         dtCtors = [],
         dtPos = UnknownPos
     }
+
+-- dataAsType :: Var -> Datatype -> Type
+-- dataAsType name (Datatype kind _ _ _) =
+    -- (Type name (replicate ))

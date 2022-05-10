@@ -1,17 +1,18 @@
-module Middle.Table.Data (
-    Data(..),
+{-# LANGUAGE FlexibleInstances #-}
+
+module Middle.Table.Data.Scoped (
+    Scoped(..),
 ) where
 
 import Common.SrcPos
-import Common.Typing.Type
-import Common.Var
-import Middle.Trie
+import Common.Typing
+import Front.Parser
 import Pretty
 
 
 data Scoped = Scp {
-        scpType :: Type,
-        scpMutab :: Mutability,
+        scpType :: TypeDecl,
+        scpMutab :: Mutab,
         scpPos :: SrcPos
     }
     deriving (Eq)
@@ -25,6 +26,6 @@ instance Pretty Scoped where
         " | "+|35.>typ|+
         " |"
 
-instance Pretty (String, Scoped) where
-    pretty = detailed
-    detailed (str, scp) = "| "+|15.>str|+" "*|scp
+-- instance Pretty (String, Scoped) where
+--     pretty = detailed
+--     detailed (str, scp) = "| "+|15.>str|+" "*|scp

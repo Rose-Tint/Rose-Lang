@@ -2,18 +2,19 @@
 
 module Middle.Table.Data.Trait (
     Trait(..),
+    undefFromCons
 ) where
 
 import Common.SrcPos
 import Common.Typing
 import Common.Var
-import Middle.Trie
+import Front.Parser
 import Pretty
 
 
 data Trait = Trait {
         trtKind :: Kind,
-        trtVisib :: Visibility,
+        trtVisib :: Visib,
         trtMeths :: [Var],
         trtImpls :: [TypeDecl],
         trtPos :: SrcPos
@@ -29,9 +30,9 @@ instance Pretty Trait where
         " | "+|15.>kind|+
         " |"
 
-instance Pretty (String, Trait) where
-    pretty = detailed
-    detailed (str, trt) = "| "+|15.>str|+" "*|trt
+-- instance Pretty (String, Trait) where
+--     pretty = detailed
+--     detailed (str, trt) = "| "+|15.>str|+" "*|trt
 
 
 undefFromCons :: Constraint -> Trait

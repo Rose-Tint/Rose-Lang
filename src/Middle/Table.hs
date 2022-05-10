@@ -1,6 +1,7 @@
 module Middle.Table (
     module S,
     Table(..),
+    ScopedMaps,
     insertType,
     insertTrait,
     insertGlobal,
@@ -11,6 +12,7 @@ module Middle.Table (
 
 import Data.Maybe (mapMaybe)
 
+import Common.SrcPos
 import Common.Var
 import Middle.Table.Data as S
 import Middle.Table.VarMap as S
@@ -67,9 +69,9 @@ insertScoped sym dta tbl =
 
 getSimilarVars :: Var -> Table -> [Var]
 getSimilarVars (Var name _) (Table typs trts glbs scps) =
-    concatMap [
+    concat [
         filtKeys dtPos typs,
-        filtKeys trtPos typs,
+        filtKeys trtPos trts,
         filtKeys glbPos glbs,
         concatMap (filtKeys scpPos) scps
     ]

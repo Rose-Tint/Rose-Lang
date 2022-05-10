@@ -2,7 +2,7 @@
 
 {-# OPTIONS_GHC -Wno-orphans #-}
 
-module Middle.Table.VarMap a (
+module Middle.Table.VarMap (
     Trie,
     -- Construction
     T.empty, singleton,
@@ -21,6 +21,7 @@ module Middle.Table.VarMap a (
 import Prelude hiding (lookup)
 
 import Common.Var
+import Middle.Table.Data
 import Middle.Table.Trie hiding (
     singleton,
     insert,
@@ -28,8 +29,9 @@ import Middle.Table.Trie hiding (
     findWithDefault,
     delete,
     adjust,
+    isMemberOf,
     )
-import qualified Middle.SymbolTable.Trie as T
+import qualified Middle.Table.Trie as T
 import Pretty
 
 
@@ -69,16 +71,19 @@ instance Pretty (Trie Global) where
 
 instance Pretty [(Trie Scoped)] where
     pretty = detailed
-    detailed t = "Scopeds:\n"++
+    detailed ts = "Scopeds:\n"++
         "+-Symbol#10-+-Position--+-Mutab.-+-Type#30-+\n"
-        +|(unlines $! detailed <$> concatMap assocs scps)
+        +|(unlines $! unlineAssocsD <$> ts)
 
 instance Pretty (Trie Trait) where
     pretty = detailed
     detailed t = "Traits:\n"++
-        "+-Symbol#10-+-Position--+-Visib.-+-Kind#10-+\n"
+        "+-Symbol#10-+-Position--+-Visib.-+-Kind#12-+\n"
         +|unlineAssocsD t
 
 
 unlineAssocsD :: Pretty a => Trie a -> String
-unlineAssocsD t = unlines $! detailed <$> T.assocs t
+unlineAssocsD t = unlines strs
+    where
+        strs = (\(key, dta) -> "| "+|15.>key|+" "*|dta) <$> assocs'
+        assocs' = T.assocs t

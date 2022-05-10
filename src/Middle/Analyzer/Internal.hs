@@ -1,4 +1,5 @@
 {-# LANGUAGE Rank2Types #-}
+{-# LANGUAGE LambdaCase #-}
 
 module Middle.Analyzer.Internal (
     Control.Monad.Fail.fail,
@@ -9,8 +10,8 @@ module Middle.Analyzer.Internal (
     getModuleName,
     pushScope, popScope,
     peekExpType, expect,
+    getTopDef, getCurrDef, getCurrDef', getDefs,
     define,
-    addImport,
     updatePos, updatePosVar, updatePosVal,
     option, optional,
     throw, warn, catch, throwUndefined,
@@ -24,10 +25,10 @@ import Data.Functor ((<&>))
 import Common.SrcPos
 import Common.Typing
 import Common.Var
-import Front.Parser (Import, Value, valPos)
+import Front.Parser (Value, valPos)
 import Middle.Analyzer.Error
 import Middle.Analyzer.State
-import Middle.SymbolTable
+import Middle.Table
 
 
 default (Int, Double)
@@ -44,8 +45,7 @@ newtype Analyzer a
 data Analysis
     = Analysis {
         arErrors :: ![ErrInfo],
-        arTable :: !SymbolTable,
-        arImports :: ![Import]
+        arTable :: !Table
     }
 
 
@@ -54,13 +54,11 @@ runAnalyzer a = runA a newState okay err
     where
         err _ s = Analysis {
                     arErrors = stErrors s,
-                    arTable = stTable s,
-                    arImports = stImports s
+                    arTable = stTable s
                 }
         okay _ s = Analysis {
                     arErrors = [],
-                    arTable = stTable s,
-                    arImports = stImports s
+                    arTable = stTable s
                 }
 
 getState :: Analyzer State
@@ -74,19 +72,19 @@ modifyState_ :: (State -> State) -> Analyzer ()
 modifyState_ f = Analyzer $ \ s okay _ ->
     let !s' = f s in okay () s'
 
-getTable :: Analyzer SymbolTable
+getTable :: Analyzer Table
 getTable = stTable <$!> getState
 
-setTable :: SymbolTable -> Analyzer SymbolTable
+setTable :: Table -> Analyzer Table
 setTable = modifyTable . const
 
-modifyTable :: (SymbolTable -> SymbolTable) -> Analyzer SymbolTable
+modifyTable :: (Table -> Table) -> Analyzer Table
 modifyTable f = do
     tbl <- f <$!> getTable
     modifyState (\s -> s { stTable = tbl })
     return tbl
 
-modifyTable_ :: (SymbolTable -> SymbolTable) -> Analyzer ()
+modifyTable_ :: (Table -> Table) -> Analyzer ()
 modifyTable_ f = do
     modifyState (\s -> s { stTable = f (stTable s) })
     return ()
@@ -94,11 +92,31 @@ modifyTable_ f = do
 getModuleName :: Analyzer Var
 getModuleName = stModule <$!> getState
 
-enterDef :: Symbol -> Analyzer ()
-enterDef name = modifyState_ (\s -> s { stDefName = Just name })
+enterDef :: Var -> Analyzer ()
+enterDef name = modifyState_ (\s -> s { stDefs = (name:stDefs s) })
+
+getTopDef :: Analyzer Var
+getTopDef = last . stDefs <$!> getState
+
+getCurrDef :: Analyzer Var
+getCurrDef = getDefs >>= \case
+    [] -> getModuleName
+    (def:_) -> return def
+
+getCurrDef' :: Analyzer Var
+getCurrDef' = getDefs >>= \case
+    [] -> fail "getCurrDef': not in definition"
+    (def:_) -> return def
+
+getDefs :: Analyzer [Var]
+getDefs = stDefs <$!> getState
 
 exitDef :: Analyzer ()
-exitDef = modifyState_ (\s -> s { stDefName = Nothing })
+exitDef = modifyState_  $ \s -> s {
+    stDefs = case stDefs s of
+        [] -> []
+        (_:defs) -> defs
+    }
 
 pushScope :: Analyzer ()
 pushScope = modifyTable_ $ \tbl ->
@@ -112,9 +130,9 @@ popScope = modifyTable_ $ \tbl -> tbl {
     }
 
 pushExpType :: Type -> Analyzer ()
-pushExpType NoType = return ()
+pushExpType NoType = fail "pushExpType: cannot push `NoType`"
 pushExpType typ = Analyzer $ \ !s okay _ ->
-    okay () (s { stExpType = (typ:stExpType s) })
+    okay () (s { stExpType = (normalize typ:stExpType s) })
 
 popExpType :: Analyzer Type
 popExpType = Analyzer $ \ !s okay _ -> case stExpType s of
@@ -122,11 +140,11 @@ popExpType = Analyzer $ \ !s okay _ -> case stExpType s of
     (typ:rest) -> okay typ (s { stExpType = rest })
 
 peekExpType :: Analyzer Type
-peekExpType = Analyzer $ \ !s okay _ ->
-    let typ = case stExpType s of
-            [] -> NoType
-            (typ':_) -> typ'
-    in okay typ s
+peekExpType = do
+    eTs <- stExpType <$!> getState
+    case eTs of
+        [] -> fail "peekExpType: expected type"
+        (typ:_) -> return typ
 
 expect :: Type -> Analyzer a -> Analyzer a
 expect NoType a = a
@@ -136,7 +154,7 @@ expect t a = do
     popExpType
     return x
 
-define :: Symbol -> Analyzer a -> Analyzer Type
+define :: Var -> Analyzer a -> Analyzer Type
 define !name analyzer = do
     updatePosVar name
     enterDef name
@@ -154,10 +172,6 @@ updatePosVar (Var _ p) = updatePos p
 updatePosVal :: Value -> Analyzer ()
 updatePosVal val = updatePos (valPos val)
 
-addImport :: Import -> Analyzer ()
-addImport imp = modifyState_ $ \s ->
-    s { stImports = (imp:stImports s) }
-
 option :: a -> Analyzer a -> Analyzer a
 option def a = catch a <&> fromRight def
 
@@ -170,7 +184,7 @@ throw e = Analyzer $ \ s _ err ->
     let es = stErrors s
         em = ErrInfo {
                 emPos = stPos s,
-                emDefName = stDefName s,
+                emDefName = Just (head (stDefs s)),
                 emError = Right e
             }
     in err e (s { stErrors = (em:es) })
@@ -178,7 +192,7 @@ throw e = Analyzer $ \ s _ err ->
 warn :: Warning -> Analyzer ()
 warn w = modifyState_ $ \s -> s { stErrors = ((ErrInfo {
         emPos = stPos s,
-        emDefName = stDefName s,
+        emDefName = Just (head (stDefs s)),
         emError = Left w
     }):stErrors s) }
 
@@ -186,9 +200,9 @@ catch :: Analyzer a -> Analyzer (Either Error a)
 catch a = Analyzer $ \s okay _ ->
     runA a s (okay . Right) (okay . Left)
 
-throwUndefined :: Symbol -> Analyzer a
+throwUndefined :: Var -> Analyzer a
 throwUndefined sym = do
-    syms <- getSimilarSymbols sym <$!> getTable
+    syms <- getSimilarVars sym <$!> getTable
     throw $ Undefined sym syms
 
 
