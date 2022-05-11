@@ -44,7 +44,7 @@ data Value
     | Lambda [Var] Body
     | StmtVal Stmt
     | Hole SrcPos
-    deriving (Eq)
+    -- deriving (Eq)
 
 data Purity = Pure | Impure | Unsafe
     deriving (Show, Eq)
@@ -56,12 +56,12 @@ data Visib = Export | Intern
     deriving (Show, Eq)
 
 data Field = Field !Var Type
-    deriving (Eq)
+    -- deriving (Eq)
 
 data Ctor
     = Record !Var Visib [Field]
     | SumType !Var Visib [Type]
-    deriving (Eq)
+    -- deriving (Eq)
 
 data Stmt
     = IfElse Value Body Body
@@ -74,7 +74,7 @@ data Stmt
     | Break
     | Continue
     | NullStmt
-    deriving (Eq)
+    -- deriving (Eq)
 
 type MatchCase = (Value, Body)
 
@@ -108,7 +108,7 @@ data Expr
     }
     | FuncDef !Var [Value] Body
     | TypeAlias Visib !Var Type
-    deriving (Eq)
+    -- deriving (Eq)
 
 valPos :: Value -> SrcPos
 valPos (IntLit _ p) = p

@@ -55,20 +55,23 @@ s1 <|> s2 = fmap (apply s1) s2 `union` s1
 
 class Substable a where
     apply :: Subst -> a -> a
+    -- | Gets a set of all (f)ree (t)ype (v)ariables
     ftv :: a -> S.Set Var
 
 instance Substable Type where
     apply s (Type nm types) =
         Type nm (apply s <$> types)
-    apply s (Param nm types) = findWithDefault
-        (Param nm (apply s types)) nm s
-    apply s (Applied types) = Applied (apply s <$> types)
+    apply s typ@(TypeVar nm) = findWithDefault typ nm s
+    apply s (t1 :-> t2) = apply s t1 :-> apply s t2
+    apply s (TupleType types) = TupleType (apply s <$> types)
+    apply s (ArrayType typ) = ArrayType (apply s typ)
     ftv (Type _ types) = foldr
         S.union S.empty (ftv <$> types)
-    ftv (Param nm types) = foldr
-        S.union (S.singleton nm) (ftv <$> types)
-    ftv (Applied types) = foldr
-        S.union S.empty (ftv <$> types)
+    ftv (TypeVar nm) = S.singleton nm
+    ftv (t1 :-> t2) = ftv t1 `S.union` ftv t2
+    ftv (TupleType types) = foldl'
+        (\tvs -> S.union tvs . ftv) S.empty types
+    ftv (ArrayType typ) = ftv typ
 
 instance Substable Scheme where
     apply s (Forall vars typ) =

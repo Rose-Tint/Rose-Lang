@@ -3,14 +3,12 @@ module Common.Typing.Kind (
     mkKind,
     kindOf,
     kindFromList,
-    mkTypeWithKind,
 ) where
 
 import Data.Word(Word8)
 
 import Common.Typing.Constraint
 import Common.Typing.Type
-import Common.Var
 import Pretty
 
 
@@ -28,10 +26,6 @@ mkKind = Kind . fromIntegral
 kindFromList :: [a] -> Kind
 kindFromList = mkKind . length
 
-mkTypeWithKind :: Var -> Kind -> Type
-mkTypeWithKind name (Kind k) =
-    Type name (replicate (fromIntegral k) delayed)
-
 
 instance Pretty Kind where
     pretty (Kind n) = " -> " `seps`
@@ -44,8 +38,6 @@ class HasKind a where
 
 instance HasKind Type where
     kindOf (Type _ pars) = Kind
-        (fromIntegral (length pars))
-    kindOf (Param _ pars) = Kind
         (fromIntegral (length pars))
     kindOf _ = Kind 0
 

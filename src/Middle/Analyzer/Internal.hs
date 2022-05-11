@@ -128,7 +128,7 @@ fresh = do
     state <- modifyState $ \s ->
         s { stFreshIdx = stFreshIdx s + 1 }
     let i = stFreshIdx state
-    return (Param (prim (letters !! i)) [])
+    return (TypeVar (prim (letters !! i)))
     where
     letters = [1..] >>= flip replicateM ['a'..'z']
 

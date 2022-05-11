@@ -80,7 +80,7 @@ instance Inferable Value where
         (s1, t1) <- lookupEnv env name
         (s2, t2) <- applyArgs env arg args
         s3 <- unify t1 t2
-        return (s3 <|> s2 <|> s1, Applied [t2, t1])
+        return (s3 <|> s2 <|> s1, t2 :-> t1)
     infer env (Lambda ps body) = do
         env' <- pushParams ps env
         -- tv1 <- fresh
@@ -91,7 +91,7 @@ instance Inferable Value where
         --     ) (nullSubst, tv1) body
         (bS, bT) <- infer env' body
         tv <- fresh
-        return (bS, apply bS (Applied [tv, bT]))
+        return (bS, apply bS (tv :-> bT))
     infer env (Tuple arr) = do
         (sub, types) <- foldM (\(s1, types) val -> do
             (s2, typ) <- infer env val
@@ -175,22 +175,18 @@ lookupEnv env var = case lookup var env of
         return (nullSubst, typ)
 
 unify :: Type -> Type -> Analyzer Subst
-unify t1@(Applied ts1) t2@(Applied ts2) = go ts1 ts2
-    where
-        go (t1':ts1') (t2':ts2') = do
-            s1 <- unify t1' t2'
-            s2 <- go ts1' ts2'
-            return (s1 <|> s2)
-        go [] [] = return nullSubst
-        go _ _ = throw (TypeMismatch t1 t2)
-unify (Param name _) typ = bind name typ
-unify typ (Param name _) = bind name typ
+unify (l1 :-> l2) (r1 :-> r2) = do
+    s1 <- unify l1 l2
+    s2 <- unify (apply s1 r1) (apply s1 r2)
+    return (s2 <|> s1)
+unify (TypeVar name) typ = bind name typ
+unify typ (TypeVar name) = bind name typ
 unify (Type nm1 ts1) (Type nm2 ts2) | nm1 == nm2 =
     compose <$!> zipWithM unify ts1 ts2
 unify t1 t2 = throw (TypeMismatch t1 t2)
 
 bind :: Var -> Type -> Analyzer Subst
--- bind _ Param{} = return nullSubst
+-- bind _ TypeVar{} = return nullSubst
 bind var typ
     | occurs var typ = throw (InfiniteType var typ)
     | otherwise = return $! singleton var typ
@@ -214,7 +210,7 @@ applyArgs env a (b:bs) = do
     -- TODO: wont work (vals is a list)
     (s2, t2) <- applyArgs (apply s1 env) a bs
     tv <- fresh
-    s3 <- unify (apply s2 t1) (Applied [t2, tv])
+    s3 <- unify (apply s2 t1) (t2 :-> tv)
     return (compose [s3, s2, s1], apply s3 tv)
 
 -- pushes parameters to the type-environment
@@ -227,24 +223,23 @@ pushParams (par:pars) env = do
     pushParams pars env'
 
 newTypeEnv :: Analyzer TypeEnv
-newTypeEnv = do
-    tbl <- getTable
-    tEnv <- fromList <$> mapM (\(s, dt) -> do
-        let Kind k = dtKind dt
-        types <- replicateM (fromIntegral k) fresh
-        let name = Var s (dtPos dt)
-            typ = Type name types
-        return (name, Forall [] typ)
-        ) (assocs (tblTypes tbl))
-    let gEnv = (\glb ->
-            let TypeDecl _ typ = glbType glb
-            in Forall [] typ
-            ) <$> tblGlobals tbl
-        sEnvs = fmap (Forall [] . scpType)
-            <$> tblScopeds tbl
-        sEnv = foldr (<>) emptyTypeEnv sEnvs
-    return (tEnv <> gEnv <> sEnv)
-    
+newTypeEnv = return emptyTypeEnv
+    -- tbl <- getTable
+    -- tEnv <- fromList <$> mapM (\(s, dt) -> do
+    --     -- let Kind k = dtKind dt
+    --     -- types <- replicateM (fromIntegral k) fresh
+    --     let name = Var s (dtPos dt)
+    --         typ = Type name []
+    --     return (name, Forall [] typ)
+    --     ) (assocs (tblTypes tbl))
+    -- let gEnv = (\glb ->
+    --         let TypeDecl _ typ = glbType glb
+    --         in Forall [] typ
+    --         ) <$> tblGlobals tbl
+    --     sEnvs = fmap (Forall [] . scpType)
+    --         <$> tblScopeds tbl
+    --     sEnv = foldr (<>) emptyTypeEnv sEnvs
+    -- return (tEnv <> gEnv <> sEnv)
 
 inferNew :: Inferable a => a -> Analyzer (Subst, Type)
 inferNew a = do

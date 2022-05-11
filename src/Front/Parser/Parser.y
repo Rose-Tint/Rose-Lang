@@ -118,32 +118,29 @@ Vis :: { Visib }
     | intern        { Intern }
 
 TypeDecl :: { TypeDecl }
-    : "<" CtxSeq ArrowSepTypes1 ">" { TypeDecl $2 (Applied $3) }
-    | "<" ArrowSepTypes1 ">" { TypeDecl [] (Applied $2) }
+    : "<" CtxSeq ":" ArrowSepTypes1 ">" { TypeDecl $2 $4 }
+    | "<" ArrowSepTypes1 ">" { TypeDecl [] $2 }
 
 CtxSeq :: { Context }
-    : CtxSeq_ ":"   { reverse $1 }
-
-CtxSeq_ :: { Context }
-    : CtxSeq_ "," Constraint  { ($3:$1) }
+    : CtxSeq "," Constraint  { ($3:$1) }
     | Constraint              { [$1]    }
 
 Constraint :: { Constraint }
     : big_id SmallIds0   { Constraint $1 $2 }
 
-ArrowSepTypes1 :: { [Type] }
-    : ArrowSepTypes1_    { reverse $1 }
+-- ArrowSepTypes1 :: { Type }
+--     : ArrowSepTypes1_    { $1 }
 
-ArrowSepTypes1_ :: { [Type] }
-    : Type                      { [$1]      }
-    | ArrowSepTypes1_ "->" Type { ($3:$1) }
+ArrowSepTypes1 :: { Type }
+    : Type                      { $1 }
+    | ArrowSepTypes1 "->" Type { $1 :-> $3 }
 
 Type :: { Type }
     : big_id Types0             { Type $1 $2 }
-    | small_id Types0           { Param $1 $2 }
-    | "[" Type "]"              { Type (prim "[]") [$2] }
-    | "(" CommaSepTypes2 ")"    { Type (prim ",") $2 }
-    | "(" ArrowSepTypes1 ")"    { Applied $2 }
+    | small_id                  { TypeVar $1 }
+    | "[" Type "]"              { ArrayType $2 }
+    | "(" CommaSepTypes2 ")"    { TupleType $2 }
+    | "(" ArrowSepTypes1 ")"    { $2 }
 
 Types0 :: { [Type] }
     : Types1_        { reverse $1 }
@@ -155,7 +152,7 @@ Types0 :: { [Type] }
 -- type-parameter (see `Type`, rules 1 & 2),
 -- but added ~15 s/r conflicts
 Types1_ :: { [Type] }
-    : Type           { [$1] }
+    : Type           { ([$1]) }
     | Types1_ Type   { ($2:$1) }
 
 CommaSepTypes2 :: { [Type] }
@@ -271,7 +268,7 @@ NewVar :: { Stmt }
 
 VarType :: { TypeDecl }
     : TypeDecl      { $1 }
-    | {- empty -}   { TypeDecl [] delayed }
+    | {- empty -}   { TypeDecl [] (TypeVar (prim "")) } -- thats not right...
 
 FuncCall :: { Value }
     : Term infix_id Term    { Application (VarVal $2) [$1, $3] }
@@ -325,7 +322,7 @@ CtorList :: { [Ctor] }
 
 CtorDef :: { Ctor }
     : Vis big_id                        { SumType $2 $1 [] }
-    | Vis big_id "<" ArrowSepTypes1 ">" { SumType $2 $1 $4 }
+    | Vis big_id "<" ArrowSepTypes1 ">" { SumType $2 $1 (typeToList $4) }
 
 TypeAlias :: { Expr }
     : using Vis big_id "=" Type  { TypeAlias $2 $3 $5 }

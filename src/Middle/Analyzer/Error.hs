@@ -31,7 +31,7 @@ data Error
     | InfiniteType Var Type
     | OtherError String
     | FalseError
-    deriving (Eq)
+    -- deriving (Eq)
 
 data Warning
     = ShadowsName

@@ -1,8 +1,6 @@
 module Common.Typing.Type  (
     Type(..),
-    delayed,
-    (<::>),
-    normalize,
+    typeToList,
     -- primitives
     boolType,
     intType,
@@ -10,7 +8,7 @@ module Common.Typing.Type  (
     doubleType,
     stringType,
     charType,
-    arrayType, arrayOf,
+    arrayOf,
     tupleOf,
 ) where
 
@@ -19,81 +17,80 @@ import Pretty
 
 
 data Type
-    = Type {-# UNPACK #-} !Var [Type]
-    | Param {-# UNPACK #-} !Var [Type]
-    | Applied [Type]
+    -- | A defined type (i.e. Int, Maybe a)
+    = Type !Var [Type]
+    | TypeVar !Var
+    -- | Application type (i.e. a -> b, a -> String)
+    | Type :-> Type
+    | TupleType [Type]
+    | ArrayType Type
 
 
-instance Eq Type where
-    Type nm1 ts1 == Type nm2 ts2 = nm1 == nm2 && allTypesEq ts1 ts2
-    Type _ ts1 == Param _ ts2 = allTypesEq ts1 ts2
-    Param _ ts1 == Type _ ts2 = allTypesEq ts1 ts2
-    Param nm1 ts1 == Param nm2 ts2 = nm1 == nm2 && allTypesEq ts1 ts2
-    Param _ [] == Applied _ = True
-    Applied _ == Param _ [] = True
-    Applied [t1] == t2 = t1 == t2
-    t1 == Applied [t2] = t1 == t2
-    Applied ts1 == Applied ts2 = allTypesEq ts1 ts2
-    _ == _ = False
-
-allTypesEq :: [Type] -> [Type] -> Bool
-allTypesEq [] [] = True
-allTypesEq (t1:ts1) (t2:ts2) = t1 == t2 && allTypesEq ts1 ts2
-allTypesEq _ _ = False
+-- | Helpful for things like sum-type constructors
+typeToList :: Type -> [Type]
+typeToList (t1 :-> t2) = (t1:typeToList t2)
+typeToList t = [t]
 
 
-infixl 7 <::>
-(<::>) :: Type -> Type -> Maybe Type
-Applied [] <::> typ = Just typ
-typ <::> Applied [] = Just typ
-Applied [t1] <::> t2 = t1 <::> t2
-t1 <::> Applied [t2] = t1 <::> t2
-Applied ts1 <::> Applied ts2 = case zipTypes ts1 ts2 of
-    Nothing -> Nothing
-    Just [] -> Nothing
-    Just [t] -> Just t
-    Just ts -> Just (Applied ts)
-Type n1 ts1 <::> Type n2 ts2
-    | n1 /= n2 = Nothing
-    | otherwise = do
-        types <- zipTypes ts1 ts2
-        return (Type n1 types)
-Param _ ts1 <::> Type nm ts2 = do
-    types <- zipTypes ts1 ts2
-    return (Type nm types)
-Param n1 ts1 <::> Param n2 ts2
-    | n1 /= n2 = Nothing
-    | otherwise = do
-        types <- zipTypes ts1 ts2
-        return (Type n1 types)
-Type nm ts1 <::> Param _ ts2 = do
-        types <- zipTypes ts1 ts2
-        return (Type nm types)
-typ <::> Param _ [] = Just typ
-Param _ [] <::> typ = Just typ
-_ <::> _ = Nothing
+-- instance Eq Type where
+--     Type nm1 ts1 == Type nm2 ts2 = nm1 == nm2 && allTypesEq ts1 ts2
+--     Type _ ts1 == TypeVar _ ts2 = allTypesEq ts1 ts2
+--     TypeVar _ ts1 == Type _ ts2 = allTypesEq ts1 ts2
+--     TypeVar nm1 ts1 == TypeVar nm2 ts2 = nm1 == nm2 && allTypesEq ts1 ts2
+--     TypeVar _ [] == Applied _ = True
+--     Applied _ == TypeVar _ [] = True
+--     Applied [t1] == t2 = t1 == t2
+--     t1 == Applied [t2] = t1 == t2
+--     Applied ts1 == Applied ts2 = allTypesEq ts1 ts2
+--     _ == _ = False
+
+-- allTypesEq :: [Type] -> [Type] -> Bool
+-- allTypesEq [] [] = True
+-- allTypesEq (t1:ts1) (t2:ts2) = t1 == t2 && allTypesEq ts1 ts2
+-- allTypesEq _ _ = False
+
+
+-- infixl 7 <::>
+-- (<::>) :: Type -> Type -> Maybe Type
+-- Applied [] <::> typ = Just typ
+-- typ <::> Applied [] = Just typ
+-- Applied [t1] <::> t2 = t1 <::> t2
+-- t1 <::> Applied [t2] = t1 <::> t2
+-- Applied ts1 <::> Applied ts2 = case zipTypes ts1 ts2 of
+--     Nothing -> Nothing
+--     Just [] -> Nothing
+--     Just [t] -> Just t
+--     Just ts -> Just (Applied ts)
+-- Type n1 ts1 <::> Type n2 ts2
+--     | n1 /= n2 = Nothing
+--     | otherwise = do
+--         types <- zipTypes ts1 ts2
+--         return (Type n1 types)
+-- TypeVar _ ts1 <::> Type nm ts2 = do
+--     types <- zipTypes ts1 ts2
+--     return (Type nm types)
+-- TypeVar n1 ts1 <::> TypeVar n2 ts2
+--     | n1 /= n2 = Nothing
+--     | otherwise = do
+--         types <- zipTypes ts1 ts2
+--         return (Type n1 types)
+-- Type nm ts1 <::> TypeVar _ ts2 = do
+--         types <- zipTypes ts1 ts2
+--         return (Type nm types)
+-- typ <::> TypeVar _ [] = Just typ
+-- TypeVar _ [] <::> typ = Just typ
+-- _ <::> _ = Nothing
 -- |Zips Types using `(<:>)`. Returns `Nothing` if
 -- one list is longer than the other, or `(<:>)`
 -- returns `NoType`.
-zipTypes :: [Type] -> [Type] -> Maybe [Type]
-zipTypes [] [] = Just []
-zipTypes [] (_:_) = Nothing
-zipTypes (_:_) [] = Nothing
-zipTypes (t1:ts1) (t2:ts2) = do
-    types <- zipTypes ts1 ts2
-    typ <- t1 <::> t2
-    return (typ:types)
-
--- |Turns `Applied` types with only one type-argument
--- into just that type
-normalize :: Type -> Type
-normalize (Applied [t]) = normalize t
-normalize (Applied ts) = Applied (normalize <$> ts)
-normalize (Type nm ts) = Type nm (normalize <$> ts)
-normalize typ = typ
-
-delayed :: Type
-delayed = Param (prim "") []
+-- zipTypes :: [Type] -> [Type] -> Maybe [Type]
+-- zipTypes [] [] = Just []
+-- zipTypes [] (_:_) = Nothing
+-- zipTypes (_:_) [] = Nothing
+-- zipTypes (t1:ts1) (t2:ts2) = do
+--     types <- zipTypes ts1 ts2
+--     typ <- t1 <::> t2
+--     return (typ:types)
 
 
 {- PRIMITIVES -}
@@ -111,28 +108,22 @@ doubleType :: Type
 doubleType = Type (prim "Double") []
 
 stringType :: Type
-stringType = Type (prim "Array") [charType]
+stringType = Type (prim "String") []
 
 charType :: Type
 charType = Type (prim "Char") []
 
-arrayType :: Type
-arrayType = Type (prim "[]") [delayed]
-
 arrayOf :: Type -> Type
-arrayOf t = Type (prim "[]") [t]
+arrayOf = ArrayType
 
 tupleOf :: [Type] -> Type
-tupleOf = Type (prim "(,)")
+tupleOf = TupleType
 
 
 instance Pretty Type where
-    -- Tuple
-    pretty (Type (Var "(,)" _) types) = "("+|", "`seps`types|+")"
-    -- Array
-    pretty (Type (Var "[]" _) types) = "["+|", "`seps`types|+"]"
     pretty (Type name []) = pretty name
     pretty (Type name types) = name|+" "+|" "`seps`types
-    pretty (Param name []) = pretty name
-    pretty (Param name types) = name|+" "+|" "`seps`types
-    pretty (Applied types) = "("+|" -> "`seps`types|+")"
+    pretty (TypeVar name) = pretty name
+    pretty (t1 :-> t2) = "("+|t1|+" -> "+|t2|+")"
+    pretty (TupleType types) = "("+|", "`seps`types|+")"
+    pretty (ArrayType typ) = "["+|typ|+"]"

@@ -16,7 +16,6 @@ import Common.SrcPos
 import Common.Var
 import Middle.Table.Data as S
 import Middle.Table.VarMap as S
-import Middle.Table.Trie (assocs)
 import Pretty
 import Utils.String
 
@@ -39,7 +38,7 @@ data Table
         tblGlobals :: !GlobalMap,
         tblScopeds :: !ScopedMaps
     }
-    deriving (Eq)
+    -- deriving (Eq)
 
 
 emptyTable :: Table

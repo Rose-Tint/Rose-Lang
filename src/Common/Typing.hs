@@ -10,7 +10,7 @@ import Pretty
 
 
 data TypeDecl = TypeDecl Context Type
-    deriving (Eq)
+    -- deriving (Eq)
 
 
 instance Pretty TypeDecl where
