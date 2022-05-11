@@ -22,6 +22,7 @@ import Common.Var
 import Front.Parser (Value(..), Stmt(..))
 import Middle.Analyzer.Error
 import Middle.Analyzer.Internal
+-- import Middle.Analyzer.Table
 import Middle.Table
 import Middle.Typing.Scheme
 
@@ -55,8 +56,25 @@ instance Inferable Value where
     infer env (VarVal var) = do
         updatePosVar var
         lookupEnv env var
+        -- mData <- lookupScoped var
+        -- typ <- case mData of
+        --     Nothing -> do
+        --         tv <- fresh
+        --         TypeDecl _ typ <- glbType <$> pushUndefFunc var tv
+        --         return typ
+        --     Just scp -> return (scpType scp)
+        -- return (nullSubst, typ)
     infer env (Application val vals) = applyArgs env val vals
-    infer env (CtorCall name []) = lookupEnv env name
+    infer env (CtorCall name []) = do
+        updatePosVar name
+        lookupEnv env name
+        -- mData <- lookupGlobal name
+        -- TypeDecl _ typ <- case mData of
+        --     Nothing -> do
+        --         tv <- fresh
+        --         glbType <$> pushUndefCtor name tv
+        --     Just glb -> return (glbType glb)
+        -- return (nullSubst, typ)
     infer env (CtorCall name (arg:args)) = do
         updatePosVar name
         (s1, t1) <- lookupEnv env name
@@ -140,13 +158,14 @@ instance Inferable Stmt where
         return (nullSubst, tv)
 
 instance Inferable [Stmt] where
-    infer _ [] = undefined
+    infer _ [] = undefined -- TODO
     infer env [stmt] = infer env stmt
     infer env (stmt:stmts) = do
         (s1, t1) <- infer env stmt
         (s2, t2) <- infer env stmts
         s3 <- unify t1 t2
         return (s3 <|> s2 <|> s1, apply s3 t2)
+
 
 lookupEnv :: TypeEnv -> Var -> Analyzer (Subst, Type)
 lookupEnv env var = case lookup var env of
@@ -163,17 +182,15 @@ unify t1@(Applied ts1) t2@(Applied ts2) = go ts1 ts2
             s2 <- go ts1' ts2'
             return (s1 <|> s2)
         go [] [] = return nullSubst
-        go _ _ = throw (UnifyError t1 t2)
-unify (Param name []) typ = bind name typ
-unify typ (Param name []) = bind name typ
-unify (Type nm1 []) (Type nm2 [])
-    | nm1 == nm2 = return nullSubst
-unify t1 t2 = throw (UnifyError t1 t2)
+        go _ _ = throw (TypeMismatch t1 t2)
+unify (Param name _) typ = bind name typ
+unify typ (Param name _) = bind name typ
+unify (Type nm1 ts1) (Type nm2 ts2) | nm1 == nm2 =
+    compose <$!> zipWithM unify ts1 ts2
+unify t1 t2 = throw (TypeMismatch t1 t2)
 
 bind :: Var -> Type -> Analyzer Subst
-bind var typ@(Param nm [])
-    | var == nm = return nullSubst
-    | otherwise = throw (BindError var typ)
+-- bind _ Param{} = return nullSubst
 bind var typ
     | occurs var typ = throw (InfiniteType var typ)
     | otherwise = return $! singleton var typ
@@ -204,20 +221,30 @@ applyArgs env a (b:bs) = do
 pushParams :: [Var] -> TypeEnv -> Analyzer TypeEnv
 pushParams [] !env = return env
 pushParams (par:pars) env = do
+    updatePosVar par
     tv <- fresh
     let env' = extend par (Forall [] tv) env
     pushParams pars env'
 
 newTypeEnv :: Analyzer TypeEnv
 newTypeEnv = do
-    tbl <- tblTypes <$!> getTable
-    mapWithKeyM (\s dt -> do
+    tbl <- getTable
+    tEnv <- fromList <$> mapM (\(s, dt) -> do
         let Kind k = dtKind dt
         types <- replicateM (fromIntegral k) fresh
         let name = Var s (dtPos dt)
             typ = Type name types
-        return (Forall [] typ)
-        ) tbl
+        return (name, Forall [] typ)
+        ) (assocs (tblTypes tbl))
+    let gEnv = (\glb ->
+            let TypeDecl _ typ = glbType glb
+            in Forall [] typ
+            ) <$> tblGlobals tbl
+        sEnvs = fmap (Forall [] . scpType)
+            <$> tblScopeds tbl
+        sEnv = foldr (<>) emptyTypeEnv sEnvs
+    return (tEnv <> gEnv <> sEnv)
+    
 
 inferNew :: Inferable a => a -> Analyzer (Subst, Type)
 inferNew a = do

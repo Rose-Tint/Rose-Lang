@@ -11,7 +11,7 @@ import Pretty
 
 
 data Scoped = Scp {
-        scpType :: TypeDecl,
+        scpType :: Type,
         scpMutab :: Mutab,
         scpPos :: SrcPos
     }

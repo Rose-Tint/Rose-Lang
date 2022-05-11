@@ -210,7 +210,7 @@ pushMethod name typ vis pur parent = do
     modifyTrait parent (\t -> t { trtMeths = (name:trtMeths t) })
     return dta
 
-pushScoped :: Var -> TypeDecl -> Mutab -> Analyzer Scoped
+pushScoped :: Var -> Type -> Mutab -> Analyzer Scoped
 pushScoped name typ mut = do
     let dta = Scp typ mut (varPos name)
     modifyTable_ (insertScoped name dta)

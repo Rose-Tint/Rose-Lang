@@ -1,4 +1,5 @@
-module Middle.Table.Trie (Trie,
+module Middle.Table.Trie (
+    Trie,
     -- Construction
     empty, singleton, fromList,
     -- Insertion
@@ -9,7 +10,7 @@ module Middle.Table.Trie (Trie,
     (??),
     -- Deletion/Updating
     delete, adjust, update,
-    mapWithKey, mapWithKeyM,
+    mapWithKeyM,
     -- Combination
     union, -- difference, intersect,
     -- Other
@@ -208,25 +209,6 @@ update f [_] (Node chn a) = let a' = f a in case a' of
 update f (c:cs) trie = updateChildAt c (update f cs) trie
 
 
-mapWithKey :: (String -> a -> b) -> Trie a -> Trie b
-mapWithKey _ Empty = Empty
-mapWithKey f (Link chn com) = Link
-    (mapWithKey (f . (com ++)) <$> chn) com
-mapWithKey f (Node chn a) = Node
-    (mapWithKey f <$> chn) (f "" a)
-
-
-mapWithKeyM :: Monad m => (String -> a -> m b) -> Trie a -> m (Trie b)
-mapWithKeyM _ Empty = return Empty
-mapWithKeyM f (Link chn com) = do
-    chn' <- mapM (mapWithKeyM (f . (com ++))) chn
-    return (Link chn' com)
-mapWithKeyM f (Node chn a) = do
-    chn' <- mapM (mapWithKeyM f) chn
-    b <- f "" a
-    return (Node chn' b)
-
-
 {- %%%%%%%%%% Combining %%%%%%%%%% -}
 
 -- |Creates a trie consisting of the all items in both tries.
@@ -291,6 +273,18 @@ union l1@(Link chn1 com1) l2@(Link chn2 com2)
 --                 zipChn intersect chn1 chn2
 -- intersect tr1 tr2 = Link (zipChn intersect
 --     (trieChildren tr1) (trieChildren tr2))
+
+
+mapWithKeyM :: Monad m =>
+    (String -> a -> m b) -> Trie a -> m (Trie b)
+mapWithKeyM _ Empty = return Empty
+mapWithKeyM f (Link chn com) = do
+    chn' <- mapM (mapWithKeyM (f . (com ++))) chn
+    return (Link chn' com)
+mapWithKeyM f (Node chn a) = do
+    chn' <- mapM (mapWithKeyM f) chn
+    b <- f "" a
+    return (Node chn' b)
 
 
 {- %%%%%%%%%% Other %%%%%%%%%% -}

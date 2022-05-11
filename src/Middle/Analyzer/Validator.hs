@@ -113,14 +113,13 @@ instance Validator Stmt where
         return (Match val' cases')
     validate stmt@(NewVar mut name _ _) = do
         (sub, typ) <- inferNew stmt
-        pushScoped name (TypeDecl [] (apply sub typ)) mut
+        pushScoped name (apply sub typ) mut
         return stmt
     validate stmt@(Reassignment name val) = do
         -- TODO: assert mutability
         dta <- findScoped name
-        let TypeDecl _ typ = scpType dta
         (_, vT) <- inferNew val
-        _ <- unify typ vT
+        _ <- unify (scpType dta) vT
         return stmt
     validate (Return val) = do
         val' <- validate val
@@ -202,7 +201,7 @@ pushParams (val:vals) = do
     case val of
         VarVal var -> do
             tv <- fresh
-            pushScoped var (TypeDecl [] tv) Imut
+            pushScoped var tv Imut
             return ()
         Hole p -> do
             updatePos p

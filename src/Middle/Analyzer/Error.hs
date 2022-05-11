@@ -27,7 +27,6 @@ data Error
     | Redefinition
         Var -- original
         Var -- new
-    | UnifyError Type Type
     | BindError Var Type
     | InfiniteType Var Type
     | OtherError String
@@ -90,7 +89,6 @@ instance Pretty Error where
         where
             newLine = srcLine (varPos new)
             origLine = srcLine (varPos orig)
-    pretty (UnifyError _t1 _t2) = "Unification error"
     pretty (BindError _var _t2) = "Type-Binding error"
     pretty (InfiniteType tv typ) =
         "Cannot create the infinite type `"+|tv|+" -> "+|typ|+"`"++
