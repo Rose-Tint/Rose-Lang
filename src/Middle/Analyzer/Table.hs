@@ -29,7 +29,6 @@ import Prelude hiding (lookup)
 
 import Control.Monad ((<$!>))
 
-import Common.SrcPos
 import Common.Typing
 import Common.Var
 import Front.Parser

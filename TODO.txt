@@ -2,7 +2,10 @@ TODO:
   - Change Rose file-extensions
     - from ".th"
     - to ".ro" or ".rose"
+  - Move Trie file to new folder
+    - maybe VarMap too?
+  - Implement context and constraints
 
 IN-PROGRESS:
   - LLVM back-end
-  - MAJOR rework to middle-end
+  - Eliminate `NoType`

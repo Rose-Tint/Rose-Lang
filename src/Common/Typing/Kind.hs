@@ -30,7 +30,7 @@ kindFromList = mkKind . length
 
 mkTypeWithKind :: Var -> Kind -> Type
 mkTypeWithKind name (Kind k) =
-    Type name (replicate (fromIntegral k) Delayed)
+    Type name (replicate (fromIntegral k) delayed)
 
 
 instance Pretty Kind where

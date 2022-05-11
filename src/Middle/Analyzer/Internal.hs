@@ -5,11 +5,14 @@ module Middle.Analyzer.Internal (
     Control.Monad.Fail.fail,
     Analyzer,
     Analysis(..),
+    State(..),
     runAnalyzer,
+    -- modifyState, modifyState_,
+    getState,
+    fresh,
     getTable, setTable, modifyTable, modifyTable_,
     getModuleName,
-    pushScope, popScope,
-    peekExpType, peekExpType', expect,
+    pushScope, popScope, inNewScope,
     getTopDef, getCurrDef, getCurrDef', getDefs,
     define,
     updatePos, updatePosVar, updatePosVal,
@@ -17,7 +20,9 @@ module Middle.Analyzer.Internal (
     throw, warn, catch, throwUndefined,
 ) where
 
-import Control.Monad ((<$!>), void)
+import Prelude hiding (fail)
+
+import Control.Monad ((<$!>), void, replicateM)
 import Control.Monad.Fail
 import Data.Either (fromRight)
 import Data.Functor ((<&>))
@@ -118,6 +123,15 @@ exitDef = modifyState_  $ \s -> s {
         (_:defs) -> defs
     }
 
+fresh :: Analyzer Type
+fresh = do
+    state <- modifyState $ \s ->
+        s { stFreshIdx = stFreshIdx s + 1 }
+    let i = stFreshIdx state
+    return (Param (prim (letters !! i)) [])
+    where
+    letters = [1..] >>= flip replicateM ['a'..'z']
+
 pushScope :: Analyzer ()
 pushScope = modifyTable_ $ \tbl ->
     tbl { tblScopeds = (empty:tblScopeds tbl) }
@@ -129,45 +143,20 @@ popScope = modifyTable_ $ \tbl -> tbl {
         (_:scps) -> scps
     }
 
-pushExpType :: Type -> Analyzer ()
-pushExpType NoType = fail "pushExpType: cannot push `NoType`"
-pushExpType typ = Analyzer $ \ !s okay _ ->
-    okay () (s { stExpType = (normalize typ:stExpType s) })
+inNewScope :: Analyzer a -> Analyzer a
+inNewScope an = do
+    pushScope
+    x <- an
+    popScope
+    return $! x
 
-popExpType :: Analyzer Type
-popExpType = Analyzer $ \ !s okay _ -> case stExpType s of
-    [] -> okay NoType s
-    (typ:rest) -> okay typ (s { stExpType = rest })
-
-peekExpType :: Analyzer Type
-peekExpType = do
-    eTs <- stExpType <$!> getState
-    case eTs of
-        [] -> return Delayed
-        (typ:_) -> return typ
-
-peekExpType' :: Analyzer Type
-peekExpType' = do
-    eTs <- stExpType <$!> getState
-    case eTs of
-        [] -> fail "peekExpType': expected type"
-        (typ:_) -> return typ
-
-expect :: Type -> Analyzer a -> Analyzer a
-expect NoType a = a
-expect t a = do
-    pushExpType t
-    x <- a
-    popExpType
-    return x
-
-define :: Var -> Analyzer a -> Analyzer Type
+define :: Var -> Analyzer a -> Analyzer a
 define !name analyzer = do
     updatePosVar name
     enterDef name
-    analyzer
+    x <- analyzer
     exitDef
-    return NoType
+    return x
 
 updatePos :: SrcPos -> Analyzer ()
 updatePos UnknownPos = return ()

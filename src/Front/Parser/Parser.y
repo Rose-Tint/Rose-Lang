@@ -271,7 +271,7 @@ NewVar :: { Stmt }
 
 VarType :: { TypeDecl }
     : TypeDecl      { $1 }
-    | {- empty -}   { TypeDecl [] Delayed }
+    | {- empty -}   { TypeDecl [] delayed }
 
 FuncCall :: { Value }
     : Term infix_id Term    { Application (VarVal $2) [$1, $3] }

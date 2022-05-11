@@ -3,9 +3,10 @@
 {-# OPTIONS_GHC -Wno-orphans #-}
 
 module Middle.Table.VarMap (
-    Trie,
+    module Middle.Table.Trie,
+    VarMap,
     -- Construction
-    T.empty, singleton,
+    singleton, fromList,
     -- Insertion
     insert,
     -- Query
@@ -13,9 +14,8 @@ module Middle.Table.VarMap (
     -- Deletion/Updating
     delete, adjust,
     -- Combination
-    T.union,
     -- Other
-    T.keys, T.isEmpty, T.size, isMemberOf,
+    isMemberOf,
 ) where
 
 import Prelude hiding (lookup)
@@ -25,6 +25,7 @@ import Middle.Table.Data
 import Middle.Table.Trie hiding (
     singleton,
     insert,
+    fromList,
     lookup,
     findWithDefault,
     delete,
@@ -35,11 +36,18 @@ import qualified Middle.Table.Trie as T
 import Pretty
 
 
+type VarMap = Trie
+
+
 singleton :: Var -> a -> Trie a
 singleton = T.singleton . varName
 
 insert :: Var -> a -> Trie a -> Trie a
 insert = T.insert . varName
+
+fromList :: [(Var, a)] -> Trie a
+fromList [] = empty
+fromList ((k,v):kvs) = insert k v (fromList kvs)
 
 lookup :: Var -> Trie a -> Maybe a
 lookup = T.lookup . varName
