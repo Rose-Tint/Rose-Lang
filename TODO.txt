@@ -5,10 +5,6 @@ TODO:
     - Move Trie file to new folder
         - maybe VarMap too?
     - Implement context and constraints
-    - Modify `Type`
-        - `Applied [Type]` -> `Type :-> Type`
-        - `Param Var [Type]` -> `TVar Var Kind`
-        - maybe add tuple/array types?
     - Allow constructor-operators
         - decide syntactic difference
             - initial symbol, or something else?
@@ -28,6 +24,7 @@ TODO:
             | | +-State.hs
             | +-IO.hs
             +-Typing(.hs)
+            | +-Prim.hs
             | +-Type.hs
             | +-Kind.hs
             | +-Constraint.hs
@@ -64,10 +61,15 @@ TODO:
             +-Control
             | +-Concurrent
             | | +-Threading.hs
+    - change `NewVar`'s `TypeDecl` parameter to just `Type`
 
 IN-PROGRESS:
     - LLVM back-end
     - Hindley-Milner type-system
+    - Modify `Type`
+        - `Applied [Type]` -> `Type :-> Type`
+        - `Param Var [Type]` -> `TVar Var`
+        - add tuple/array types
 
 COMPLETED, BUT QUESTIONABLE:
     - Eliminate `NoType`
