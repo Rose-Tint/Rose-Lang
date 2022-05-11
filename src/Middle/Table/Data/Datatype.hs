@@ -2,7 +2,7 @@
 
 module Middle.Table.Data.Datatype (
     Datatype(..),
-    undefFromType,
+    -- undefFromType,
 ) where
 
 import Common.SrcPos
@@ -13,20 +13,20 @@ import Pretty
 
 
 data Datatype = Datatype {
-        dtKind :: Kind,
+        -- dtKind :: Kind,
         dtVis :: Visib,
         dtCtors :: [Var],
         dtPos :: SrcPos
     }
-    deriving (Eq)
+    -- deriving (Eq)
 
 
 instance Pretty Datatype where
     pretty = detailed
-    detailed (Datatype kind vis _ctors pos) =
+    detailed (Datatype vis _ctors pos) =
          "| "+|9.>terse pos|+
         " | "+|6.<vis|+
-        " | "+|15.<kind|+
+        -- " | "+|15.<kind|+
         " |"
 
 -- instance Pretty (String, Datatype) where
@@ -37,10 +37,10 @@ instance Pretty Datatype where
 -- | Initialized a new, undefined `Datatype`.
 -- To be used when an undefined type has
 -- been encountered.
-undefFromType :: Type -> Datatype
-undefFromType typ = Datatype {
-        dtKind = kindOf typ,
-        dtVis = Export,
-        dtCtors = [],
-        dtPos = UnknownPos
-    }
+-- undefFromType :: Type -> Datatype
+-- undefFromType typ = Datatype {
+--         -- dtKind = kindOf typ,
+--         dtVis = Export,
+--         dtCtors = [],
+--         dtPos = UnknownPos
+--     }

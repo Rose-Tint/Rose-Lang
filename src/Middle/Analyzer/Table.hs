@@ -116,8 +116,8 @@ findScoped name = lookupScoped name >>= maybe
 
 lookupType :: Var -> Analyzer (Maybe Datatype)
 lookupType name = do
-    typs <- tblTypes <$!> getTable
-    return $! lookup name typs
+    types <- tblTypes <$!> getTable
+    return $! lookup name types
 
 lookupTrait :: Var -> Analyzer (Maybe Trait)
 lookupTrait name = do
@@ -150,68 +150,67 @@ modifyTrait name f = modifyTable_ $ \tbl ->
     tbl { tblTraits = adjust f name (tblTraits tbl) }
 
 
-pushDatatype :: Var -> [Var] -> Visib -> Analyzer Datatype
-pushDatatype name pars vis = do
-    let dta = Datatype (kindFromList pars) vis [] (varPos name)
+pushDatatype :: Var -> Visib -> Analyzer Datatype
+pushDatatype name vis = do
+    let dta = Datatype vis [] (varPos name)
     modifyTable_ (insertType name dta)
     return dta
 
-pushTrait :: Var -> [Var] -> Visib -> Analyzer Trait
-pushTrait name pars vis = do
-    let dta = Trait (kindFromList pars) vis [] [] (varPos name)
+pushTrait :: Var -> Visib -> Analyzer Trait
+pushTrait name vis = do
+    let dta = Trait vis [] [] (varPos name)
     modifyTable_ (insertTrait name dta)
     return dta
 
-pushUndefTrait :: Var -> [Type] -> Analyzer Trait
-pushUndefTrait name pars = do
-    let dta = Trait (kindFromList pars) Export [] [] (varPos name)
+pushUndefTrait :: Var -> Analyzer Trait
+pushUndefTrait name = do
+    let dta = Trait Export [] [] (varPos name)
     modifyTable_ (insertTrait name dta)
     return dta
 
-pushCtor :: Var -> Type -> Visib -> Var -> Analyzer Global
-pushCtor name typ vis parent = do
-    let dta = Constructor (TypeDecl [] typ) vis parent (varPos name)
+pushCtor :: Var -> Visib -> Var -> Analyzer Global
+pushCtor name vis parent = do
+    let dta = Constructor vis parent (varPos name)
     modifyTable_ (insertGlobal name dta)
     modifyDatatype parent (\d -> d { dtCtors = (name:dtCtors d) })
     return dta
 
-pushUndefCtor :: Var -> Type -> Analyzer Global
-pushUndefCtor name typ = do
+pushUndefCtor :: Var -> Analyzer Global
+pushUndefCtor name = do
     -- !!!TODO: undefined
-    let dta = Constructor
-            (TypeDecl [] typ) Export (prim "UNDEFINED") (varPos name)
+    let dta = Constructor Export (prim "UNDEFINED") (varPos name)
     modifyTable_ (insertGlobal name dta)
     return dta
 
-pushFunction :: Var -> TypeDecl -> Visib -> Analyzer Global
-pushFunction name typ vis = do
-    let dta = Function typ vis Nothing (varPos name)
+pushFunction :: Var -> Visib -> Analyzer Global
+pushFunction name vis = do
+    let dta = Function vis Nothing (varPos name)
     modifyTable_ (insertGlobal name dta)
     return dta
 
-pushUndefFunc :: Var -> Type -> Analyzer Global
-pushUndefFunc name typ = do
+pushUndefFunc :: Var -> Analyzer Global
+pushUndefFunc name = do
     -- TODO: get current/expoected purity
     -- instead of `Nothing` or `Unsafe`
-    let dta = Function (TypeDecl [] typ) Export Nothing (varPos name)
+    let dta = Function Export Nothing (varPos name)
     modifyTable_ (insertGlobal name dta)
     return dta
 
-pushFunction' :: Var -> TypeDecl -> Visib -> Purity -> Analyzer Global
-pushFunction' name typ vis pur = do
-    let dta = Function typ vis (Just pur) (varPos name)
+pushFunction' :: Var -> Visib -> Purity -> Analyzer Global
+pushFunction' name vis pur = do
+    let dta = Function vis (Just pur) (varPos name)
     modifyTable_ (insertGlobal name dta)
     return dta
 
-pushMethod :: Var -> TypeDecl -> Visib -> Purity -> Var -> Analyzer Global
-pushMethod name typ vis pur parent = do
-    let dta = Method typ vis (Just pur) parent (varPos name)
+pushMethod :: Var -> Visib -> Purity -> Var -> Analyzer Global
+pushMethod name vis pur parent = do
+    let dta = Method vis (Just pur) parent (varPos name)
     modifyTable_ (insertGlobal name dta)
     modifyTrait parent (\t -> t { trtMeths = (name:trtMeths t) })
     return dta
 
-pushScoped :: Var -> Type -> Mutab -> Analyzer Scoped
-pushScoped name typ mut = do
-    let dta = Scp typ mut (varPos name)
+pushScoped :: Var -> Mutab -> Analyzer Scoped
+pushScoped name mut = do
+    let dta = Scp mut (varPos name)
     modifyTable_ (insertScoped name dta)
     return dta

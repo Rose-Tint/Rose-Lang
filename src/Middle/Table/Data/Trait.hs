@@ -2,7 +2,7 @@
 
 module Middle.Table.Data.Trait (
     Trait(..),
-    undefFromCons
+    -- undefFromCons
 ) where
 
 import Common.SrcPos
@@ -13,21 +13,21 @@ import Pretty
 
 
 data Trait = Trait {
-        trtKind :: Kind,
+        -- trtKind :: Kind,
         trtVisib :: Visib,
         trtMeths :: [Var],
         trtImpls :: [TypeDecl],
         trtPos :: SrcPos
     }
-    deriving (Eq)
+    -- deriving (Eq)
 
 
 instance Pretty Trait where
     pretty = detailed
-    detailed (Trait kind vis _meths _impls pos) =
+    detailed (Trait vis _meths _impls pos) =
          "| "+|9.>pos|+
         " | "+|6.>vis|+
-        " | "+|15.>kind|+
+        -- " | "+|15.>kind|+
         " |"
 
 -- instance Pretty (String, Trait) where
@@ -35,11 +35,11 @@ instance Pretty Trait where
 --     detailed (str, trt) = "| "+|15.>str|+" "*|trt
 
 
-undefFromCons :: Constraint -> Trait
-undefFromCons cons = Trait {
-    trtKind = kindOf cons,
-    trtVisib = Export,
-    trtMeths = [],
-    trtImpls = [],
-    trtPos = UnknownPos
-    }
+-- undefFromCons :: Constraint -> Trait
+-- undefFromCons cons = Trait {
+--     -- trtKind = kindOf cons,
+--     trtVisib = Export,
+--     trtMeths = [],
+--     trtImpls = [],
+--     trtPos = UnknownPos
+--     }
