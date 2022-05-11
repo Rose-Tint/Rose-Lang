@@ -22,7 +22,7 @@ import Common.Var
 import Front.Parser (Value(..), Stmt(..))
 import Middle.Analyzer.Error
 import Middle.Analyzer.Internal
-import Middle.Table.VarMap
+import Middle.Table
 import Middle.Typing.Scheme
 
 
@@ -209,7 +209,17 @@ pushParams (par:pars) env = do
     pushParams pars env'
 
 newTypeEnv :: Analyzer TypeEnv
-newTypeEnv = tblTypes <$!> getState
+newTypeEnv = do
+    tbl <- tblTypes <$!> getTable
+    mapWithKeyM (\s dt -> do
+        let Kind k = dtKind dt
+        types <- replicateM (fromIntegral k) fresh
+        let name = Var s (dtPos dt)
+            typ = Type name types
+        return (Forall [] typ)
+        ) tbl
 
 inferNew :: Inferable a => a -> Analyzer (Subst, Type)
-inferNew = newTypeEnv >>= infer
+inferNew a = do
+    env <- newTypeEnv
+    infer env a

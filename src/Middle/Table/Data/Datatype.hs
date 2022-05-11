@@ -44,7 +44,3 @@ undefFromType typ = Datatype {
         dtCtors = [],
         dtPos = UnknownPos
     }
-
--- dataAsType :: Var -> Datatype -> Type
--- dataAsType name (Datatype kind _ _ _) =
-    -- (Type name (replicate ))

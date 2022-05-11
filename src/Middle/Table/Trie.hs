@@ -9,6 +9,7 @@ module Middle.Table.Trie (Trie,
     (??),
     -- Deletion/Updating
     delete, adjust, update,
+    mapWithKey, mapWithKeyM,
     -- Combination
     union, -- difference, intersect,
     -- Other
@@ -205,6 +206,25 @@ update f [_] (Node chn a) = let a' = f a in case a' of
     Just a'' -> Node chn a''
 -- update [_] _ trie = trie
 update f (c:cs) trie = updateChildAt c (update f cs) trie
+
+
+mapWithKey :: (String -> a -> b) -> Trie a -> Trie b
+mapWithKey _ Empty = Empty
+mapWithKey f (Link chn com) = Link
+    (mapWithKey (f . (com ++)) <$> chn) com
+mapWithKey f (Node chn a) = Node
+    (mapWithKey f <$> chn) (f "" a)
+
+
+mapWithKeyM :: Monad m => (String -> a -> m b) -> Trie a -> m (Trie b)
+mapWithKeyM _ Empty = return Empty
+mapWithKeyM f (Link chn com) = do
+    chn' <- mapM (mapWithKeyM (f . (com ++))) chn
+    return (Link chn' com)
+mapWithKeyM f (Node chn a) = do
+    chn' <- mapM (mapWithKeyM f) chn
+    b <- f "" a
+    return (Node chn' b)
 
 
 {- %%%%%%%%%% Combining %%%%%%%%%% -}
