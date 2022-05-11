@@ -5,29 +5,29 @@ module Middle.Analyzer.State (
 ) where
 
 import Common.SrcPos
-import Common.Typing
 import Common.Var
-import Front.Parser (Import)
 import Middle.Analyzer.Error
-import Middle.SymbolTable
+import Middle.Table
+-- import Middle.Typing.Scheme
 
 
 data State
     = State {
         stModule :: {-# UNPACK #-} !Var,
-        stExpType :: [Type],
+        stFreshIdx :: {-# UNPACK #-} !Int,
+        -- stTypeEnv :: TypeEnv,
+        stAllowBreak :: Bool,
         stErrors :: [ErrInfo],
-        stTable :: SymbolTable,
-        stImports :: [Import],
-        stDefName :: Maybe Symbol,
+        stTable :: Table,
+        stDefs :: [Var],
         stPos :: SrcPos
     }
 
 
 newModuleState :: String -> State
 {-# INLINE newModuleState #-}
-newModuleState name = State (prim name) [] []
-    emptyTable [] Nothing newSrcPos
+newModuleState name = State
+    (prim name) 0 False [] emptyTable [] newSrcPos
 
 newState :: State
 {-# INLINE newState #-}

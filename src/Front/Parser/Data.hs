@@ -4,8 +4,8 @@ module Front.Parser.Data (
     ValArray,
     Value(..),
     Purity(..),
-    Mutability,
-    Visibility(..),
+    Mutab(..),
+    Visib(..),
     Field(..),
     Ctor(..),
     Stmt(..),
@@ -44,36 +44,37 @@ data Value
     | Lambda [Var] Body
     | StmtVal Stmt
     | Hole SrcPos
-    deriving (Eq)
+    -- deriving (Eq)
 
 data Purity = Pure | Impure | Unsafe
     deriving (Show, Eq)
 
-type Mutability = Purity
+data Mutab = Mut | Imut
+    deriving (Show, Eq)
 
-data Visibility = Extern | Intern
+data Visib = Export | Intern
     deriving (Show, Eq)
 
 data Field = Field !Var Type
-    deriving (Eq)
+    -- deriving (Eq)
 
 data Ctor
-    = Record !Var Visibility [Field]
-    | SumType !Var Visibility [Type]
-    deriving (Eq)
+    = Record !Var Visib [Field]
+    | SumType !Var Visib [Type]
+    -- deriving (Eq)
 
 data Stmt
     = IfElse Value Body Body
     | Loop Stmt Stmt Stmt Body
     | Match Value [(Value, Body)]
-    | NewVar Mutability !Var TypeDecl Value
+    | NewVar Mutab !Var TypeDecl Value
     | Reassignment !Var Value
     | Return Value
     | ValStmt Value
     | Break
     | Continue
     | NullStmt
-    deriving (Eq)
+    -- deriving (Eq)
 
 type MatchCase = (Value, Body)
 
@@ -82,18 +83,18 @@ type Body = [Stmt]
 data Expr
     = FuncDecl {
         exprPurity :: Purity,
-        exprVisib :: Visibility,
+        exprVisib :: Visib,
         exprName :: !Var,
         exprType :: {-# UNPACK #-} !TypeDecl
     }
     | DataDef {
-        exprVisib :: Visibility,
+        exprVisib :: Visib,
         exprName :: !Var,
         exprParams :: [Var],
         exprCtors :: [Ctor]
     }
     | TraitDecl {
-        exprVisib :: Visibility,
+        exprVisib :: Visib,
         exprCtx :: Context,
         exprName :: !Var,
         exprParams :: [Var],
@@ -106,8 +107,8 @@ data Expr
         exprFuncs :: [Expr]
     }
     | FuncDef !Var [Value] Body
-    | TypeAlias Visibility !Var Type
-    deriving (Eq)
+    | TypeAlias Visib !Var Type
+    -- deriving (Eq)
 
 valPos :: Value -> SrcPos
 valPos (IntLit _ p) = p
@@ -136,18 +137,20 @@ valPos (Hole p) = p
 
 
 instance Pretty Purity where
-    terse Pure = "pu"
-    terse Impure = "im"
-    terse Unsafe = "un"
     pretty Pure = "pure"
     pretty Impure = "impure"
     pretty Unsafe = "unsafe"
     detailed = show
 
-instance Pretty Visibility where
-    terse Extern = "ex"
+instance Pretty Mutab where
+    pretty Mut = "mut"
+    pretty Imut = ""
+    detailed = show
+
+instance Pretty Visib where
+    terse Export = "ex"
     terse Intern = "in"
-    pretty Extern = "export"
+    pretty Export = "export"
     pretty Intern = "intern"
     detailed = show
 

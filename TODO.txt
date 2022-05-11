@@ -1,7 +1,75 @@
 TODO:
-  - Change Rose file-extensions
-    - from ".th"
-    - to ".ro" or ".rose"
+    - Change Rose file-extensions
+        - from ".th"
+        - to ".ro" or ".rose"
+    - Move Trie file to new folder
+        - maybe VarMap too?
+    - Implement context and constraints
+    - Allow constructor-operators
+        - decide syntactic difference
+            - initial symbol, or something else?
+    - seperate certain statements from expressions
+        - Match, IfElse,
+    - Add a 'compound' statement instead of `Body`
+    - reorganize the module structure (yes, again :...)
+        - desired layout: src/
+            +-CodeGen(.hs)
+            | +-ToLLVM.hs
+            +-Cmd(.hs)
+            | +-Flags.hs
+            | +-Warnings.hs
+            | +-Options.hs
+            +-Builder(.hs)
+            | +-Internal(.hs)
+            | | +-State.hs
+            | +-IO.hs
+            +-Typing(.hs)
+            | +-Prim.hs
+            | +-Type.hs
+            | +-Kind.hs
+            | +-Constraint.hs
+            | +-Infer.hs
+            | +-Inferable.hs
+            | +-Scheme.hs
+            | +-Substitution.hs
+            | +-TypeEnv.hs
+            | +-Unification.hs
+            +-Common
+            | +-Module.hs
+            | +-SrcPos.hs
+            | +-Var.hs
+            | +-Specifiers.hs
+            +-Parser(.hs)
+            | +-Base.hs
+            | +-Lexer.x
+            | +-Parser.y
+            | +-Token.hs
+            +-AST(.hs)
+            | +-Expr.hs
+            | +-Value.hs
+            | +-Stmt.hs
+            | +-Data.hs
+            | +-Trait.hs
+            +-Data
+            | +-Trie.hs
+            | +-VarMap.hs
+            | +-Table.hs
+            +-Utils.hs
+            +-Text.hs
+            | +-Pretty.hs
+            +-Main.hs
+            +-Control
+            | +-Concurrent
+            | | +-Threading.hs
+    - change `NewVar`'s `TypeDecl` parameter to just `Type`
 
 IN-PROGRESS:
-  - LLVM backend
+    - LLVM back-end
+    - Hindley-Milner type-system
+    - Modify `Type`
+        - `Applied [Type]` -> `Type :-> Type`
+        - `Param Var [Type]` -> `TVar Var`
+        - add tuple/array types
+
+COMPLETED, BUT QUESTIONABLE:
+    - Eliminate `NoType`

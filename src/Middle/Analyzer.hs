@@ -4,11 +4,11 @@ module Middle.Analyzer (
     analyze,
 ) where
 
-import Middle.Analyzer.Checker
 import Middle.Analyzer.Error
 import Middle.Analyzer.Internal
+import Middle.Analyzer.Validator
 import Front.Parser.Data (Expr)
 
 
 analyze :: [Expr] -> Analysis
-analyze = runAnalyzer . mapM infer
+analyze = runAnalyzer . mapM validate

@@ -1,14 +1,16 @@
 module Common.Typing (
-    module Common.Typing,
+    module T,
+    TypeDecl(..),
 ) where
 
-import Common.Typing.Constraint as Common.Typing
-import Common.Typing.Type as Common.Typing
+import Common.Typing.Constraint as T
+import Common.Typing.Kind as T
+import Common.Typing.Type as T
 import Pretty
 
 
 data TypeDecl = TypeDecl Context Type
-    deriving (Eq)
+    -- deriving (Eq)
 
 
 instance Pretty TypeDecl where

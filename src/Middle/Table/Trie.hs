@@ -1,4 +1,5 @@
-module Middle.SymbolTable.Trie (Trie,
+module Middle.Table.Trie (
+    Trie,
     -- Construction
     empty, singleton, fromList,
     -- Insertion
@@ -9,6 +10,7 @@ module Middle.SymbolTable.Trie (Trie,
     (??),
     -- Deletion/Updating
     delete, adjust, update,
+    mapWithKeyM,
     -- Combination
     union, -- difference, intersect,
     -- Other
@@ -271,6 +273,18 @@ union l1@(Link chn1 com1) l2@(Link chn2 com2)
 --                 zipChn intersect chn1 chn2
 -- intersect tr1 tr2 = Link (zipChn intersect
 --     (trieChildren tr1) (trieChildren tr2))
+
+
+mapWithKeyM :: Monad m =>
+    (String -> a -> m b) -> Trie a -> m (Trie b)
+mapWithKeyM _ Empty = return Empty
+mapWithKeyM f (Link chn com) = do
+    chn' <- mapM (mapWithKeyM (f . (com ++))) chn
+    return (Link chn' com)
+mapWithKeyM f (Node chn a) = do
+    chn' <- mapM (mapWithKeyM f) chn
+    b <- f "" a
+    return (Node chn' b)
 
 
 {- %%%%%%%%%% Other %%%%%%%%%% -}

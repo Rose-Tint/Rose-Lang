@@ -4,7 +4,7 @@ module Front.Parser.Imports (
 ) where
 
 import Common.Var
-import Front.Parser.Data (Visibility, Expr)
+import Front.Parser.Data (Visib, Expr)
 import Pretty
 
 
@@ -14,7 +14,7 @@ data Module = Module
 
 data Import = Import
     {-# UNPACK #-} !Var -- module name
-    Visibility
+    Visib
 
 
 instance Pretty Module where
