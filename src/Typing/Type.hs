@@ -1,0 +1,32 @@
+module Typing.Type  (
+    Type(..),
+    typeToList,
+) where
+
+import Common.Var
+import Pretty
+
+
+data Type
+    -- | A defined type (i.e. Int, Maybe a)
+    = Type !Var [Type]
+    | TypeVar !Var
+    -- | Application type (i.e. a -> b, a -> String)
+    | Type :-> Type
+    | TupleType [Type]
+    | ArrayType Type
+
+
+-- | Helpful for things like sum-type constructors
+typeToList :: Type -> [Type]
+typeToList (t1 :-> t2) = (t1:typeToList t2)
+typeToList t = [t]
+
+
+instance Pretty Type where
+    pretty (Type name []) = pretty name
+    pretty (Type name types) = name|+" "+|" "`seps`types
+    pretty (TypeVar name) = pretty name
+    pretty (t1 :-> t2) = "("+|t1|+" -> "+|t2|+")"
+    pretty (TupleType types) = "("+|", "`seps`types|+")"
+    pretty (ArrayType typ) = "["+|typ|+"]"

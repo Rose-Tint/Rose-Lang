@@ -16,40 +16,57 @@ build-type:         Simple
 common general
     hs-source-dirs: src
     other-modules:
-        Builder,
-        Builder.CmdLine,
-        Builder.CmdLine.Flags,
-        Builder.CmdLine.Internal,
-        Builder.CmdLine.Warnings,
-        Builder.Internal,
-        Builder.IO,
-        Builder.Output,
-        Builder.State,
-        Common.Item,
-        Common.SrcPos,
-        Common.Typing,
-        Common.Typing.Constraint,
-        Common.Typing.Type,
-        Common.Var,
-        Front.Parser,
-        Front.Parser.Imports,
-        Front.Parser.Data,
-        Front.Parser.Lexer,
-        Front.Parser.Parser,
-        Front.Parser.Token,
-        Middle.Analyzer,
-        Middle.Analyzer.Internal,
-        Middle.Analyzer.Checker,
-        Middle.Analyzer.Error,
-        Middle.Analyzer.State,
-        Middle.Analyzer.SymbolTable,
-        Middle.SymbolTable,
-        Middle.SymbolTable.SymbolData,
-        Middle.SymbolTable.SymbolMap,
-        Middle.SymbolTable.Trie,
-        Pretty,
-        Threading,
-        Utils.Paths,
+        Analysis
+        Analysis.Analyzer
+        Analysis.Error
+        Analysis.Table
+        Analysis.Validator
+        AST
+        AST.Data
+        AST.Expr
+        AST.Stmt
+        AST.Trait
+        AST.Value
+        Builder
+        Builder.Internal
+        Builder.IO
+        Cmd
+        Cmd.Flags
+        Cmd.Options
+        Cmd.Warnings
+        -- CodeGen
+        -- CodeGen.LLVM.Base
+        -- CodeGen.LLVM.ToLLVM
+        Common.Module
+        Common.Specifiers
+        Common.SrcPos
+        Common.Var
+        -- Control.Concurrent.Threading
+        Data.Table
+        Data.Table.Datatype
+        Data.Table.Global
+        Data.Table.Scoped
+        Data.Table.Trait
+        Data.Trie
+        Data.VarMap
+        Parser
+        Parser.Base
+        Parser.Lexer
+        Parser.Parser
+        Parser.Token
+        Text.Pretty
+        Typing.Constraint
+        Typing.Infer
+        Typing.Inferable
+        Typing.Kind
+        Typing.Prim
+        Typing.Scheme
+        Typing.Substitution
+        Typing.Type
+        Typing.TypeEnv
+        Typing.Unification
+        Utils
+        Utils.FilePath
         Utils.String
 
     build-tool-depends:

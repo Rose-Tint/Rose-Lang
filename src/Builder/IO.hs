@@ -5,9 +5,10 @@ module Builder.IO (
 
 import System.Directory (createDirectoryIfMissing)
 
-import Builder.CmdLine
 import Builder.Internal
+import Cmd
 import Utils.Paths
+import Pretty
 
 
 mReadFile :: FilePath -> BuilderIO (Maybe String)
@@ -38,3 +39,39 @@ createTraceDir = do
         return (Just dir)
     else
         return Nothing
+
+success, message, status, debug
+    :: Pretty a => a -> BuilderIO ()
+success = myPutStr 1 . terse
+message = myPutStr 1 . terse
+status = myPutStr 2 . pretty
+debug = myPutStr 3 . detailed
+
+warn :: String -> BuilderIO ()
+warn str = do
+    ws <- cmdWarns . stCmdLine <$> getState
+    -- -Werror sets negative
+    if w_error `isWEnabledFor` ws then
+        fatal str
+    else
+        myPutStr 1 str
+
+fatal :: String -> BuilderIO a
+fatal str = do
+    myPutStr 0 str
+    putChar <#> '\n'
+    liftBuild exitFailure
+
+trace :: Pretty a => FilePath -> a -> BuilderIO ()
+trace path a = do
+    doTrace <- cmdTrace . stCmdLine <$> getState
+    dir <- stBuildDir <$> getState
+    when doTrace <#> writeFile
+        (dir ++ path)
+        (uncolor (processString (detailed a)))
+
+myPutStr :: Int -> String -> BuilderIO ()
+myPutStr thresh str = do
+    verb <- cmdVerb . stCmdLine <$> getState
+    when (verb >= thresh) $
+        putStr <#> processString str

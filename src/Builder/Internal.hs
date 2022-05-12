@@ -1,8 +1,13 @@
 {-# LANGUAGE Rank2Types #-}
 
 module Builder.Internal (
-    BuilderT, Builder, BuilderIO, BuilderM,
+    BuilderT,
+    Builder,
+    BuilderIO,
+    BuilderM,
+    Stream,
     State(..),
+    mkState,
     buildM,
     liftBuild, (<#>),
     getState, updateState,
@@ -13,11 +18,26 @@ module Builder.Internal (
 
 import Control.Monad ((<$!>))
 import Data.Functor.Identity (Identity)
-import Data.Set (insert, member)
+import Data.Set (Set, empty, insert, member)
 
 import Builder.CmdLine.Internal
 import Builder.State
 
+
+
+type Stream = String
+
+data State = State {
+        stCmdLine :: CmdLine,
+        stFile :: FilePath,
+        stModule :: String,
+        -- current build directory, as opposed to
+        -- cmdBuildDir, which is the base
+        stBuildDir :: FilePath,
+        -- list of visited files
+        stVisited :: Set FilePath,
+        stSource :: String
+    }
 
 -- TODO: Decide if this should also be in the
 -- IO Monad (m (IO b) for the addition of a
@@ -38,7 +58,6 @@ newtype BuilderT m a = Builder {
 
 type Builder = BuilderT Identity
 type BuilderIO = BuilderT IO
-type BuilderM = BuilderT Maybe
 
 
 instance Functor (BuilderT m) where
@@ -55,6 +74,10 @@ instance Monad (BuilderT m) where
         let go' x s' = let !x' = m x in unB x' s' go
         in unB b s go'
 
+
+mkState :: CmdLine -> State
+{-# INLINE mkState #-}
+mkState cmd = State cmd [] [] [] empty ""
 
 buildM :: Monad m => BuilderT m a -> CmdLine -> m a
 buildM (Builder b) !cmd = b (mkState cmd) go
