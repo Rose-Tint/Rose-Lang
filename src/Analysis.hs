@@ -3,40 +3,37 @@ module Analysis (
     analyzeExprs,
 ) where
 
-import Control.Monad (forM_)
+import Control.Monad (forM_, foldM)
 
 import Analysis.Analyzer
 import Analysis.Error
 import Analysis.Validator
 import AST.Expr
 import Builder
-import Data.Table
 import Text.Pretty
-import Typing.Infer
+import Typing.Infer as Inf
+import Typing.Inferable
 import Typing.TypeEnv
 
 
-data TypeCheck = TypeCheck {
-    tcErrors :: [ErrInfo],
-    tcEnv :: TypeEnv
-    }
+data TypeCheck = TypeCheck [ErrInfo] TypeEnv
 
 
-analyze :: String -> [Expr] -> Analysis Table
+analyze :: String -> [Expr] -> Analysis
 analyze name = runAnalyzer name . mapM validate
 
 typeCheck :: [Expr] -> TypeCheck
-typeCheck exprs = unInf inf newState okay err
+typeCheck exprs = runInfer inf okay err
     where
-        okay s x = TypeCheck (stErrors s) x
-        err s _ -> TypeCheck (stErrors s) emptyEnv
-        inf = foldM inferExpr exprs
+        okay s x = TypeCheck (Inf.stErrors s) x
+        err s _ = TypeCheck (Inf.stErrors s) emptyEnv
+        inf = foldM inferExpr emptyEnv exprs
 
-analyzeExprs :: [Expr] -> BuilderIO (Analysis Table)
+analyzeExprs :: [Expr] -> BuilderIO Analysis
 analyzeExprs es = do
     name <- getModule
     debug ("Analyzing ["+|name|+"]\n")
-    let env = handleTypeCheck $ typeCheck es
+    _env <- handleTypeCheck (typeCheck es)
     let res = analyze name es
     trace "Symbol-Table.txt" (arTable res)
     printAnalysisErrors $ arErrors res

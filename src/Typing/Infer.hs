@@ -2,8 +2,13 @@
 
 module Typing.Infer (
     Infer,
+    stErrors,
+    runInfer,
     fresh,
     throw,
+    recoverMaybe,
+    recoverOpt,
+    recover,
     throwUndefined,
 ) where
 
@@ -11,7 +16,6 @@ import Control.Monad (replicateM)
 import Data.Maybe (fromMaybe)
 
 import Analysis.Error
-import AST.Expr
 import Common.SrcPos
 import Common.Var
 import Typing.Type
@@ -48,6 +52,9 @@ instance Monad Infer where
         in inf s okay' err
 
 
+runInfer :: Infer a -> (State -> a -> b) -> (State -> Error -> b) -> b
+runInfer (Inf inf) = inf (State 0 [])
+
 modifyState :: (State -> State) -> Infer State
 modifyState f = Inf $ \s okay _ ->
     let s' = f s in okay s' s'
@@ -64,7 +71,12 @@ fresh = do
 
 throw :: Error -> Infer a
 throw e = Inf $ \s _ err ->
-    let ei = ErrInfo UnknownPos (Right e)
+    let ei = case e of
+            Undefined name _ -> ErrInfo (varPos name) (Right e)
+            Redefinition _orig new -> ErrInfo (varPos new) (Right e)
+            BindError name _ -> ErrInfo (varPos name) (Right e)
+            MissingReturn name -> ErrInfo (varPos name) (Right e)
+            _ -> ErrInfo UnknownPos (Right e)
         s' = s { stErrors = (ei:stErrors s) }
     in err s' e
 

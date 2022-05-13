@@ -2,8 +2,7 @@
 
 module Typing.Inferable (
     infer,
-    inferStmt,
-    inferBody,
+    inferExpr,
 ) where
 
 import Prelude hiding (lookup)
@@ -149,7 +148,7 @@ inferStmt env (Loop init' cond iter body) = do
                 "invalid condition expression"
 inferStmt env (Match val cases) = do
     vI <- infer env val
-    inferCases vI cases
+    inferCases env vI cases
 inferStmt env (NewVar _mut _name (TypeDecl _ typ) val) = do
     (vS, vT) <- infer env val
     sub <- unify typ vT
@@ -176,7 +175,7 @@ inferCases :: TypeEnv
     -- | The result of inferring from value being matched
     -> (Subst, Type)
     -> [MatchCase] -> Infer (Either Subst (Subst, Type))
-inferCases _ (vS, _) [] = Left vS
+inferCases _ (vS, _) [] = return (Left vS)
 inferCases env (vS, vT) cases = do
     tv <- fresh
     foldM (\prev (Case ptrn body) -> do
@@ -194,7 +193,7 @@ inferCases env (vS, vT) cases = do
                     let s3 = compose
                             [s2, bS, vpS, pS, s1]
                     return (Right (s3, bT))
-        ) (vS, tv) cases
+        ) (Right (vS, tv)) cases
 
 -- if both bodies guarantee a return, then this can
 -- as well. otherwise it cannot be guaranteed.
@@ -203,24 +202,24 @@ mergeStmtInfs ::
     Either Subst (Subst, Type) ->
     Infer (Either Subst (Subst, Type))
 mergeStmtInfs (Left s1) (Left s2) = return
-    (Left <$> (s1 <|> s2))
+    (Left (s1 <|> s2))
 mergeStmtInfs (Left s1) (Right (s2, _)) = return
-    (Left <$> (s1 <|> s2))
+    (Left (s1 <|> s2))
 mergeStmtInfs (Right (s1, _)) (Left s2) = return
-    (Left <$> (s1 <|> s2))
+    (Left (s1 <|> s2))
 mergeStmtInfs (Right (s1, t1)) (Right (s2, t2)) = do
     s3 <- unify t1 t2
     return (Right (s1 <|> s2 <|> s3, t1))
 
-inferStmtSubst :: TypeEnv -> Stmt
-    -> Infer (Either Subst (Subst, Type))
-inferStmtSubst env =
-    (either id fst <$>) . inferStmt env
+inferStmtSubst :: TypeEnv -> Stmt -> Infer Subst
+inferStmtSubst env stmt = do
+    eith <- inferStmt env stmt
+    return (either id fst eith)
 
-inferBodySubst :: TypeEnv -> Stmt
-    -> Infer (Either Subst (Subst, Type))
-inferBodySubst =
-    (either id fst <$>) . inferBody env
+inferBodySubst :: TypeEnv -> Body -> Infer Subst
+inferBodySubst env body = do
+    eith <- inferBody env body
+    return (either id fst eith)
 
 inferParams :: TypeEnv -> [Pattern] -> Infer (Subst, Type)
 inferParams _ [] = do
@@ -240,34 +239,34 @@ inferExpr env (FuncDecl _ _ name typDcl) = do
         scheme = generalize env typ
         env' = extend name scheme env
     return env'
-inferExpr env (DataDef _ name pars ctors) = do
+inferExpr env (DataDef _ name pars _ctors) = do
     let tvs = TypeVar <$> pars
-        scheme = Forall tvs (Type name tvs)
+        scheme = Forall pars (Type name tvs)
         env' = extend name scheme env
     return env'
 -- TODO:
-inferExpr env (TraitDecl _ _ctx _name pars fns) = do
-    let tvs = TypeVar <$> pars
-        env' = apply tvs env
+inferExpr env (TraitDecl _ _ctx _name _pars fns) = do
+    -- let tvs = TypeVar <$> pars
+    --     env' = apply tvs env
         -- scheme = Forall tvs ...
-    foldM inferExpr env' fns
+    foldM inferExpr env fns
 -- TODO:
 inferExpr env (TraitImpl _ctx _name _types fns) = do
     -- let Forall tvs typ = searchEnv name env
     foldM inferExpr env fns
-inferExpr env (FuncDef _ name pars body) = do
-    Forall tvs fnT <- searchEnv name env
+inferExpr env (FuncDef name pars body) = do
+    (fnS, fnT) <- searchEnv name env
     (psS, psT) <- inferParams env pars
-    fnS <- unify (apply psS fnT) psT
-    let env' = apply s2 env
+    fnS' <- unify (apply psS fnT) psT
+    let env' = apply fnS env
     bodyInf <- inferBody env' body
     case bodyInf of
         Right (bS, bT) -> do
             fbS <- unify bT fnT
-            let sub = compose [fbS, bS, fnS, psS]
+            let sub = compose [fbS, bS, fnS, psS, fnS']
                 typ = apply sub fnT
                 scheme = generalize env typ
-                env'' = extend name scheme
+                env'' = extend name scheme env'
             return env''
         Left _ -> throw (MissingReturn name)
 inferExpr env (TypeAlias _ _name _typ) = do

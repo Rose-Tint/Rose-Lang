@@ -46,6 +46,9 @@ data ErrInfo
 
 
 instance Pretty ([String], ErrInfo) where
+    pretty (_, (ErrInfo pos@UnknownPos werr)) = case werr of
+        Left wrn -> "::"-|pos|-":$yWarning: $R"+|wrn|+"\n"
+        Right err -> "::"-|pos|-": $rError: $R"+|err|+"\n"
     pretty (lns, (ErrInfo pos werr)) = case werr of
         Left wrn -> "::"-|pos|-":$yWarning: $R"+|wrn|+
             "\n$p"+|5.>lno|+" | $R"+|line|+
