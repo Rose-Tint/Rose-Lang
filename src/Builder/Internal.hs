@@ -4,7 +4,6 @@ module Builder.Internal (
     BuilderT,
     Builder,
     BuilderIO,
-    BuilderM,
     Stream,
     State(..),
     mkState,
@@ -20,9 +19,7 @@ import Control.Monad ((<$!>))
 import Data.Functor.Identity (Identity)
 import Data.Set (Set, empty, insert, member)
 
-import Builder.CmdLine.Internal
-import Builder.State
-
+import Cmd
 
 
 type Stream = String

@@ -1,15 +1,14 @@
 {-# LANGUAGE FlexibleInstances #-}
 
-module Middle.Table.Data.Datatype (
+module Data.Table.Datatype (
     Datatype(..),
     -- undefFromType,
 ) where
 
-import Common.SrcPos
-import Common.Typing
 import Common.Var
-import Front.Parser
-import Pretty
+import Common.SrcPos
+import Common.Specifiers
+import Text.Pretty
 
 
 data Datatype = Datatype {

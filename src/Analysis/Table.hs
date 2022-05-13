@@ -1,4 +1,5 @@
 module Analysis.Table (
+    module Data.Table,
     -- searchDatatypes, searchTraits, searchGlobals, searchScopeds,
     findDatatype,
     findTrait,
@@ -29,11 +30,10 @@ import Prelude hiding (lookup)
 
 import Control.Monad ((<$!>))
 
-import Common.Typing
+import Analysis.Analyzer
+import Common.Specifiers
 import Common.Var
-import Front.Parser
-import Middle.Analyzer.Internal
-import Middle.Table
+import Data.Table
 
 
 -- Thus is the convention for Var Table lookups:

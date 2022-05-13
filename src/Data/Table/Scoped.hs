@@ -1,13 +1,10 @@
-{-# LANGUAGE FlexibleInstances #-}
-
-module Middle.Table.Data.Scoped (
+module Data.Table.Scoped (
     Scoped(..),
 ) where
 
 import Common.SrcPos
-import Common.Typing
-import Front.Parser
-import Pretty
+import Common.Specifiers
+import Text.Pretty
 
 
 data Scoped = Scp {
@@ -15,7 +12,6 @@ data Scoped = Scp {
         scpMutab :: Mutab,
         scpPos :: SrcPos
     }
-    -- deriving (Eq)
 
 
 instance Pretty Scoped where

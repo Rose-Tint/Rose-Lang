@@ -2,11 +2,11 @@
 
 module Typing.Constraint (
     Constraint(..),
-    Context,
+    Context(..),
 ) where
 
 import Common.Var
-import Pretty
+import Text.Pretty
 
 
 data Constraint = Constraint
@@ -14,7 +14,7 @@ data Constraint = Constraint
     [Var] -- type-params
     deriving (Eq)
 
-type Context = [Constraint]
+newtype Context = Ctx [Constraint]
 
 
 instance Pretty Constraint where
@@ -22,8 +22,7 @@ instance Pretty Constraint where
         name|+" "+|" "`seps`types
 
 instance Pretty Context where
-    terse ctx = ","`sepsT`ctx|-":"
-    pretty [] = ""
-    pretty ctx = ", "`seps`ctx|+ " : "
-    detailed [] = ": "
-    detailed ctx = pretty ctx
+    terse (Ctx []) = ""
+    terse (Ctx cs) = ","`sepsT`cs|-":"
+    pretty (Ctx []) = ""
+    pretty (Ctx cs) = ", "`seps`cs|+ " : "

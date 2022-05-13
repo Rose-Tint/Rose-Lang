@@ -1,12 +1,12 @@
 {-# LANGUAGE DefaultSignatures #-}
 {-# LANGUAGE FlexibleInstances #-}
 
-module Pretty (
+module Text.Pretty (
     Color(..),
     Pretty(..),
 
     -- color,
-    -- uncolor,
+    uncolor,
     -- colored,
     -- reset,
 
@@ -43,6 +43,7 @@ module Pretty (
     (*|*),
 ) where
 
+import Data.Time (NominalDiffTime)
 import Text.Printf hiding (printf)
 import qualified Text.Printf as P
 
@@ -203,7 +204,7 @@ processString (ch:chs) = case ch of
         (ch':chs') -> (ch':processString chs')
     '#' -> case span isDigit chs of
         (numStr, (ch':chs')) ->
-            let count = unsafeReadInt numStr
+            let count = readInt 10 numStr
             in replicate count ch' ++ processString chs'
         _ -> ('#':processString chs)
     '$' -> case chs of
@@ -239,6 +240,8 @@ instance PrintfArg Color where
 instance Pretty Int8
 
 instance Pretty Int
+
+instance Pretty NominalDiffTime
 
 instance Pretty Char where
     pretty = (:[])

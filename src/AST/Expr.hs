@@ -1,6 +1,16 @@
 module AST.Expr (
-
+    Expr(..),
 ) where
+
+import AST.Ctor
+import AST.Stmt
+import AST.Pattern
+import Common.Var
+import Common.Specifiers
+import Text.Pretty
+import Typing.Constraint
+import Typing.Type
+import Typing.TypeDecl
 
 
 data Expr
@@ -8,7 +18,7 @@ data Expr
         exprPurity :: Purity,
         exprVisib :: Visib,
         exprName :: !Var,
-        exprType :: {-# UNPACK #-} !TypeDecl
+        exprType :: !TypeDecl
     }
     | DataDef {
         exprVisib :: Visib,
@@ -29,7 +39,7 @@ data Expr
         exprTypes :: [Type],
         exprFuncs :: [Expr]
     }
-    | FuncDef !Var [Value] Body
+    | FuncDef !Var [Pattern] Body
     | TypeAlias Visib !Var Type
 
 
@@ -37,8 +47,8 @@ instance Pretty Expr where
     pretty (FuncDecl vis pur name typ) =
         vis|+" "+|pur|+" "+|name|+|typ
     pretty (FuncDef name pars body) =
-        name|+" "+|" "`seps`fmap prettyPtrn pars|+" {\n"+|
-            indentCatLns body|+"}"
+        name|+" "+|" "`seps`pars|+
+            " {\n"+|indentCatLns body|+"}"
     pretty (DataDef vis name pars []) =
         vis|+" data "+|name|+" "+|" "`seps`pars
     pretty (DataDef vis name pars (ctor:ctors)) =
@@ -46,12 +56,12 @@ instance Pretty Expr where
         indentLns ("= "+|ctor)|+|
         indentCatLns (fmap ("| "+|) ctors)
     pretty (TraitDecl vis ctx name pars fns) =
-        vis|+" trait <"+|", "`seps`ctx|+"> "+|name|+
-        " "+|" "`seps`pars|+
+        vis|+" trait<"+|init(init(pretty ctx))|+"> "
+        +|name|+" "+|" "`seps`pars|+
         " {\n"+|indentCatLns fns|+"}"
     pretty (TraitImpl ctx name types fns) =
-        "impl <"+|", "`seps`ctx|+"> "+|name|+
-        " "+|" "`seps` types|+
+        "impl <"+|init(init(pretty ctx))|+"> "
+        +|name|+" "+|" "`seps` types|+
         " {\n"+|indentCatLns fns|+"}"
     pretty (TypeAlias vis alias typ) =
         vis|+" using "+|alias|+" = "+|typ

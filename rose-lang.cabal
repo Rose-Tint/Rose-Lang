@@ -16,57 +16,58 @@ build-type:         Simple
 common general
     hs-source-dirs: src
     other-modules:
-        Analysis
-        Analysis.Analyzer
-        Analysis.Error
-        Analysis.Table
-        Analysis.Validator
-        AST
-        AST.Data
-        AST.Expr
-        AST.Stmt
-        AST.Trait
-        AST.Value
-        Builder
-        Builder.Internal
-        Builder.IO
-        Cmd
-        Cmd.Flags
-        Cmd.Options
-        Cmd.Warnings
-        -- CodeGen
-        -- CodeGen.LLVM.Base
-        -- CodeGen.LLVM.ToLLVM
-        Common.Module
-        Common.Specifiers
-        Common.SrcPos
-        Common.Var
-        -- Control.Concurrent.Threading
-        Data.Table
-        Data.Table.Datatype
-        Data.Table.Global
-        Data.Table.Scoped
-        Data.Table.Trait
-        Data.Trie
-        Data.VarMap
-        Parser
-        Parser.Base
-        Parser.Lexer
-        Parser.Parser
-        Parser.Token
-        Text.Pretty
-        Typing.Constraint
-        Typing.Infer
-        Typing.Inferable
-        Typing.Kind
-        Typing.Prim
-        Typing.Scheme
-        Typing.Substitution
-        Typing.Type
-        Typing.TypeEnv
-        Typing.Unification
-        Utils
-        Utils.FilePath
+        Analysis,
+        Analysis.Analyzer,
+        Analysis.Error,
+        Analysis.Table,
+        Analysis.Validator,
+        AST,
+        AST.Ctor,
+        AST.Expr,
+        AST.Literal,
+        AST.Pattern,
+        AST.Stmt,
+        AST.Value,
+        Builder,
+        Builder.Internal,
+        Builder.IO,
+        Cmd,
+        Cmd.Flags,
+        Cmd.Options,
+        Cmd.Warnings,
+        -- CodeGen,
+        -- CodeGen.LLVM.Base,
+        -- CodeGen.LLVM.ToLLVM,
+        Common.Module,
+        Common.Specifiers,
+        Common.SrcPos,
+        Common.Var,
+        -- Control.Concurrent.Threading,
+        Data.Table,
+        Data.Table.Datatype,
+        Data.Table.Global,
+        Data.Table.Scoped,
+        Data.Table.Trait,
+        Data.Trie,
+        Data.VarMap,
+        Parser,
+        Parser.Lexer,
+        Parser.Parser,
+        Parser.Token,
+        Text.Pretty,
+        Typing.Constraint,
+        Typing.Infer,
+        Typing.Inferable,
+        Typing.Kind,
+        Typing.Primitives,
+        Typing.Scheme,
+        Typing.Substitution,
+        Typing.Type,
+        Typing.TypeDecl,
+        Typing.TypeEnv,
+        Typing.Unification,
+        Utils,
+        Utils.FilePath,
         Utils.String
 
     build-tool-depends:

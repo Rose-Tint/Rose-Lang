@@ -10,12 +10,20 @@ module Typing.TypeEnv (
     generalize
 ) where
 
+import Prelude hiding (lookup)
+
+import qualified Data.Set as S
+
+import Common.Var
 import Data.VarMap
 import Typing.Infer
 import Typing.Scheme
+import Typing.Substitution
+import Typing.Type
 
 
 type TypeEnv = VarMap Scheme
+
 
 extend :: Var -> Scheme -> TypeEnv -> TypeEnv
 extend = insert

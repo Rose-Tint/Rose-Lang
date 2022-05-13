@@ -4,7 +4,7 @@ module Typing.Type  (
 ) where
 
 import Common.Var
-import Pretty
+import Text.Pretty
 
 
 data Type

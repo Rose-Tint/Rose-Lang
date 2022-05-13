@@ -1,6 +1,10 @@
 module Common.Specifiers (
-
+    Purity(..),
+    Mutab(..),
+    Visib(..),
 ) where
+
+import Text.Pretty
 
 
 data Purity = Pure | Impure | Unsafe

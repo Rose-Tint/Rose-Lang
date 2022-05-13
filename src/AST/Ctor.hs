@@ -1,6 +1,13 @@
-module AST.Data (
-
+module AST.Ctor (
+    Field(..),
+    Ctor(..),
 ) where
+
+import Common.Specifiers
+import Common.Var
+import Text.Pretty
+import Typing.Type
+import Typing.TypeDecl
 
 
 data Field = Field !Var Type
@@ -11,9 +18,10 @@ data Ctor
 
 
 instance Pretty Field where
-    pretty (Field name typ) = name|+|TypeDecl [] typ
+    pretty (Field name typ) =
+        name|+|typeDecl [] typ
     detailed (Field name typ) =
-        "Field: "+|name|+|TypeDecl [] typ
+        "Field: "+|name|+|typeDecl [] typ
 
 instance Pretty Ctor where
     pretty (SumType vis name types) =

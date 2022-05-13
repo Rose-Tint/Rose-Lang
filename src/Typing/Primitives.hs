@@ -9,6 +9,7 @@ module Typing.Primitives (
     tupleOf,
 ) where
 
+import Common.Var
 import Typing.Type
 
 

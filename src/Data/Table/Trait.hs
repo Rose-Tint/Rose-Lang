@@ -1,22 +1,22 @@
 {-# LANGUAGE FlexibleInstances #-}
 
-module Middle.Table.Data.Trait (
+module Data.Table.Trait (
     Trait(..),
     -- undefFromCons
 ) where
 
 import Common.SrcPos
-import Common.Typing
+import Common.Specifiers
 import Common.Var
-import Front.Parser
-import Pretty
+import Text.Pretty
+import Typing.Type
 
 
 data Trait = Trait {
         -- trtKind :: Kind,
         trtVisib :: Visib,
         trtMeths :: [Var],
-        trtImpls :: [TypeDecl],
+        trtImpls :: [Type],
         trtPos :: SrcPos
     }
     -- deriving (Eq)

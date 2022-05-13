@@ -1,7 +1,7 @@
 {-# LANGUAGE Rank2Types #-}
 {-# LANGUAGE LambdaCase #-}
 
-module Analysis.Internal (
+module Analysis.Analyzer (
     Analyzer,
     Analysis(..),
     State(..),
@@ -27,7 +27,7 @@ module Analysis.Internal (
 
     -- getTopDef,
     -- getCurrDef,
-    -- getCurrDef',
+    getCurrDef',
     -- getDefs,
     define,
 
@@ -52,14 +52,12 @@ import Control.Monad.Fail
 import Data.Either (fromRight)
 import Data.Functor ((<&>))
 
-import Middle.Table
+import Analysis.Error
+import AST.Value
 import Common.SrcPos
-import Common.Typing
 import Common.Var
-import Front.Parser (Value, valPos)
-import Middle.Analyzer.Error
-import Middle.Analyzer.State
-import Middle.Table
+import Data.Table
+import Typing.Type
 
 
 default (Int, Double)

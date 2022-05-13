@@ -1,10 +1,11 @@
 module Cmd (
+    module Cmd.Flags,
+    module Cmd.Warnings,
     CmdLine(..),
     readCmdLine,
 ) where
 
 import System.Console.GetOpt
-import System.Directory
 import System.Environment (getArgs)
 import System.Exit (exitSuccess)
 
@@ -28,6 +29,13 @@ data CmdLine = CmdLine {
         cmdFlags :: !Flags,
         cmdWarns :: !Warning
     }
+
+
+help :: IO Flag
+help = do
+    let header = "Usage: rose [FILES...] [OPTIONS...]"
+    putStrLn $! usageInfo header optionOptions
+    exitSuccess
 
 setFlags :: [Flag] -> CmdLine -> CmdLine
 {-# INLINABLE setFlags #-}

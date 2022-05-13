@@ -4,13 +4,13 @@ module Common.Module (
     Item(..),
 ) where
 
+import AST.Expr
+import Common.Specifiers
 import Common.Var
-import Pretty
+import Text.Pretty
 
 
-data Module = Module
-    [Import]
-    [Expr]
+data Module = Module [Import] [Expr]
 
 data Import = Import Var Visib
 

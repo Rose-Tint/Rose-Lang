@@ -7,7 +7,7 @@ module Common.SrcPos (
 
 import Data.Int (Int8)
 
-import Pretty
+import Text.Pretty
 
 
 type Line = Int

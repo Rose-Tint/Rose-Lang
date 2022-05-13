@@ -21,7 +21,10 @@ module Data.VarMap (
 import Prelude hiding (lookup)
 
 import Common.Var
-import Data.Data
+import Data.Table.Datatype
+import Data.Table.Global
+import Data.Table.Scoped
+import Data.Table.Trait
 import Data.Trie hiding (
     singleton,
     insert,
@@ -33,7 +36,7 @@ import Data.Trie hiding (
     isMemberOf,
     )
 import qualified Data.Trie as T
-import Pretty
+import Text.Pretty
 
 
 type VarMap = Trie

@@ -1,17 +1,13 @@
 module Typing.Kind (
     Kind(..),
-    mkKind,
     kindOf,
-    kindFromList,
 ) where
 
-import Pretty
+import Typing.Constraint
+import Typing.Type
 
 
-default (Word8, Double)
-
-
-data Kind
+data Kind = Kind Int
 
 class HasKind a where
     kindOf :: a -> Kind

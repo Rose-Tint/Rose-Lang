@@ -1,12 +1,21 @@
 module AST.Stmt (
-
+    Stmt(..),
+    Body,
+    MatchCase(..),
 ) where
+
+import AST.Value
+import AST.Pattern
+import Common.Specifiers
+import Common.Var
+import Text.Pretty
+import Typing.TypeDecl
 
 
 data Stmt
     = IfElse Value Body Body
     | Loop Stmt Stmt Stmt Body
-    | Match Value [(Value, Body)]
+    | Match Value [MatchCase]
     | NewVar Mutab !Var TypeDecl Value
     | Reassignment !Var Value
     | Return Value
@@ -15,6 +24,11 @@ data Stmt
     | Continue
     | NullStmt
     | Compound [Stmt]
+
+data MatchCase = Case Pattern Body
+
+-- TODO: make `newtype`
+type Body = [Stmt]
 
 
 instance Pretty Stmt where
@@ -37,6 +51,7 @@ instance Pretty Stmt where
     pretty (Return val) = "return "+|val|+";"
     pretty (ValStmt val) = val|+";"
     pretty NullStmt = ";"
+    pretty (Compound ss) = indentCatLns ss
     detailed (IfElse val tb []) =
         "If: "*|val
             |*|indentLns (indentCatLnsD tb)|+
@@ -69,4 +84,8 @@ instance Pretty Stmt where
     detailed (ValStmt val) =
         "Expr: "*|val
     detailed NullStmt = "Null Statement"
+    detailed (Compound ss) = indentCatLns ss
+
+instance Pretty MatchCase where
+    pretty (Case p b) = p|+" \n"+|indentCatLns b
 

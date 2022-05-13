@@ -1,4 +1,4 @@
-module Middle.Table (
+module Data.Table (
     module T,
     Table(..),
     ScopedMaps,
@@ -19,7 +19,7 @@ import Data.Table.Global as T
 import Data.Table.Scoped as T
 import Data.Table.Trait as T
 import Data.VarMap as T
-import Pretty
+import Text.Pretty
 import Utils.String
 
 

@@ -7,16 +7,14 @@ module Parser.Lexer (
     lexError,
 ) where
 
-import Data.Char (digitToInt)
-import Data.Int (Int64)
-import Data.List (foldl')
 import Text.Read (readMaybe)
 
 import Common.SrcPos
 import Common.Var
 import AST
 import Parser.Token
-import Pretty
+import Text.Pretty
+import Utils.String
 }
 
 %wrapper "monad"
@@ -141,27 +139,19 @@ reserved :: Token -> TokenAction
 reserved tok _ 0 = lexError $ "("+|tok|+")"
 reserved tok _ _ = return tok
 
-stoi :: Int -> String -> Int64
-stoi base =
-    let b = fromIntegral base
-        digToInt = fromIntegral . digitToInt
-    in foldl' (\ !x !d ->
-        b * x + digToInt d
-        ) (0 :: Int64)
-
 integer :: Int -> TokenAction
 integer _ _ 0 = lexError "integral literal"
 integer base (pos, _, _, ('+':str)) len = return
     (TValue (IntLit
-        (negate (stoi base (take len str)))
+        (negate (readInt base (take len str)))
         (fromAlexPosn pos)))
 integer base (pos, _, _, ('-':str)) len = return
     (TValue (IntLit
-        (negate (stoi base (take len str)))
+        (negate (readInt base (take len str)))
         (fromAlexPosn pos)))
 integer base (pos, _, _, str) len = return
     (TValue (IntLit
-        (stoi base (take len str))
+        (readInt base (take len str))
         (fromAlexPosn pos)))
 
 float :: TokenAction

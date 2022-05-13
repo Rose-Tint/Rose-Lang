@@ -6,12 +6,10 @@ module Analysis.Error (
     ErrInfo(..),
 ) where
 
-import Builder.State (Stream)
 import Common.SrcPos
-import Common.Typing
 import Common.Var
-import Pretty
--- import Utils
+import Text.Pretty
+import Typing.Type
 
 
 default (Int, Double)
@@ -47,7 +45,7 @@ data ErrInfo
     }
 
 
-instance Pretty ([Stream], ErrInfo) where
+instance Pretty ([String], ErrInfo) where
     pretty (lns, (ErrInfo pos _ werr)) = case werr of
         Left wrn -> "::"-|pos|-":$yWarning: $R"+|wrn|+
             "\n$p"+|5.>lno|+" | $R"+|line|+

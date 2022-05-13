@@ -1,4 +1,4 @@
-module Utils.Paths (
+module Utils.FilePath (
     modToDir,
     modToPath,
     pathToDir,

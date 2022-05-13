@@ -1,4 +1,4 @@
-module Middle.Table.Trie (
+module Data.Trie (
     Trie,
     -- Construction
     empty, singleton, fromList,

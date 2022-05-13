@@ -2,17 +2,18 @@ module Parser.Token (
     Token(..),
 ) where
 
+import AST.Literal
+import AST.Pattern
 import Common.Var
-import AST.Value
-import Pretty
+import Text.Pretty
 
 
 data Token
-    = TValue Value
+    = TValue Literal
     | TBig Var
     | TSmall Var
     | TInfix Var
-    | THole Value
+    | THole Pattern
     | TEq
     | TColon
     | TSemi

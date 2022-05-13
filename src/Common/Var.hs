@@ -7,7 +7,7 @@ import Data.Function (on)
 import Data.Ord (comparing)
 
 import Common.SrcPos
-import Pretty
+import Text.Pretty
 
 
 data Var = Var {

@@ -1,6 +1,18 @@
 module AST.Value (
-
+    Value(..),
+    ValArray,
+    valPos,
 ) where
+
+import Data.Array
+import Data.Char (isAlphaNum)
+
+import AST.Literal
+import AST.Pattern
+import Common.SrcPos
+import Common.Var
+import Text.Pretty
+
 
 type ValArray = Array Int Value
 
@@ -13,34 +25,27 @@ data Value
     | Array ValArray
     | Lambda [Var] Value
     | IfElseVal Value Value Value
-    | MatchVal Value [(Value, Value)]
+    | MatchVal Value [(Pattern, Value)]
 
 
 valPos :: Value -> SrcPos
-valPos (IntLit _ p) = p
-valPos (FloatLit _ p) = p
-valPos (DoubleLit _ p) = p
-valPos (CharLit _ p) = p
-valPos (StringLit _ p) = p
+valPos (Literal (IntLit _ p)) = p
+valPos (Literal (FloatLit _ p)) = p
+valPos (Literal (DoubleLit _ p)) = p
+valPos (Literal (CharLit _ p)) = p
+valPos (Literal (StringLit _ p)) = p
 valPos (VarVal var) = varPos var
-valPos (Application _ _) = UnknownPos
-valPos (Lambda _ _) = UnknownPos
-valPos (CtorCall var _) = varPos var
-valPos (Array _) = UnknownPos
-valPos (Tuple _) = UnknownPos
+valPos (CtorCall name _) = varPos name
+valPos _ = UnknownPos
 
 
 instance Pretty Value where
-    terse (FloatLit n _) = show n
+    terse (Literal l) = terse l
     terse (VarVal var) = terse var
     terse (Tuple arr) = "("-|","`sepsT`elems arr|-")"
     terse (Array arr) = "["-|","`sepsT`elems arr|-"]"
     terse val = pretty val
-    pretty (IntLit n _) = show n
-    pretty (FloatLit n _) = show n ++ "f"
-    pretty (DoubleLit n _) = show n
-    pretty (CharLit c _) = show c
-    pretty (StringLit s _) = show s
+    pretty (Literal l) = pretty l
     pretty (VarVal (Var name _))
         | all isIdChar name = name
         | otherwise = "("+|name|+")"
@@ -52,5 +57,8 @@ instance Pretty Value where
         "("+|name|+" "+|" "`seps`args|+")"
     pretty (Tuple arr) = "("+|", "`seps`elems arr|+")"
     pretty (Array arr) = "[ "+|", "`seps`elems arr|+" ]"
-    pretty (Lambda ps stmts) =  " "`seps`ps|+" => {\n"
-        +|indentCatLns stmts|+"}"
+    pretty (Lambda ps body) =
+        "("+|" "`seps`ps|+" => "+|body|+")"
+    pretty (IfElseVal cnd tr fa) =
+        "(if ("+|cnd|+") then "+|tr|+" else "+|fa|+")"
+    pretty MatchVal{} = "{- MATCH-VALUE (im lazy...) -}"

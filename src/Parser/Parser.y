@@ -4,13 +4,14 @@ module Parser.Parser (rose) where
 import Data.Array (listArray)
 
 import Common.Module
-import Typing.Type
-import Typing.Constraint
+import Common.Specifiers
 import Common.Var
 import AST
-import Parser.Imports
 import Parser.Lexer
-import Pretty
+import Text.Pretty
+import Typing.Constraint
+import Typing.Type
+import Typing.TypeDecl
 }
 
 {- TODO:
@@ -119,10 +120,10 @@ Vis :: { Visib }
     | intern        { Intern }
 
 TypeDecl :: { TypeDecl }
-    : "<" CtxSeq ":" ArrowSepTypes1 ">" { TypeDecl $2 $4 }
-    | "<" ArrowSepTypes1 ">" { TypeDecl [] $2 }
+    : "<" CtxSeq ":" ArrowSepTypes1 ">" { typeDecl $2 $4 }
+    | "<" ArrowSepTypes1 ">" { typeDecl [] $2 }
 
-CtxSeq :: { Context }
+CtxSeq :: { [Constraint] }
     : CtxSeq "," Constraint  { ($3:$1) }
     | Constraint              { [$1]    }
 
@@ -168,15 +169,15 @@ FuncDef :: { Expr }
     | small_id Params0 BodyAssn         { FuncDef $1 $2 $3 }
     | "(" infix_id ")" Params0 BodyAssn { FuncDef $2 $4 $5 }
 
-Params0 :: { [Value] }
+Params0 :: { [Pattern] }
     : Params0_  { reverse $1 }
 
-Params0_ :: { [Value] }
+Params0_ :: { [Pattern] }
     : {- empty -}                { [] }
     | Params0_ Pattern  { ($2:$1) }
 
 BodyAssn :: { Body }
-    : "=" Stmt   { [Return (StmtVal $2)] }
+    : "=" Stmt   { [$2] }
     | Body       { $1   }
 
 -- TODO: labeled loops
@@ -194,7 +195,7 @@ IfElse :: { Stmt }
     | if Term StmtBody                  { IfElse $2 $3 [] }
 
 Term :: { Value }
-    : literal               { $1 }
+    : literal               { Literal $1 }
     | "[" ArrayTerms1 "]"   { mkArray $2 }
     | "(" TupleTerms2 ")"   { mkTuple $2 }
     | SmallIds1             {
@@ -227,49 +228,49 @@ Match :: { Stmt }
     : match Term "{" Cases1 "}" { Match $2 $4 }
 
 Cases1 :: { [MatchCase] }
-    : Cases1 Pattern BodyAssn   { (($2,$3):$1) }
-    | Pattern BodyAssn          { [($1,$2)] }
+    : Cases1 Pattern BodyAssn   { (Case $2 $3:$1) }
+    | Pattern BodyAssn          { [Case $1 $2] }
 
-Pattern :: { Value }
+Pattern :: { Pattern }
     : "_"                   { $1 }
-    | small_id              { VarVal $1 }
+    | small_id              { Param $1 }
     | "[" PatternItem "]"   { $2 }
 
-PatternItem :: { Value }
-    : literal       { $1 }
+PatternItem :: { Pattern }
+    : literal       { LitPtrn $1 }
     | TuplePattern  { $1 }
     | CtorPattern   { $1 }
 
-TuplePattern :: { Value }
-    : "(" TuplePtrns2_ ")" { mkTuple (reverse $2) }
+TuplePattern :: { Pattern }
+    : "(" CommaSepPtrn2_ ")" { TuplePtrn $2 }
 
-TuplePtrns2_ :: { [Value] }
-    : TuplePtrns2_ "," Pattern   { ($3:$1)  }
+CommaSepPtrn2_ :: { [Pattern] }
+    : CommaSepPtrn2_ "," Pattern   { ($3:$1)  }
     | Pattern "," Pattern      { [$3, $1] }
 
-CtorPattern :: { Value }
-    : big_id Patterns0   { CtorCall $1 $2 }
+CtorPattern :: { Pattern }
+    : big_id Patterns0   { CtorPtrn $1 $2 }
 
-Patterns0 :: { [Value] }
+Patterns0 :: { [Pattern] }
     : Patterns0_ { reverse $1 }
 
-Patterns0_ :: { [Value] }
+Patterns0_ :: { [Pattern] }
     : {- empty -}       { [] }
     | Patterns0 Pattern  { ($2:$1) }
 
 Expr :: { Stmt }
     : NewVar                { $1 }
     | small_id "=" Term ";" { Reassignment $1 $3 }
-    | Term ";"          { ValStmt $1 }
+    | Term ";"              { ValStmt $1 }
     | ";"                   { NullStmt }
 
 NewVar :: { Stmt }
-    : let small_id VarType "=" Term ";"        { NewVar Mut $2 $3 $5 }
-    | let mut small_id VarType "=" Term ";"    { NewVar Imut $3 $4 $6 }
+    : let small_id NewVarTypeDecl "=" Term ";"        { NewVar Mut $2 $3 $5 }
+    | let mut small_id NewVarTypeDecl "=" Term ";"    { NewVar Imut $3 $4 $6 }
 
-VarType :: { TypeDecl }
+NewVarTypeDecl :: { TypeDecl }
     : TypeDecl      { $1 }
-    | {- empty -}   { TypeDecl [] (TypeVar (prim "")) } -- thats not right...
+    | {- empty -}   { typeDecl [] (TypeVar (prim "")) } -- thats not right...
 
 FuncCall :: { Value }
     : Term infix_id Term    { Application (VarVal $2) [$1, $3] }
@@ -285,8 +286,7 @@ Terms0_ :: { [Value] }
     | Terms0_ Term    { ($2:$1) }
 
 Lambda :: { Value }
-    : SmallIds1 "=>" Body    { Lambda $1 $3 }
-    | SmallIds1 "=>" Term    { Lambda $1 [Return $3] }
+    : SmallIds1 "=>" Term    { Lambda $1 $3 }
 
 SmallIds1 :: { [Var] }
     : SmallIds1_ %prec APP { reverse $1 }
@@ -332,8 +332,8 @@ TraitDecl :: { Expr }
     : trait Vis TraitCtx big_id SmallIds1 "{" MethodDecls1 "}"    { TraitDecl $2 $3 $4 $5 $7 }
 
 TraitCtx :: { Context }
-    : {- empty -}       { [] }
-    | "<" CtxSeq ">"    { $2 }
+    : {- empty -}       { Ctx [] }
+    | "<" CtxSeq ">"    { Ctx $2 }
 
 MethodDecls1 :: { [Expr] }
     : FuncDecl                { [$1] }

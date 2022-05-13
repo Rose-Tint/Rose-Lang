@@ -3,10 +3,10 @@ module Parser (
 ) where
 
 import Common.Module
-import Parser.Base
+import Builder
 import Parser.Lexer
 import Parser.Parser
-import Pretty
+import Text.Pretty
 
 
 parse :: String -> Either String Module

@@ -1,17 +1,35 @@
 module Main (main) where
 
-import Control.Monad (unless)
+import Control.Monad (unless, forM_)
 import Data.Time (diffUTCTime, getCurrentTime)
 
 import Analysis
 import Builder
+import Cmd
+import Common.Module
+import Common.Var
 import Parser
-import Pretty
+import Text.Pretty
 import Utils.FilePath (modToPath)
 
 
-default (Int, Double)
+build :: BuilderIO ()
+build = do
+    cmd <- stCmdLine <$> getState
+    mapM_ buildFile (cmdFiles cmd)
 
+buildFile :: FilePath -> BuilderIO ()
+buildFile [] = return ()
+buildFile path = hasBeenVisited path >>= \skip ->
+    if skip then return () else do
+        mReadFile path
+        name <- stModule <$> getState
+        message ("Building Module ["+|name|+"]\n")
+        Module imports tree <- parseFile
+        _ <- analyzeExprs tree
+        finalizeVisit
+        forM_ imports $ \(Import (Var modName _) _) ->
+            buildFile (modToPath modName)
 
 main :: IO ()
 main = do
@@ -22,5 +40,5 @@ main = do
     timeStart <- getCurrentTime
     buildM build cmd
     timeEnd <- getCurrentTime
-    unless (cmdVerb cmd <= 0) $
-        "Finished in "+|diffUTCTime timeEnd timeStart+|"\n"
+    unless (cmdVerb cmd <= 0) $ putStrLn $
+        "Finished in "+|diffUTCTime timeEnd timeStart|+"\n"

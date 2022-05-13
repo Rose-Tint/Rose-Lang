@@ -1,16 +1,15 @@
 {-# LANGUAGE FlexibleInstances #-}
 
-module Middle.Table.Data.Global (
+module Data.Table.Global (
     Global(..),
     glbPurity,
     funcToMeth,
 ) where
 
-import Common.Var
 import Common.SrcPos
-import Common.Typing
-import Front.Parser
-import Pretty
+import Common.Specifiers
+import Common.Var
+import Text.Pretty
 
 
 data Global

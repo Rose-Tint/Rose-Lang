@@ -1,14 +1,23 @@
 module Builder.IO (
     mReadFile,
     createTraceDir,
+    success,
+    message,
+    status,
+    debug,
+    warn,
+    fatal,
+    trace,
 ) where
 
+import Control.Monad (when)
+import System.Exit (exitFailure)
 import System.Directory (createDirectoryIfMissing)
 
 import Builder.Internal
 import Cmd
-import Utils.Paths
-import Pretty
+import Utils.FilePath
+import Text.Pretty
 
 
 mReadFile :: FilePath -> BuilderIO (Maybe String)

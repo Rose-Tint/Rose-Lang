@@ -1,10 +1,13 @@
 module Cmd.Options (
+    Flag(..),
     optionOptions,
 ) where
 
 import System.Console.GetOpt
 import System.Directory
-import System.Exit (exitSuccess)
+
+import Cmd.Flags
+import Cmd.Warnings
 
 
 data Flag
@@ -25,12 +28,6 @@ silent = return (Verbosity 0)
 
 debug_info :: IO Flag
 debug_info = return (Verbosity 5)
-
-help :: IO Flag
-help = do
-    let header = "Usage: rose [FILES...] [OPTIONS...]"
-    putStrLn $! usageInfo header optionOptions
-    exitSuccess
 
 buildDir :: FilePath -> IO Flag
 buildDir path = do
