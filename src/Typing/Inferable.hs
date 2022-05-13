@@ -35,15 +35,14 @@ instance Inferable Literal where
 instance Inferable Value where
     infer env (Literal lit) = infer env lit
     infer env (VarVal name) = searchEnv name env
-    infer env (Application val vals) =
-        applyArgs env val vals
-    infer env (CtorCall name []) =
-        searchEnv name env
-    infer env (CtorCall name (arg:args)) = do
-        (s1, t1) <- searchEnv name env
-        (s2, t2) <- applyArgs env arg args
-        s3 <- unify t1 t2
-        return (s3 <|> s2 <|> s1, t2 :-> t1)
+    infer env (Application v1 v2) = do
+        (s1, t1) <- infer env v1
+        let env' = apply s1 env
+        (s2, t2) <- infer env' v2
+        tv <- fresh
+        s3 <- unify (apply s2 t1) (t2 :-> tv)
+        return (s3 <|> s2 <|> s1, apply s3 tv)
+    infer env (CtorCall name) = searchEnv name env
     infer env (Lambda ps body) = do
         env' <- pushParams ps env
         (bS, bT) <- infer env' body
@@ -86,8 +85,7 @@ instance Inferable Pattern where
     infer _ Hole{} = do
         tv <- fresh
         return (nullSubst, tv)
-    infer env (CtorPtrn name []) =
-        searchEnv name env
+    infer env (CtorPtrn name []) = searchEnv name env
     infer env (CtorPtrn name (arg:args)) = do
         (s1, t1) <- searchEnv name env
         (s2, t2) <- applyPtrns env arg args
@@ -223,16 +221,6 @@ applyPtrns env v1 (v2:vs) = do
     (s1, t1) <- infer env v1
     let env' = apply s1 env
     (s2, t2) <- applyPtrns env' v2 vs
-    tv <- fresh
-    s3 <- unify (apply s2 t1) (t2 :-> tv)
-    return (s3 <|> s2 <|> s1, apply s3 tv)
-
-applyArgs :: TypeEnv -> Value -> [Value] -> Infer (Subst, Type)
-applyArgs env val [] = infer env val
-applyArgs env v1 (v2:vs) = do
-    (s1, t1) <- infer env v1
-    let env' = apply s1 env
-    (s2, t2) <- applyArgs env' v2 vs
     tv <- fresh
     s3 <- unify (apply s2 t1) (t2 :-> tv)
     return (s3 <|> s2 <|> s1, apply s3 tv)

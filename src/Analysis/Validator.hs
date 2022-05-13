@@ -77,11 +77,11 @@ instance Validator Value where
                 return ()
             Just _ -> return ()
         return val
-    validate (Application val vals) = do
-        val' <- validate val
-        vals' <- mapM validate vals
-        return (Application val' vals')
-    validate (CtorCall name args) = do
+    validate (Application v1 v2) = do
+        v1' <- validate v1
+        v2' <- validate v2
+        return (Application v1' v2')
+    validate (CtorCall name) = do
         updatePosVar name
         mData <- lookupGlobal name
         case mData of
@@ -91,8 +91,7 @@ instance Validator Value where
             Just Constructor{} -> return ()
             Just dta -> throw $ Redefinition
                 (name{varPos=glbPos dta}) name
-        args' <- mapM validate args
-        return (CtorCall name args')
+        return (CtorCall name)
     validate (Tuple arr) =
         Tuple <$!> mapM validate arr
     validate (Array arr) =

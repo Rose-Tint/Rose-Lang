@@ -200,25 +200,22 @@ Term :: { Value }
     | "(" TupleTerms2 ")"   { mkTuple $2 }
     | SmallIds1             {
         let (var:vars) = fmap VarVal $1
-        in case vars of
-                [] -> var
-                _ -> Application var vars
+        in valueFromList var vars
         }
     | Lambda                { $1 }
     | FuncCall              { $1 }
     | "(" Term ")"          { $2 }
+    | if Term return Term else Term { IfElseVal $2 $4 $6 }
+    | match Term "{" TermCases "}" { MatchVal $2 $4 }
 
 ArrayTerms1 :: { [Value] }
     : ArrayTerms1 "," Term   { ($3:$1) }
     | ArrayTerms1 ","        { $1      }
-    | Term                  { [$1]    }
+    | Term                   { [$1]    }
 
 TupleTerms2 :: { [Value] }
     : TupleTerms2 "," Term   { ($3:$1) }
     | Term "," Term         { [$1] }
-
-CtorCall :: { Value }
-    : big_id Terms0 { CtorCall $1 $2 }
 
 StmtBody :: { Body }
     : Stmt  { [$1] }
@@ -240,13 +237,17 @@ PatternItem :: { Pattern }
     : literal       { LitPtrn $1 }
     | TuplePattern  { $1 }
     | CtorPattern   { $1 }
+    | OrPattern     { $1 }
 
 TuplePattern :: { Pattern }
-    : "(" CommaSepPtrn2_ ")" { TuplePtrn $2 }
+    : "(" CommaSepPtrn2 ")" { TuplePtrn $2 }
+
+CommaSepPtrn2 :: { [Pattern] }
+    : CommaSepPtrn2_ { reverse $1 }
 
 CommaSepPtrn2_ :: { [Pattern] }
     : CommaSepPtrn2_ "," Pattern   { ($3:$1)  }
-    | Pattern "," Pattern      { [$3, $1] }
+    | Pattern "," Pattern          { [$3, $1] }
 
 CtorPattern :: { Pattern }
     : big_id Patterns0   { CtorPtrn $1 $2 }
@@ -257,6 +258,9 @@ Patterns0 :: { [Pattern] }
 Patterns0_ :: { [Pattern] }
     : {- empty -}       { [] }
     | Patterns0 Pattern  { ($2:$1) }
+
+OrPattern :: { Pattern }
+    : PatternItem "," PatternItem { $1 `OrPtrn` $3 }
 
 Expr :: { Stmt }
     : NewVar                { $1 }
@@ -273,17 +277,14 @@ NewVarTypeDecl :: { TypeDecl }
     | {- empty -}   { typeDecl [] (TypeVar (prim "")) } -- thats not right...
 
 FuncCall :: { Value }
-    : Term infix_id Term    { Application (VarVal $2) [$1, $3] }
+    : Term infix_id Term    { Application (VarVal $2) $1 }
     | infix_id              { VarVal $1 }
-    | CtorCall              { $1 }
-    | Term Term %prec APP   { Application $1 [$2] }
+    | big_id                { CtorCall $1 }
+    | Term Term %prec APP   { Application $1 $2 }
 
-Terms0 :: { [Value] }
-    : Terms0_    { reverse $1 }
-
-Terms0_ :: { [Value] }
-    : {- empty -}   { []      }
-    | Terms0_ Term    { ($2:$1) }
+TermCases :: { [(Pattern, Value)] }
+    : Pattern "=" Term { [($1, $3)] }
+    | TermCases Pattern "=" Term { (($2,$4):$1) }
 
 Lambda :: { Value }
     : SmallIds1 "=>" Term    { Lambda $1 $3 }

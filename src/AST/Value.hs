@@ -2,6 +2,7 @@ module AST.Value (
     Value(..),
     ValArray,
     valPos,
+    valueFromList
 ) where
 
 import Data.Array
@@ -19,8 +20,8 @@ type ValArray = Array Int Value
 data Value
     = Literal Literal
     | VarVal Var
-    | Application Value [Value]
-    | CtorCall Var [Value]
+    | Application Value Value
+    | CtorCall Var
     | Tuple ValArray
     | Array ValArray
     | Lambda [Var] Value
@@ -35,8 +36,12 @@ valPos (Literal (DoubleLit _ p)) = p
 valPos (Literal (CharLit _ p)) = p
 valPos (Literal (StringLit _ p)) = p
 valPos (VarVal var) = varPos var
-valPos (CtorCall name _) = varPos name
+valPos (CtorCall name) = varPos name
 valPos _ = UnknownPos
+
+valueFromList :: Value -> [Value] -> Value
+valueFromList val [] = val
+valueFromList v1 (v2:vs) = Application v1 (valueFromList v2 vs)
 
 
 instance Pretty Value where
@@ -51,10 +56,9 @@ instance Pretty Value where
         | otherwise = "("+|name|+")"
         where
             isIdChar c = isAlphaNum c || c == '_'
-    pretty (Application val args) =
-        "("+|val|+" "+|" "`seps`args|+")"
-    pretty (CtorCall name args) =
-        "("+|name|+" "+|" "`seps`args|+")"
+    pretty (Application val arg) =
+        "("+|val|+" "+|arg|+")"
+    pretty (CtorCall name) = "("+|name|+")"
     pretty (Tuple arr) = "("+|", "`seps`elems arr|+")"
     pretty (Array arr) = "[ "+|", "`seps`elems arr|+" ]"
     pretty (Lambda ps body) =
