@@ -1,3 +1,5 @@
+{-# LANGUAGE LambdaCase #-}
+
 module Typing.Inferable (
     infer,
     inferStmt,
@@ -36,17 +38,17 @@ instance Inferable Value where
     infer env (Literal lit) = infer env lit
     infer env (VarVal name) = searchEnv name env
     infer env (Application v1 v2) = do
+        tv <- fresh
         (s1, t1) <- infer env v1
         let env' = apply s1 env
         (s2, t2) <- infer env' v2
-        tv <- fresh
         s3 <- unify (apply s2 t1) (t2 :-> tv)
         return (s3 <|> s2 <|> s1, apply s3 tv)
     infer env (CtorCall name) = searchEnv name env
     infer env (Lambda ps body) = do
+        tv <- fresh
         env' <- pushParams ps env
         (bS, bT) <- infer env' body
-        tv <- fresh
         return (bS, apply bS (tv :-> bT))
     infer env (Tuple arr) = do
         (sub, types) <- foldM (\(s1, types) val -> do
@@ -109,6 +111,12 @@ instance Inferable Pattern where
 -- that it will return (i.e. all cases guarantee a
 -- return in a `Match`). If no such guarantee can be
 -- made, it will return `Left s`.
+--
+-- In short:
+-- - `Left` -> return not guaranteed, but here are
+--     the substitutions i found anyway
+-- - `Right` -> return guaranteed! Here are the
+--     substitutions and type being returned.
 inferStmt :: TypeEnv -> Stmt -> Infer (Either Subst (Subst, Type))
 inferStmt env (IfElse cond tb fb) = do
     (cS, cT) <- infer env cond
@@ -122,19 +130,11 @@ inferStmt env (IfElse cond tb fb) = do
         mergeStmtInfs b i
         ) mtb fb
     mergeStmtInfs mtb mfb
-    -- case (mtb, mfb) of
-    --     (Just (tS, tT), Just (fS, fT)) ->
-    --         let sub = compose [cS',fS,tS,cS]
-    --         in return (Right (sub, apply sub tT))
-    --     _ -> return (Left cS')
 inferStmt env (Loop init' cond iter body) = do
-    inS <- either id fst <$>
-        inferStmt env init'
+    inS <- inferStmtSubst env init'
     cS <- inferCond
-    itS <- either id fst <$>
-        inferStmt env iter
-    bS <- either id fst <$>
-        inferBody env body
+    itS <- inferStmtSubst env iter
+    bS <- inferBodySubst env body
     let sub = compose [bS,itS,cS,inS]
     return (Left sub)
     where
@@ -148,27 +148,8 @@ inferStmt env (Loop init' cond iter body) = do
             _ -> throw $ OtherError
                 "invalid condition expression"
 inferStmt env (Match val cases) = do
-    tv <- fresh
-    (vS, vT) <- infer env val
-    foldM (\prev (Case ptrn body) -> case prev of
-        Left sub1 -> do
-            (pS, pT) <- infer env ptrn
-            sub2 <- either id fst <$> inferBody env body
-            vpS <- unify vT pT
-            return (Left (compose [vpS,sub2,pS,sub1]))
-        Right (sub, typ) -> do
-            (pS, pT) <- infer env ptrn
-            vpS <- unify vT pT
-            eith <- inferBody env body
-            case eith of
-                Left bS ->
-                    let sub' = compose [bS, vpS, pS, sub]
-                    in return (Left sub')
-                Right (bS, bT) -> do
-                    sub' <- unify typ bT
-                    let sub'' = compose [sub', bS, vpS, pS, sub]
-                    return (Right (sub'', bT))
-        ) (Right (vS, tv)) cases
+    vI <- infer env val
+    inferCases vI cases
 inferStmt env (NewVar _mut _name (TypeDecl _ typ) val) = do
     (vS, vT) <- infer env val
     sub <- unify typ vT
@@ -182,7 +163,8 @@ inferStmt env (ValStmt val) = do
     return (Left s)
 inferStmt _ _ = return (Left nullSubst)
 
-inferBody :: TypeEnv -> Body -> Infer (Either Subst (Subst, Type))
+inferBody :: TypeEnv -> Body
+    -> Infer (Either Subst (Subst, Type))
 inferBody env body = do
     tv <- fresh
     foldM (\b stmt -> do
@@ -190,23 +172,106 @@ inferBody env body = do
         mergeStmtInfs b i
         ) (Right (nullSubst, tv)) body
 
+inferCases :: TypeEnv
+    -- | The result of inferring from value being matched
+    -> (Subst, Type)
+    -> [MatchCase] -> Infer (Either Subst (Subst, Type))
+inferCases _ (vS, _) [] = Left vS
+inferCases env (vS, vT) cases = do
+    tv <- fresh
+    foldM (\prev (Case ptrn body) -> do
+        (pS, pT) <- infer env ptrn
+        vpS <- unify vT pT
+        case prev of
+            Left s1 -> do
+                s2 <- inferBodySubst env body
+                return (Left (compose [vpS,s2,pS,s1]))
+            Right (s1, typ) -> inferBody env body >>= \case
+                Left bS -> return
+                    (Left (compose [bS, vpS, pS, s1]))
+                Right (bS, bT) -> do
+                    s2 <- unify typ bT
+                    let s3 = compose
+                            [s2, bS, vpS, pS, s1]
+                    return (Right (s3, bT))
+        ) (vS, tv) cases
+
 -- if both bodies guarantee a return, then this can
 -- as well. otherwise it cannot be guaranteed.
 mergeStmtInfs ::
     Either Subst (Subst, Type) ->
     Either Subst (Subst, Type) ->
     Infer (Either Subst (Subst, Type))
--- mergeStmtInfs (Left s1) (Left s2) = return
---     (Left <$> (s1 <|> s2))
--- mergeStmtInfs (Left s1) (Right (s2, _)) = return
---     (Left <$> (s1 <|> s2))
--- mergeStmtInfs (Right (s1, _)) (Left s2) = return
---     (Left <$> (s1 <|> s2))
+mergeStmtInfs (Left s1) (Left s2) = return
+    (Left <$> (s1 <|> s2))
+mergeStmtInfs (Left s1) (Right (s2, _)) = return
+    (Left <$> (s1 <|> s2))
+mergeStmtInfs (Right (s1, _)) (Left s2) = return
+    (Left <$> (s1 <|> s2))
 mergeStmtInfs (Right (s1, t1)) (Right (s2, t2)) = do
     s3 <- unify t1 t2
     return (Right (s1 <|> s2 <|> s3, t1))
-mergeStmtInfs i1 i2 = return
-    (Left (either id fst i1 <|> either id fst i2))
+
+inferStmtSubst :: TypeEnv -> Stmt
+    -> Infer (Either Subst (Subst, Type))
+inferStmtSubst env =
+    (either id fst <$>) . inferStmt env
+
+inferBodySubst :: TypeEnv -> Stmt
+    -> Infer (Either Subst (Subst, Type))
+inferBodySubst =
+    (either id fst <$>) . inferBody env
+
+inferParams :: TypeEnv -> [Pattern] -> Infer (Subst, Type)
+inferParams _ [] = do
+    tv <- fresh
+    return (nullSubst, tv)
+inferParams env (p:ps) = do
+    tv <- fresh
+    (s1, t1) <- infer env p
+    let env' = apply s1 env
+    (s2, t2) <- inferParams env' ps
+    s3 <- unify (apply s2 t1) (t2 :-> tv)
+    return (s3 <|> s2 <|> s1, apply s3 tv)
+
+inferExpr :: TypeEnv -> Expr -> Infer TypeEnv
+inferExpr env (FuncDecl _ _ name typDcl) = do
+    let TypeDecl _cons typ = typDcl
+        scheme = generalize env typ
+        env' = extend name scheme env
+    return env'
+inferExpr env (DataDef _ name pars ctors) = do
+    let tvs = TypeVar <$> pars
+        scheme = Forall tvs (Type name tvs)
+        env' = extend name scheme env
+    return env'
+-- TODO:
+inferExpr env (TraitDecl _ _ctx _name pars fns) = do
+    let tvs = TypeVar <$> pars
+        env' = apply tvs env
+        -- scheme = Forall tvs ...
+    foldM inferExpr env' fns
+-- TODO:
+inferExpr env (TraitImpl _ctx _name _types fns) = do
+    -- let Forall tvs typ = searchEnv name env
+    foldM inferExpr env fns
+inferExpr env (FuncDef _ name pars body) = do
+    Forall tvs fnT <- searchEnv name env
+    (psS, psT) <- inferParams env pars
+    fnS <- unify (apply psS fnT) psT
+    let env' = apply s2 env
+    bodyInf <- inferBody env' body
+    case bodyInf of
+        Right (bS, bT) -> do
+            fbS <- unify bT fnT
+            let sub = compose [fbS, bS, fnS, psS]
+                typ = apply sub fnT
+                scheme = generalize env typ
+                env'' = extend name scheme
+            return env''
+        Left _ -> throw (MissingReturn name)
+inferExpr env (TypeAlias _ _name _typ) = do
+    return env
 
 pushParams :: [Var] -> TypeEnv -> Infer TypeEnv
 pushParams [] env = return env
@@ -218,9 +283,9 @@ pushParams (par:pars) env = do
 applyPtrns :: TypeEnv -> Pattern -> [Pattern] -> Infer (Subst, Type)
 applyPtrns env val [] = infer env val
 applyPtrns env v1 (v2:vs) = do
+    tv <- fresh
     (s1, t1) <- infer env v1
     let env' = apply s1 env
     (s2, t2) <- applyPtrns env' v2 vs
-    tv <- fresh
     s3 <- unify (apply s2 t1) (t2 :-> tv)
     return (s3 <|> s2 <|> s1, apply s3 tv)

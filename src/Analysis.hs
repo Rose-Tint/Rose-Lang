@@ -10,17 +10,34 @@ import Analysis.Error
 import Analysis.Validator
 import AST.Expr
 import Builder
+import Data.Table
 import Text.Pretty
+import Typing.Infer
+import Typing.TypeEnv
 
 
-analyze :: [Expr] -> Analysis
-analyze = runAnalyzer . mapM validate
+data TypeCheck = TypeCheck {
+    tcErrors :: [ErrInfo],
+    tcEnv :: TypeEnv
+    }
 
-analyzeExprs :: [Expr] -> BuilderIO Analysis
+
+analyze :: String -> [Expr] -> Analysis Table
+analyze name = runAnalyzer name . mapM validate
+
+typeCheck :: [Expr] -> TypeCheck
+typeCheck exprs = unInf inf newState okay err
+    where
+        okay s x = TypeCheck (stErrors s) x
+        err s _ -> TypeCheck (stErrors s) emptyEnv
+        inf = foldM inferExpr exprs
+
+analyzeExprs :: [Expr] -> BuilderIO (Analysis Table)
 analyzeExprs es = do
     name <- getModule
     debug ("Analyzing ["+|name|+"]\n")
-    let !res = analyze es
+    let env = handleTypeCheck $ typeCheck es
+    let res = analyze name es
     trace "Symbol-Table.txt" (arTable res)
     printAnalysisErrors $ arErrors res
     return res
@@ -33,3 +50,8 @@ printAnalysisErrors es = do
     forM_ es $ \e -> case emError e of
         Right FalseError -> return ()
         _ -> message $ "\n"+|name|+|(lns, e)|+"\n"
+
+handleTypeCheck :: TypeCheck -> BuilderIO TypeEnv
+handleTypeCheck (TypeCheck errs env) = do
+    printAnalysisErrors errs
+    return env

@@ -95,14 +95,23 @@ instance Validator Value where
     validate (Tuple arr) =
         Tuple <$!> mapM validate arr
     validate (Array arr) =
-        -- TODO: verify that they are all of the same type
         Array <$!> mapM validate arr
     validate (Lambda params bdy) = do
         -- params' <- mapM validate params
         bdy' <- validate bdy
         return (Lambda params bdy')
-    validate _ = fail
-        "Validator.validate: Value not fully implemented"
+    validate (IfElseVal cond tr fa) = do
+        cond' <- validate cond
+        tr' <- validate tr
+        fa' <- validate fa
+        return (IfElseVal cond' tr' fa')
+    validate (MatchVal val cases) = do
+        val' <- validate val
+        cases' <- forM cases $ \(p, v) -> do
+            p' <- validate p
+            v' <- validate v
+            return (p', v')
+        return (MatchVal val' cases')
 
 -- TODO: check if a return is required
 --   (In other words, if there is no return
@@ -175,15 +184,15 @@ instance Validator Expr where
         mapM_ validate fns
         return expr
     -- TODO:
-    validate expr@(TraitImpl _ctx name _types fns) = define name $! do
+    validate (TraitImpl ctx name types fns) = define name $! do
         mData <- lookupTrait name
         case mData of
             Nothing -> do
                 pushUndefTrait name
                 return ()
             Just _ -> return ()
-        mapM_ validate fns
-        return expr
+        fns' <- mapM validate fns
+        return (TraitImpl ctx name types fns')
     validate expr@(TypeAlias _vis _alias _typ) = do
         -- TODO
         return expr

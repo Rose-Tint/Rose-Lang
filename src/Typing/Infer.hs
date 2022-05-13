@@ -8,19 +8,24 @@ module Typing.Infer (
 ) where
 
 import Control.Monad (replicateM)
+import Data.Maybe (fromMaybe)
 
-import Analysis.Analyzer ()
 import Analysis.Error
+import AST.Expr
+import Common.SrcPos
 import Common.Var
 import Typing.Type
 
 
-newtype State = State { freshIndex :: Int }
+data State = State {
+    stFreshIndex :: Int,
+    stErrors :: [ErrInfo]
+    }
 
 newtype Infer a = Inf {
     unInf :: forall b. State
         -> (State -> a -> b)
-        -> (Error -> b)
+        -> (State -> Error -> b)
         -> b
     }
 
@@ -50,15 +55,31 @@ modifyState f = Inf $ \s okay _ ->
 fresh :: Infer Type
 fresh = do
     state <- modifyState $ \s ->
-        s { freshIndex = freshIndex s + 1 }
-    let i = freshIndex state
+        s { stFreshIndex = stFreshIndex s + 1 }
+    let i = stFreshIndex state
     return (TypeVar (prim (letters !! i)))
     where
         letters = [1..]
             >>= flip replicateM ['a'..'z']
 
 throw :: Error -> Infer a
-throw e = Inf $ \_ _ err -> err e
+throw e = Inf $ \s _ err ->
+    let ei = ErrInfo UnknownPos (Right e)
+        s' = s { stErrors = (ei:stErrors s) }
+    in err s' e
+
+recoverMaybe :: Infer a -> Infer (Maybe a)
+recoverMaybe (Inf inf) = Inf $ \s okay _ ->
+    let okay' s' = okay s' . Just
+        err' s' _ = okay s' Nothing
+    in inf s okay' err'
+
+recoverOpt :: a -> Infer a -> Infer a
+recoverOpt def inf = fromMaybe def <$>
+    recoverMaybe inf
+
+recover :: Infer a -> Infer ()
+recover inf = recoverOpt () (inf >> return ())
 
 throwUndefined :: Var -> Infer a
 throwUndefined sym = throw $ Undefined sym []

@@ -6,7 +6,6 @@ module Analysis.Analyzer (
     Analysis(..),
     State(..),
 
-    newModuleState,
     newState,
     runAnalyzer,
 
@@ -55,6 +54,7 @@ import Data.Functor ((<&>))
 import Analysis.Error
 import AST.Value
 import Common.SrcPos
+import Common.Specifiers
 import Common.Var
 import Data.Table
 import Typing.Type
@@ -67,8 +67,8 @@ data State
     = State {
         stModule :: {-# UNPACK #-} !Var,
         stFreshIdx :: {-# UNPACK #-} !Int,
-        -- stTypeEnv :: TypeEnv,
         stAllowBreak :: Bool,
+        stPurity :: Purity,
         stErrors :: [ErrInfo],
         stTable :: Table,
         stDefs :: [Var],
@@ -86,30 +86,22 @@ newtype Analyzer a
 data Analysis
     = Analysis {
         arErrors :: ![ErrInfo],
-        arTable :: !Table
+        arTable :: Table
     }
 
 
-newModuleState :: String -> State
-{-# INLINE newModuleState #-}
-newModuleState name = State
-    (prim name) 0 False [] emptyTable [] newSrcPos
-
-newState :: State
+newState :: String -> State
 {-# INLINE newState #-}
-newState = newModuleState ""
+newState name = State (prim name)
+    0 False Pure [] emptyTable [] newSrcPos
 
-runAnalyzer :: Analyzer a -> Analysis
-runAnalyzer a = runA a newState okay err
+runAnalyzer :: String -> Analyzer a -> Analysis
+runAnalyzer mdl a = runA a (newState mdl) go go
     where
-        err _ s = Analysis {
-                    arErrors = stErrors s,
-                    arTable = stTable s
-                }
-        okay _ s = Analysis {
-                    arErrors = [],
-                    arTable = stTable s
-                }
+        go _ s = Analysis {
+                arErrors = stErrors s,
+                arTable = stTable s
+            }
 
 getState :: Analyzer State
 getState = modifyState id
@@ -225,7 +217,6 @@ throw e = Analyzer $ \ s _ err ->
     let es = stErrors s
         em = ErrInfo {
                 emPos = stPos s,
-                emDefName = Just (head (stDefs s)),
                 emError = Right e
             }
     in err e (s { stErrors = (em:es) })
@@ -233,7 +224,6 @@ throw e = Analyzer $ \ s _ err ->
 warn :: Warning -> Analyzer ()
 warn w = modifyState_ $ \s -> s { stErrors = ((ErrInfo {
         emPos = stPos s,
-        emDefName = Just (head (stDefs s)),
         emError = Left w
     }):stErrors s) }
 

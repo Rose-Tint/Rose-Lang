@@ -27,6 +27,7 @@ data Error
         Var -- new
     | BindError Var Type
     | InfiniteType Var Type
+    | MissingReturn Var -- name of function
     | OtherError String
     | FalseError
     -- deriving (Eq)
@@ -40,13 +41,12 @@ data Warning
 data ErrInfo
     = ErrInfo {
         emPos :: SrcPos,
-        emDefName :: Maybe Var,
         emError :: Either Warning Error
     }
 
 
 instance Pretty ([String], ErrInfo) where
-    pretty (lns, (ErrInfo pos _ werr)) = case werr of
+    pretty (lns, (ErrInfo pos werr)) = case werr of
         Left wrn -> "::"-|pos|-":$yWarning: $R"+|wrn|+
             "\n$p"+|5.>lno|+" | $R"+|line|+
             "\n#8 $y#"+|col|+"~$r^$R\n"
@@ -91,5 +91,8 @@ instance Pretty Error where
     pretty (InfiniteType tv typ) =
         "Cannot create the infinite type `"+|tv|+" -> "+|typ|+"`"++
         "\n    Resulting from the occurence of `"+|tv|+"` in `"+|typ|+"`"
+    pretty (MissingReturn name) =
+        "Missing return statement in function body of `$y"
+        +|name|+"$R`"
     pretty (OtherError msg) = show msg ++ "\n"
     pretty FalseError = ""
