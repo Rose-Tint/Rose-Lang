@@ -1,5 +1,6 @@
 module AST.Pattern (
     Pattern(..),
+    generality,
 ) where
 
 import AST.Literal
@@ -8,6 +9,8 @@ import Common.Var
 import Text.Pretty
 
 
+type Specificity = Int
+
 data Pattern
     = Param Var
     | Hole SrcPos
@@ -15,6 +18,17 @@ data Pattern
     | TuplePtrn [Pattern]
     | LitPtrn Literal
     | OrPtrn Pattern Pattern
+
+
+-- | calculates the generality of a pattern by
+-- counting how many wildcards there are
+generality :: Pattern -> Specificity
+generality (CtorPtrn _ ps) = sum (generality <$> ps)
+generality (TuplePtrn ps) = sum (generality <$> ps)
+generality LitPtrn{} = 0
+generality (OrPtrn p1 p2) = generality p1 + generality p2
+generality _ = 1
+
 
 instance Pretty Pattern where
     pretty (Param name) = pretty name
