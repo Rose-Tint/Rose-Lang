@@ -2,91 +2,134 @@
 
 module Typing.Infer (
     Infer,
-    stErrors,
     runInfer,
+    getEnv,
+    local,
+    extendEnv,
+    applyEnv,
+    refresh,
     fresh,
     throw,
-    recoverMaybe,
-    recoverOpt,
-    recover,
+    -- recover,
     throwUndefined,
+    lookupEnv,
+    searchEnv,
+    findEnv,
+    instantiate,
+    generalize
 ) where
 
+import Prelude hiding (lookup)
+
 import Control.Monad (replicateM)
-import Data.Maybe (fromMaybe)
+-- import Control.Monad.Trans.RWS.CPS
+import Control.Monad.Trans.State
+import qualified Data.Set as S
 
 import Analysis.Error
 import Common.SrcPos
 import Common.Var
+import Data.VarMap
+import Typing.Scheme
+import Typing.Substitution
 import Typing.Type
+import Typing.TypeEnv
 
 
-data State = State {
+data InferState = InfState {
     stFreshIndex :: Int,
-    stErrors :: [ErrInfo]
+    stErrors :: [ErrInfo],
+    stEnv :: TypeEnv
     }
 
-newtype Infer a = Inf {
-    unInf :: forall b. State
-        -> (State -> a -> b)
-        -> (State -> Error -> b)
-        -> b
-    }
+type Infer a = State InferState a
 
 
-instance Functor Infer where
-    fmap f (Inf inf) = Inf $ \s okay ->
-        let okay' s' = okay s' . f
-        in inf s okay'
-
-instance Applicative Infer where
-    pure a = Inf $ \s okay _ -> okay s a
-    f <*> x = do
-        f' <- f
-        x' <- x
-        return $! f' x'
-
-instance Monad Infer where
-    Inf inf >>= f = Inf $ \s okay err  ->
-        let okay' s' x = unInf (f x) s' okay err
-        in inf s okay' err
-
-
-runInfer :: Infer a -> (State -> a -> b) -> (State -> Error -> b) -> b
-runInfer (Inf inf) = inf (State 0 [])
-
-modifyState :: (State -> State) -> Infer State
-modifyState f = Inf $ \s okay _ ->
-    let s' = f s in okay s' s'
+runInfer :: Infer a -> (a, [ErrInfo], TypeEnv)
+runInfer inf =
+    let (a, InfState _ errs env) =
+            runState inf (InfState 0 [] emptyEnv)
+    in (a, reverse errs, env)
 
 fresh :: Infer Type
 fresh = do
-    state <- modifyState $ \s ->
-        s { stFreshIndex = stFreshIndex s + 1 }
-    let i = stFreshIndex state
+    modify $ \s -> s { stFreshIndex = stFreshIndex s + 1 }
+    i <- gets stFreshIndex
     return (TypeVar (prim (letters !! i)))
     where
         letters = [1..]
             >>= flip replicateM ['a'..'z']
 
-throw :: Error -> Infer a
-throw e = Inf $ \s _ err ->
-    let ei = ErrInfo (getPos e) (Right e)
-        s' = s { stErrors = (ei:stErrors s) }
-    in err s' e
+local :: (TypeEnv -> TypeEnv) -> Infer a -> Infer a
+local f = withState $ \s -> s { stEnv= f (stEnv s) }
 
-recoverMaybe :: Infer a -> Infer (Maybe a)
-recoverMaybe (Inf inf) = Inf $ \s okay _ ->
-    let okay' s' = okay s' . Just
-        err' s' _ = okay s' Nothing
-    in inf s okay' err'
+getEnv :: Infer TypeEnv
+getEnv = gets stEnv
 
-recoverOpt :: a -> Infer a -> Infer a
-recoverOpt def inf = fromMaybe def <$>
-    recoverMaybe inf
+extendEnv ::  Var -> Scheme -> Infer ()
+extendEnv name scheme = modify $ \s ->
+    s { stEnv = extend name scheme (stEnv s) }
 
-recover :: Infer a -> Infer ()
-recover inf = recoverOpt () (inf >> return ())
+applyEnv :: Subst -> Infer ()
+applyEnv sub = modify $ \s ->
+    s { stEnv = apply sub (stEnv s) }
 
-throwUndefined :: Var -> Infer a
-throwUndefined sym = throw $ Undefined sym []
+refresh :: Infer ()
+refresh = modify $ \s -> s { stFreshIndex = 0 }
+
+-- | Adds the error to the error list
+throw :: Error -> Infer ()
+throw err = do
+    let ei = ErrInfo (getPos err) (Right err)
+    modify $ \s -> s { stErrors = (ei:stErrors s) }
+
+-- recover :: Infer a -> Infer (Maybe a)
+-- recover inf = lift catchE (Just <$> inf) handle
+--     where
+--         handle _err = return Nothing
+
+throwUndefined :: Var -> Infer ()
+throwUndefined sym = throw (Undefined sym [])
+
+lookupEnv :: Var -> Infer (Maybe (Subst, Type))
+lookupEnv var = do
+    env <- getEnv
+    case lookup var env of
+        Nothing -> return Nothing
+        Just scheme -> do
+            typ <- instantiate scheme
+            return (Just (nullSubst, typ))
+
+searchEnv :: Var -> Infer (Subst, Type)
+searchEnv var = do
+    env <- getEnv
+    case lookup var env of
+        Nothing -> do
+            tv <- fresh
+            return (singleton var tv, tv)
+        Just scheme -> do
+            typ <- instantiate scheme
+            return (nullSubst, typ)
+
+findEnv :: Var -> Infer (Subst, Type)
+findEnv var = do
+    env <- getEnv
+    case lookup var env of
+        Nothing -> do
+            throwUndefined var
+            tv <- fresh
+            return (nullSubst, tv)
+        Just scheme -> do
+            typ <- instantiate scheme
+            return (nullSubst, typ)
+
+instantiate :: Scheme -> Infer Type
+instantiate (Forall vars typ) = do
+    vars' <- mapM (const fresh) vars
+    let sub = fromList (zip vars vars')
+    return $! apply sub typ
+
+generalize :: TypeEnv -> Type -> Scheme
+generalize env typ = Forall vars typ
+    where
+        vars = S.toList (ftv typ `S.difference` ftv env)

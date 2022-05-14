@@ -26,7 +26,9 @@ unify :: Type -> Type -> Infer Subst
 unify (TypeVar nm) typ = bind nm typ
 unify typ (TypeVar nm) = bind nm typ
 unify t1@(Type nm1 ts1) t2@(Type nm2 ts2)
-    | nm1 /= nm2 = throw (TypeMismatch t1 t2)
+    | nm1 /= nm2 = do
+        throw (TypeMismatch t1 t2)
+        return nullSubst
     | length ts1 == length ts2 =
         compose <$> (zipWithM unify ts1 ts2)
 unify (l1 :-> l2) (r1 :-> r2) = do
@@ -36,12 +38,16 @@ unify (l1 :-> l2) (r1 :-> r2) = do
 unify (ArrayType t1) (ArrayType t2) = unify t1 t2
 unify (TupleType ts1) (TupleType ts2) =
     compose <$> (zipWithM unify ts1 ts2)
-unify t1 t2 = throw (TypeMismatch t1 t2)
+unify t1 t2 = do
+    throw (TypeMismatch t1 t2)
+    return nullSubst
 
 -- |Binds a variable to a type in a substitution.
 -- Also performs an occurence check.
 bind :: Var -> Type -> Infer Subst
 bind _ (TypeVar _) = return nullSubst
 bind nm typ
-    | nm ~> typ = throw (InfiniteType nm typ)
+    | nm ~> typ = do
+        throw (InfiniteType nm typ)
+        return nullSubst
     | otherwise = return (singleton nm typ)
