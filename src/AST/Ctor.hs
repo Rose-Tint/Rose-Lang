@@ -4,6 +4,7 @@ module AST.Ctor (
 ) where
 
 import Common.Specifiers
+import Common.SrcPos
 import Common.Var
 import Text.Pretty
 import Typing.Type
@@ -16,6 +17,13 @@ data Ctor
     = Record !Var Visib [Field]
     | SumType !Var Visib [Type]
 
+
+instance HasSrcPos Field where
+    getPos (Field name _) = getPos name
+
+instance HasSrcPos Ctor where
+    getPos (Record name _ _) = getPos name
+    getPos (SumType name _ _) = getPos name
 
 instance Pretty Field where
     pretty (Field name typ) =

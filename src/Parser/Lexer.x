@@ -193,7 +193,7 @@ lexError :: String -> Alex a
 lexError msg = do
     (pos_, _, _, input) <- alexGetInput
     let pos = fromAlexPosn pos_
-        lno = srcLine pos
+        lno = posLine pos
         line = "..." ++ takeWhile (/= '\n') input
     alexError $
         "::"-|pos|-|Red|+": Error parsing a "+|msg|+":\n"

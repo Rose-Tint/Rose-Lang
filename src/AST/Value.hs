@@ -1,7 +1,6 @@
 module AST.Value (
     Value(..),
     ValArray,
-    valPos,
     valueFromList
 ) where
 
@@ -29,20 +28,21 @@ data Value
     | MatchVal Value [(Pattern, Value)]
 
 
-valPos :: Value -> SrcPos
-valPos (Literal (IntLit _ p)) = p
-valPos (Literal (FloatLit _ p)) = p
-valPos (Literal (DoubleLit _ p)) = p
-valPos (Literal (CharLit _ p)) = p
-valPos (Literal (StringLit _ p)) = p
-valPos (VarVal var) = varPos var
-valPos (CtorCall name) = varPos name
-valPos _ = UnknownPos
-
 valueFromList :: Value -> [Value] -> Value
 valueFromList val [] = val
 valueFromList v1 (v2:vs) = Application v1 (valueFromList v2 vs)
 
+
+instance HasSrcPos Value where
+    getPos (Literal lit) = getPos lit
+    getPos (VarVal var) = getPos var
+    getPos (Application val _) = getPos val
+    getPos (CtorCall name) = getPos name
+    getPos (Lambda [] val) = getPos val
+    getPos (Lambda (val:_) _) = getPos val
+    getPos (IfElseVal val _ _) = getPos val
+    getPos (MatchVal val _) = getPos val
+    getPos _ = UnknownPos
 
 instance Pretty Value where
     terse (Literal l) = terse l

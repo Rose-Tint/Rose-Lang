@@ -1,6 +1,6 @@
 module Common.Var (
     Var(..),
-    prim
+    prim,
 ) where
 
 import Data.Function (on)
@@ -12,9 +12,12 @@ import Text.Pretty
 
 data Var = Var {
         varName :: !String,
-        varPos :: SrcPos
+        _varPos :: SrcPos
     }
 
+
+instance HasSrcPos Var where
+    getPos = _varPos
 
 instance Eq Var where
     (==) = (==) `on` varName
@@ -26,10 +29,9 @@ instance Ord Var where
     (>) = (>) `on` varName
     compare = comparing varName
 
+instance Pretty Var where
+    pretty = varName
+
 
 prim :: String -> Var
 prim s = Var s UnknownPos
-
-
-instance Pretty Var where
-    pretty = varName

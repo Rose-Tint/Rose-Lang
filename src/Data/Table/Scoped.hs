@@ -10,7 +10,7 @@ import Text.Pretty
 data Scoped = Scp {
         -- scpType :: Type,
         scpMutab :: Mutab,
-        scpPos :: SrcPos
+        _scpPos :: SrcPos
     }
 
 
@@ -21,6 +21,9 @@ instance Pretty Scoped where
         " | "+|6.>mut|+
         -- " | "+|35.>typ|+
         " |"
+
+instance HasSrcPos Scoped where
+    getPos = _scpPos
 
 -- instance Pretty (String, Scoped) where
 --     pretty = detailed

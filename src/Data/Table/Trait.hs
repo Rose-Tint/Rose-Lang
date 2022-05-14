@@ -17,7 +17,7 @@ data Trait = Trait {
         trtVisib :: Visib,
         trtMeths :: [Var],
         trtImpls :: [Type],
-        trtPos :: SrcPos
+        _trtPos :: SrcPos
     }
     -- deriving (Eq)
 
@@ -29,6 +29,9 @@ instance Pretty Trait where
         " | "+|6.>vis|+
         -- " | "+|15.>kind|+
         " |"
+
+instance HasSrcPos Trait where
+    getPos = _trtPos
 
 -- instance Pretty (String, Trait) where
 --     pretty = detailed

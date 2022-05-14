@@ -17,20 +17,20 @@ data Global
         -- glbType :: TypeDecl,
         glbVisib :: Visib,
         globalPurity :: Maybe Purity,
-        glbPos :: SrcPos
+        _glbPos :: SrcPos
     }
     | Constructor {
         -- glbType :: TypeDecl,
         glbVisib :: Visib,
         glbParent :: Var,
-        glbPos :: SrcPos
+        _glbPos :: SrcPos
     }
     | Method {
         -- glbType :: TypeDecl,
         glbVisib :: Visib,
         globalPurity :: Maybe Purity,
         glbParent :: Var,
-        glbPos :: SrcPos
+        _glbPos :: SrcPos
     }
     -- deriving (Eq)
 
@@ -42,7 +42,7 @@ glbPurity (Method _ pur _ _) = pur
 
 funcToMeth :: Global -> Var -> Global
 funcToMeth (Function vis pur _) trt =
-    Method vis pur trt (varPos trt)
+    Method vis pur trt (getPos trt)
 funcToMeth _ _ = error "funcToMeth: non-`Function` argument."
 
 
@@ -66,3 +66,6 @@ instance Pretty Global where
         " | "+|6.>pur|+
         -- " | "+|35.>typ|+
         " | (parent = "+|par|+")"
+
+instance HasSrcPos Global where
+    getPos = _glbPos

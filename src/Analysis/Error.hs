@@ -44,6 +44,15 @@ data ErrInfo
         emError :: Either Warning Error
     }
 
+instance HasSrcPos Error where
+    getPos (TypeMismatch ex fnd) = fnd <?> ex
+    getPos (Undefined var _) = getPos var
+    getPos (Redefinition orig new) = new <?> orig
+    getPos (BindError var typ) = var <?> typ
+    getPos (InfiniteType var typ) = typ <?> var
+    getPos (MissingReturn name) = getPos name
+    getPos _ = UnknownPos
+
 
 instance Pretty ([String], ErrInfo) where
     pretty (_, (ErrInfo pos@UnknownPos werr)) = case werr of
@@ -57,9 +66,8 @@ instance Pretty ([String], ErrInfo) where
             "\n$p"+|5.>lno|+" | $R"+|line|+
             "\n#8 $y#"+|col|+"~$r^$R\n"
         where
-            -- columns are WAY off
-            col = srcCol pos - 1
-            lno = srcLine pos
+            col = posColumn pos - 1
+            lno = posLine pos
             line| lno < 0 = "(NEGATIVE LINE NUMBER)"
                 | lno > length lns = "(EOF)"
                 | otherwise = lns !! (lno - 1)
@@ -70,8 +78,8 @@ instance Pretty Warning where
         "> shadows `"
         +|orig|+"`<ln "+|origLine|+">\n"
         where
-            newLine = srcLine (varPos new)
-            origLine = srcLine (varPos orig)
+            newLine = posLine new
+            origLine = posLine orig
 
 instance Pretty Error where
     pretty (TypeMismatch ex fnd) =
@@ -88,12 +96,11 @@ instance Pretty Error where
         "\n    Originally defined on line "+|origLine|+
         "\n    But later defined on line "+|newLine
         where
-            newLine = srcLine (varPos new)
-            origLine = srcLine (varPos orig)
+            newLine = posLine new
+            origLine = posLine orig
     pretty (BindError _var _t2) = "Type-Binding error"
     pretty (InfiniteType tv typ) =
-        "Cannot create the infinite type `"+|tv|+" -> "+|typ|+"`"++
-        "\n    Resulting from the occurence of `"+|tv|+"` in `"+|typ|+"`"
+        "Cannot create the infinite type `"+|tv|+" ~> "+|typ|+"`"
     pretty (MissingReturn name) =
         "Missing return statement in function body of `$y"
         +|name|+"$R`"

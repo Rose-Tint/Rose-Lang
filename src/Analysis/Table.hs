@@ -32,6 +32,7 @@ import Control.Monad ((<$!>))
 
 import Analysis.Analyzer
 import Common.Specifiers
+import Common.SrcPos
 import Common.Var
 import Data.Table
 
@@ -152,25 +153,25 @@ modifyTrait name f = modifyTable_ $ \tbl ->
 
 pushDatatype :: Var -> Visib -> Analyzer Datatype
 pushDatatype name vis = do
-    let dta = Datatype vis [] (varPos name)
+    let dta = Datatype vis [] (getPos name)
     modifyTable_ (insertType name dta)
     return dta
 
 pushTrait :: Var -> Visib -> Analyzer Trait
 pushTrait name vis = do
-    let dta = Trait vis [] [] (varPos name)
+    let dta = Trait vis [] [] (getPos name)
     modifyTable_ (insertTrait name dta)
     return dta
 
 pushUndefTrait :: Var -> Analyzer Trait
 pushUndefTrait name = do
-    let dta = Trait Export [] [] (varPos name)
+    let dta = Trait Export [] [] (getPos name)
     modifyTable_ (insertTrait name dta)
     return dta
 
 pushCtor :: Var -> Visib -> Var -> Analyzer Global
 pushCtor name vis parent = do
-    let dta = Constructor vis parent (varPos name)
+    let dta = Constructor vis parent (getPos name)
     modifyTable_ (insertGlobal name dta)
     modifyDatatype parent (\d -> d { dtCtors = (name:dtCtors d) })
     return dta
@@ -178,13 +179,13 @@ pushCtor name vis parent = do
 pushUndefCtor :: Var -> Analyzer Global
 pushUndefCtor name = do
     -- !!!TODO: undefined
-    let dta = Constructor Export (prim "UNDEFINED") (varPos name)
+    let dta = Constructor Export (prim "UNDEFINED") (getPos name)
     modifyTable_ (insertGlobal name dta)
     return dta
 
 pushFunction :: Var -> Visib -> Analyzer Global
 pushFunction name vis = do
-    let dta = Function vis Nothing (varPos name)
+    let dta = Function vis Nothing (getPos name)
     modifyTable_ (insertGlobal name dta)
     return dta
 
@@ -192,25 +193,25 @@ pushUndefFunc :: Var -> Analyzer Global
 pushUndefFunc name = do
     -- TODO: get current/expoected purity
     -- instead of `Nothing` or `Unsafe`
-    let dta = Function Export Nothing (varPos name)
+    let dta = Function Export Nothing (getPos name)
     modifyTable_ (insertGlobal name dta)
     return dta
 
 pushFunction' :: Var -> Visib -> Purity -> Analyzer Global
 pushFunction' name vis pur = do
-    let dta = Function vis (Just pur) (varPos name)
+    let dta = Function vis (Just pur) (getPos name)
     modifyTable_ (insertGlobal name dta)
     return dta
 
 pushMethod :: Var -> Visib -> Purity -> Var -> Analyzer Global
 pushMethod name vis pur parent = do
-    let dta = Method vis (Just pur) parent (varPos name)
+    let dta = Method vis (Just pur) parent (getPos name)
     modifyTable_ (insertGlobal name dta)
     modifyTrait parent (\t -> t { trtMeths = (name:trtMeths t) })
     return dta
 
 pushScoped :: Var -> Mutab -> Analyzer Scoped
 pushScoped name mut = do
-    let dta = Scp mut (varPos name)
+    let dta = Scp mut (getPos name)
     modifyTable_ (insertScoped name dta)
     return dta

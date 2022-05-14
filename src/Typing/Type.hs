@@ -3,6 +3,7 @@ module Typing.Type  (
     typeToList,
 ) where
 
+import Common.SrcPos
 import Common.Var
 import Text.Pretty
 
@@ -22,6 +23,13 @@ typeToList :: Type -> [Type]
 typeToList (t1 :-> t2) = (t1:typeToList t2)
 typeToList t = [t]
 
+
+instance HasSrcPos Type where
+    getPos (Type name _) = getPos name
+    getPos (TypeVar name) = getPos name
+    getPos (t1 :-> t2) = t1 <?> t2
+    getPos (TupleType types) = foldr (<?>) UnknownPos types
+    getPos (ArrayType typ) = getPos typ
 
 instance Pretty Type where
     pretty (Type name []) = pretty name

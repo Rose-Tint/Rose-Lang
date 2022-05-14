@@ -117,28 +117,20 @@ instance Inferable Pattern where
 -- - `Right` -> return guaranteed! Here are the
 --     substitutions and type being returned.
 inferStmt :: TypeEnv -> Stmt -> Infer (Either Subst (Subst, Type))
-inferStmt env (IfElse cond tb fb) = do
-    (cS, cT) <- infer env cond
-    cS' <- unify boolType cT
-    mtb <- foldM (\b stmt -> do
-        i <- inferStmt env stmt
-        mergeStmtInfs b i
-        ) (Left (cS' <|> cS)) tb
-    mfb <- foldM (\b stmt -> do
-        i <- inferStmt env stmt
-        mergeStmtInfs b i
-        ) mtb fb
-    mergeStmtInfs mtb mfb
+inferStmt env (IfElse cond trueBody falseBody) = do
+    (_cS, cT) <- infer env cond
+    _cS' <- unify boolType cT
+    etb <- inferStmt env trueBody
+    efb <- inferStmt env falseBody
+    mergeStmtInfs etb efb
 inferStmt env (Loop init' cond iter body) = do
     inS <- inferStmtSubst env init'
     cS <- inferCond
     itS <- inferStmtSubst env iter
-    bS <- inferBodySubst env body
+    bS <- inferStmtSubst env body
     let sub = compose [bS,itS,cS,inS]
     return (Left sub)
     where
-        -- `inferStmt` would return `Nothing` for
-        -- a `ValStmt`
         inferCond = case cond of
             ValStmt val -> do
                 (cS, cT) <- infer env val
@@ -160,16 +152,12 @@ inferStmt env (Return val) = Right <$> infer env val
 inferStmt env (ValStmt val) = do
     (s, _) <- infer env val
     return (Left s)
-inferStmt _ _ = return (Left nullSubst)
-
-inferBody :: TypeEnv -> Body
-    -> Infer (Either Subst (Subst, Type))
-inferBody env body = do
-    tv <- fresh
+inferStmt env (Compound body) = do
     foldM (\b stmt -> do
         i <- inferStmt env stmt
         mergeStmtInfs b i
-        ) (Right (nullSubst, tv)) body
+        ) (Left nullSubst) body
+inferStmt _ _ = return (Left nullSubst)
 
 inferCases :: TypeEnv
     -- | The result of inferring from value being matched
@@ -183,9 +171,9 @@ inferCases env (vS, vT) cases = do
         vpS <- unify vT pT
         case prev of
             Left s1 -> do
-                s2 <- inferBodySubst env body
+                s2 <- inferStmtSubst env body
                 return (Left (compose [vpS,s2,pS,s1]))
-            Right (s1, typ) -> inferBody env body >>= \case
+            Right (s1, typ) -> inferStmt env body >>= \case
                 Left bS -> return
                     (Left (compose [bS, vpS, pS, s1]))
                 Right (bS, bT) -> do
@@ -203,10 +191,10 @@ mergeStmtInfs ::
     Infer (Either Subst (Subst, Type))
 mergeStmtInfs (Left s1) (Left s2) = return
     (Left (s1 <|> s2))
-mergeStmtInfs (Left s1) (Right (s2, _)) = return
-    (Left (s1 <|> s2))
-mergeStmtInfs (Right (s1, _)) (Left s2) = return
-    (Left (s1 <|> s2))
+mergeStmtInfs (Left s1) (Right (s2, t)) = return
+    (Right (s1 <|> s2, t))
+mergeStmtInfs (Right (s1, t)) (Left s2) = return
+    (Right (s1 <|> s2, t))
 mergeStmtInfs (Right (s1, t1)) (Right (s2, t2)) = do
     s3 <- unify t1 t2
     return (Right (s1 <|> s2 <|> s3, t1))
@@ -214,11 +202,6 @@ mergeStmtInfs (Right (s1, t1)) (Right (s2, t2)) = do
 inferStmtSubst :: TypeEnv -> Stmt -> Infer Subst
 inferStmtSubst env stmt = do
     eith <- inferStmt env stmt
-    return (either id fst eith)
-
-inferBodySubst :: TypeEnv -> Body -> Infer Subst
-inferBodySubst env body = do
-    eith <- inferBody env body
     return (either id fst eith)
 
 inferParams :: TypeEnv -> [Pattern] -> Infer (Subst, Type)
@@ -259,7 +242,7 @@ inferExpr env (FuncDef name pars body) = do
     (psS, psT) <- inferParams env pars
     fnS' <- unify (apply psS fnT) psT
     let env' = apply fnS env
-    bodyInf <- inferBody env' body
+    bodyInf <- inferStmt env' body
     case bodyInf of
         Right (bS, bT) -> do
             fbS <- unify bT fnT

@@ -15,7 +15,7 @@ data Datatype = Datatype {
         -- dtKind :: Kind,
         dtVis :: Visib,
         dtCtors :: [Var],
-        dtPos :: SrcPos
+        _dtPos :: SrcPos
     }
     -- deriving (Eq)
 
@@ -27,6 +27,9 @@ instance Pretty Datatype where
         " | "+|6.<vis|+
         -- " | "+|15.<kind|+
         " |"
+
+instance HasSrcPos Datatype where
+    getPos = _dtPos
 
 -- instance Pretty (String, Datatype) where
 --     pretty = detailed

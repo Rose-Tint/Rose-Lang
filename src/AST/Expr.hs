@@ -7,6 +7,7 @@ import AST.Stmt
 import AST.Pattern
 import Common.Var
 import Common.Specifiers
+import Common.SrcPos
 import Text.Pretty
 import Typing.Constraint
 import Typing.Type
@@ -18,19 +19,19 @@ data Expr
         exprPurity :: Purity,
         exprVisib :: Visib,
         exprName :: !Var,
-        exprType :: !TypeDecl
+        exprTypeDecl :: !TypeDecl
     }
     | DataDef {
         exprVisib :: Visib,
         exprName :: !Var,
-        exprParams :: [Var],
+        exprTypeVars :: [Var],
         exprCtors :: [Ctor]
     }
     | TraitDecl {
         exprVisib :: Visib,
         exprCtx :: Context,
         exprName :: !Var,
-        exprParams :: [Var],
+        exprTypeVars :: [Var],
         exprFuncs :: [Expr]
     }
     | TraitImpl {
@@ -39,16 +40,25 @@ data Expr
         exprTypes :: [Type],
         exprFuncs :: [Expr]
     }
-    | FuncDef !Var [Pattern] Body
-    | TypeAlias Visib !Var Type
+    | FuncDef {
+        exprName :: !Var,
+        exprParams :: [Pattern],
+        exprBody :: Stmt
+    }
+    | TypeAlias {
+        exprVisib :: Visib,
+        exprName :: !Var,
+        exprType ::  Type
+    }
 
+instance HasSrcPos Expr where
+    getPos = getPos . exprName
 
 instance Pretty Expr where
     pretty (FuncDecl vis pur name typ) =
         vis|+" "+|pur|+" "+|name|+|typ
     pretty (FuncDef name pars body) =
-        name|+" "+|" "`seps`pars|+
-            " {\n"+|indentCatLns body|+"}"
+        name|+" "+|" "`seps`pars|+" "+|body
     pretty (DataDef vis name pars []) =
         vis|+" data "+|name|+" "+|" "`seps`pars
     pretty (DataDef vis name pars (ctor:ctors)) =
@@ -73,7 +83,7 @@ instance Pretty Expr where
     detailed (FuncDef name pars body) =
         "Function Definition:\n    Name: "*|name|*
         "\n    Params: "*|","`sepsD`pars|*
-        "\n    Body:\n"*|indentLns (indentCatLnsD body)
+        "\n    Body:\n"*|indentLns (indentLnsD body)
     detailed (DataDef vis name pars ctors) =
         "Datatype Definition:\n    Visib.: "*|vis|*
         "\n    Name: "*|name|*

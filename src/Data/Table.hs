@@ -72,10 +72,10 @@ insertScoped sym dta tbl =
 getSimilarVars :: Var -> Table -> [Var]
 getSimilarVars (Var name _) (Table typs trts glbs scps) =
     concat [
-        filtKeys dtPos typs,
-        filtKeys trtPos trts,
-        filtKeys glbPos glbs,
-        concatMap (filtKeys scpPos) scps
+        filtKeys getPos typs,
+        filtKeys getPos trts,
+        filtKeys getPos glbs,
+        concatMap (filtKeys getPos) scps
     ]
     where
         filtKeys :: (a -> SrcPos) -> Trie a -> [Var]

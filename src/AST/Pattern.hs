@@ -30,6 +30,14 @@ generality (OrPtrn p1 p2) = generality p1 + generality p2
 generality _ = 1
 
 
+instance HasSrcPos Pattern where
+    getPos (Param name) = getPos name
+    getPos (Hole p) = p
+    getPos (CtorPtrn name _) = getPos name
+    getPos (TuplePtrn p) = getPos (head p)
+    getPos (LitPtrn lit) = getPos lit
+    getPos (OrPtrn p _) = getPos p
+
 instance Pretty Pattern where
     pretty (Param name) = pretty name
     pretty (Hole _) = "_"

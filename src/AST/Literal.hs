@@ -16,6 +16,13 @@ data Literal
     | StringLit String SrcPos
 
 
+instance HasSrcPos Literal where
+    getPos (IntLit _ p) = p
+    getPos (FloatLit _ p) = p
+    getPos (DoubleLit _ p) = p
+    getPos (CharLit _ p) = p
+    getPos (StringLit _ p) = p
+
 instance Pretty Literal where
     terse (FloatLit n _) = show n
     terse l = pretty l

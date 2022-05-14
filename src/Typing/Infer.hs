@@ -71,12 +71,7 @@ fresh = do
 
 throw :: Error -> Infer a
 throw e = Inf $ \s _ err ->
-    let ei = case e of
-            Undefined name _ -> ErrInfo (varPos name) (Right e)
-            Redefinition _orig new -> ErrInfo (varPos new) (Right e)
-            BindError name _ -> ErrInfo (varPos name) (Right e)
-            MissingReturn name -> ErrInfo (varPos name) (Right e)
-            _ -> ErrInfo UnknownPos (Right e)
+    let ei = ErrInfo (getPos e) (Right e)
         s' = s { stErrors = (ei:stErrors s) }
     in err s' e
 

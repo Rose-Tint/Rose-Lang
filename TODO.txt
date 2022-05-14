@@ -9,6 +9,7 @@ TODO:
     - Rename `Expr` to `Top`
     - Rework the command line
     - change `NewVar`'s `TypeDecl` parameter to just `Type`
+    - Add `SpanPos` ctor for `SrcPos`
 
 IN-PROGRESS:
     - WRITE TESTS
