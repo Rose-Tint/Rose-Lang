@@ -30,11 +30,15 @@ pure (:?)<Maybe a -> (a -> b) -> Maybe b>
 [Nothing] :? _ = Nothing;
 [Just a] :? f = Just (f a);
 
-pure filterMaybes<List (Maybe a) -> List a>
-filterMaybes [Null] = Null;
-filterMaybes [List head tail] {
-    if (head == Nothing)
-        return filterMaybes tail;
-    else
-        return List head (filterMaybes tail);
-}
+
+-- pure filterMaybes<List (Maybe a) -> List a>
+-- filterMaybes [Null] = Null;
+-- filterMaybes [List head tail] {
+--     if (head == Nothing) then
+--     -- i keep getting a parsing error here that
+--     -- either wont allow a 'return', or when i
+--     -- fix that, it doesnt allow a semicolon
+--         return filterMaybes tail;
+--     else
+--         return List head (filterMaybes tail);
+-- }

@@ -19,6 +19,14 @@ import Typing.TypeDecl
  - seperate imports from top-level expressions
  -}
 
+{- R/R CONFLICT:
+	Type -> small_id .                                  (rule 29)
+	SmallIds1_ -> small_id .                            (rule 110)
+
+	small_id       reduce using rule 29
+			(reduce using rule 110)
+-}
+
 %name rose Module
 %error { parseError }
 %lexer { lexer } { TEOF }
@@ -38,6 +46,7 @@ import Typing.TypeDecl
     import          { TImport     }
     return          { TReturn     }
     if              { TIf         }
+    then            { TThen       }
     else            { TElse       }
     match           { TMatch      }
     loop            { TLoop       }
@@ -74,11 +83,13 @@ import Typing.TypeDecl
 %nonassoc infix_id
 %left big_id small_id
 %nonassoc literal
-%right if else "=>" "(" "[" ";"
 
 -- ghost precedence for function application
 -- https://stackoverflow.com/questions/27630269
 %nonassoc APP
+
+%right if then else "=>" "(" "[" ";"
+%nonassoc return
 
 
 %%
@@ -176,8 +187,8 @@ Params0_ :: { [Pattern] }
     : {- empty -}                { [] }
     | Params0_ Pattern  { ($2:$1) }
 
-BodyAssn :: { Body }
-    : "=" Stmt   { [$2] }
+BodyAssn :: { Stmt }
+    : "=" TermStmt   { Return $2 }
     | Body       { $1   }
 
 -- TODO: labeled loops
@@ -186,13 +197,13 @@ Stmt :: { Stmt }
     | Match             { $1 }
     | break ";"         { Break }
     | continue ";"      { Continue }
-    | return Term ";"   { Return $2 }
+    | return TermStmt   { Return $2 }
     | Expr              { $1 }
     | Loop              { $1 }
 
 IfElse :: { Stmt }
-    : if Term StmtBody else StmtBody    { IfElse $2 $3 $5 }
-    | if Term StmtBody                  { IfElse $2 $3 [] }
+    : if Term then StmtBody else StmtBody    { IfElse $2 $4 $6 }
+    | if Term then StmtBody                  { IfElse $2 $4 NullStmt }
 
 Term :: { Value }
     : literal               { Literal $1 }
@@ -205,8 +216,6 @@ Term :: { Value }
     | Lambda                { $1 }
     | FuncCall              { $1 }
     | "(" Term ")"          { $2 }
-    | if Term return Term else Term { IfElseVal $2 $4 $6 }
-    | match Term "{" TermCases "}" { MatchVal $2 $4 }
 
 ArrayTerms1 :: { [Value] }
     : ArrayTerms1 "," Term   { ($3:$1) }
@@ -217,16 +226,19 @@ TupleTerms2 :: { [Value] }
     : TupleTerms2 "," Term   { ($3:$1) }
     | Term "," Term         { [$1] }
 
-StmtBody :: { Body }
-    : Stmt  { [$1] }
-    | Body  { $1   }
+StmtBody :: { Stmt }
+    : Stmt  { $1 }
+    | Body  { $1 }
 
 Match :: { Stmt }
-    : match Term "{" Cases1 "}" { Match $2 $4 }
+    : MatchHead "{" Cases1 "}" { Match $1 $3 }
+
+MatchHead :: { Value }
+    : match Term { $2 }
 
 Cases1 :: { [MatchCase] }
-    : Cases1 Pattern BodyAssn   { (Case $2 $3:$1) }
-    | Pattern BodyAssn          { [Case $1 $2] }
+    : Cases1 Case   { ($2:$1) }
+    | Case          { [$1] }
 
 Pattern :: { Pattern }
     : "_"                   { $1 }
@@ -262,15 +274,22 @@ Patterns0_ :: { [Pattern] }
 OrPattern :: { Pattern }
     : PatternItem "," PatternItem { $1 `OrPtrn` $3 }
 
+Case :: { MatchCase }
+    : Pattern "->" Expr {Case $1 (
+        case $3 of
+            ValStmt val -> Return val
+            stmt -> stmt)}
+    | Pattern Body      { Case $1 $2 }
+
 Expr :: { Stmt }
     : NewVar                { $1 }
-    | small_id "=" Term ";" { Reassignment $1 $3 }
-    | Term ";"              { ValStmt $1 }
+    | small_id "=" TermStmt { Reassignment $1 $3 }
+    | TermStmt              { ValStmt $1 }
     | ";"                   { NullStmt }
 
 NewVar :: { Stmt }
-    : let small_id NewVarTypeDecl "=" Term ";"        { NewVar Mut $2 $3 $5 }
-    | let mut small_id NewVarTypeDecl "=" Term ";"    { NewVar Imut $3 $4 $6 }
+    : let small_id NewVarTypeDecl "=" TermStmt        { NewVar Mut $2 $3 $5 }
+    | let mut small_id NewVarTypeDecl "=" TermStmt    { NewVar Imut $3 $4 $6 }
 
 NewVarTypeDecl :: { TypeDecl }
     : TypeDecl      { $1 }
@@ -282,9 +301,14 @@ FuncCall :: { Value }
     | big_id                { CtorCall $1 }
     | Term Term %prec APP   { Application $1 $2 }
 
+TermStmt :: { Value }
+    : Term ";" { $1 }
+    -- | if Term then Term else Term { IfElseVal $2 $4 $6 }
+    | MatchHead "{" TermCases "}" { MatchVal $1 $3 }
+
 TermCases :: { [(Pattern, Value)] }
-    : Pattern "=" Term { [($1, $3)] }
-    | TermCases Pattern "=" Term { (($2,$4):$1) }
+    : Pattern "=>" TermStmt { [($1, $3)] }
+    | TermCases Pattern "=>" TermStmt { (($2,$4):$1) }
 
 Lambda :: { Value }
     : SmallIds1 "=>" Term    { Lambda $1 $3 }
@@ -305,8 +329,8 @@ Loop :: { Stmt }
     | loop Term StmtBody                    { whileLoop $2 $3 }
     | loop Body                             { foreverLoop $2 }
 
-Body :: { Body }
-    : "{" Stmts0 "}"    { $2 }
+Body :: { Stmt }
+    : "{" Stmts0 "}"    { Compound $2 }
 
 Stmts0 :: { [Stmt] }
     : Stmts0_    { reverse $1 }
@@ -363,11 +387,11 @@ ForeignFunc :: { () }
 parseError :: Token -> Alex a
 parseError = lexError . terse
 
-whileLoop :: Value -> Body -> Stmt
-whileLoop stmt = Loop NullStmt (ValStmt stmt) NullStmt
+whileLoop :: Value -> Stmt -> Stmt
+whileLoop val = Loop NullStmt (ValStmt val) NullStmt
 
-foreverLoop :: Body -> Stmt
-foreverLoop  = Loop NullStmt NullStmt NullStmt
+foreverLoop :: Stmt -> Stmt
+foreverLoop = Loop NullStmt NullStmt NullStmt
 
 mkRevValArray :: [Value] -> ValArray
 mkRevValArray vals = listArray

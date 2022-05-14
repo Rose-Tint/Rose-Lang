@@ -15,5 +15,5 @@ impl Default Char {
 }
 
 impl Default String {
-    default = "";
+    default = "\0";
 }

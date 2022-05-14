@@ -1,11 +1,11 @@
-data Complex n = Complex<n -> n>
+data Complex n = Cplx<n -> n>
 
 
 pure real<Complex n -> n>
-real [Complex r _] = r;
+real [Cplx r _] = r;
 
 pure imag<Complex n -> n>
-imag [Complex _ i] = i;
+imag [Cplx _ i] = i;
 
 pure conj<Complex n -> Complex n>
-conj [Complex r i] = Comlex i r;
+conj [Cplx r i] = Cplx i r;

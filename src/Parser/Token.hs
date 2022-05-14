@@ -40,6 +40,7 @@ data Token
     | TImport
     | TReturn
     | TIf
+    | TThen
     | TElse
     | TMatch
     | TLoop
@@ -84,6 +85,7 @@ instance Pretty Token where
     terse TImport = "keyword 'import'"
     terse TReturn = "keyword 'return'"
     terse TIf = "keyword 'if'"
+    terse TThen = "keyword 'then'"
     terse TElse = "keyword 'else'"
     terse TMatch = "keyword 'match'"
     terse TLoop = "keyword 'loop'"
@@ -125,6 +127,7 @@ instance Pretty Token where
     pretty TImport = "import"
     pretty TReturn = "return"
     pretty TIf = "if"
+    pretty TThen = "then"
     pretty TElse = "else"
     pretty TMatch = "match"
     pretty TLoop = "loop"
@@ -166,6 +169,7 @@ instance Pretty Token where
     detailed TImport = "TImport"
     detailed TReturn = "TReturn"
     detailed TIf = "TIf"
+    detailed TThen = "TThen"
     detailed TElse = "TElse"
     detailed TMatch = "TMatch"
     detailed TLoop = "TLoop"
