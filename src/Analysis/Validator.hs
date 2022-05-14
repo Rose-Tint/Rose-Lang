@@ -11,6 +11,7 @@ import Analysis.Error
 import Analysis.Table
 import AST
 import Common.Specifiers
+import Common.SrcPos
 import Common.Var
 
 
@@ -27,11 +28,11 @@ instance Validator Pattern where
         return val
     validate (LitPtrn lit) = LitPtrn <$> validate lit
     validate par@(Param name) = do
-        updatePosVar name
+        updatePos name
         pushScoped name Imut
         return par
     validate (CtorPtrn name args) = do
-        updatePosVar name
+        updatePos name
         args' <- mapM validate args
         mData <- lookupGlobal name
         case mData of
@@ -40,7 +41,7 @@ instance Validator Pattern where
                 return ()
             Just Constructor{} -> return ()
             Just dta -> throw $ Redefinition
-                (name{varPos=glbPos dta}) name
+                (name{_varPos=getPos dta}) name
         return (CtorPtrn name args')
     validate (TuplePtrn tup) =
         TuplePtrn <$> mapM validate tup
@@ -69,7 +70,7 @@ instance Validator Literal where
 instance Validator Value where
     validate (Literal lit) = Literal <$> validate lit
     validate val@(VarVal var) = do
-        updatePosVar var
+        updatePos var
         mData <- lookupScoped var
         case mData of
             Nothing -> do
@@ -82,7 +83,7 @@ instance Validator Value where
         v2' <- validate v2
         return (Application v1' v2')
     validate (CtorCall name) = do
-        updatePosVar name
+        updatePos name
         mData <- lookupGlobal name
         case mData of
             Nothing -> do
@@ -90,7 +91,7 @@ instance Validator Value where
                 return ()
             Just Constructor{} -> return ()
             Just dta -> throw $ Redefinition
-                (name{varPos=glbPos dta}) name
+                (name{_varPos=getPos dta}) name
         return (CtorCall name)
     validate (Tuple arr) =
         Tuple <$!> mapM validate arr
@@ -134,7 +135,7 @@ instance Validator Stmt where
         val' <- validate val
         cases' <- forM cases $ \(Case ptrn bdy) -> do
             ptrn' <- validate ptrn
-            bdy' <- mapM validate bdy
+            bdy' <- validateBody bdy
             return (Case ptrn' bdy')
             -- TODO: assert that all 'returned'
             --     vals are of the same type
@@ -161,7 +162,7 @@ instance Validator Stmt where
             fail "illegal `continue`"
     validate NullStmt = return NullStmt
     validate (Compound bdy) =
-        Compound <$> mapM validate bdy
+        Compound <$> inNewScope (mapM validate bdy)
 
 instance Validator Expr where
     validate expr@(FuncDecl pur vis name _typ) = define name $! do
@@ -199,14 +200,12 @@ instance Validator Expr where
 
 instance Validator Ctor where
     validate ctor@(SumType name vis _types) = do
-        parent <- getCurrDef'
+        parent <- getCurrDef
         define name $! pushCtor name vis parent
         return ctor
     validate (Record _name _vis _flds) = fail
         "Validator.validate: `Record`s are not yet implemented"
 
 
-validateBody :: Body -> Analyzer Body
-validateBody body = inNewScope $! do
-    -- TODO: check if body has/needs a return
-    mapM validate body
+validateBody :: Stmt -> Analyzer Stmt
+validateBody body = inNewScope (validate body)

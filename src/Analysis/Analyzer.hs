@@ -24,18 +24,10 @@ module Analysis.Analyzer (
     popScope,
     inNewScope,
 
-    -- getTopDef,
-    -- getCurrDef,
-    getCurrDef',
-    -- getDefs,
+    getCurrDef,
     define,
 
     updatePos,
-    updatePosVar,
-    -- updatePosVal,
-
-    -- option,
-    -- optional,
 
     fail,
     throw,
@@ -46,18 +38,14 @@ module Analysis.Analyzer (
 
 import Prelude hiding (fail)
 
-import Control.Monad ((<$!>), void, replicateM)
+import Control.Monad ((<$!>))
 import Control.Monad.Fail
-import Data.Either (fromRight)
-import Data.Functor ((<&>))
 
 import Analysis.Error
-import AST.Value
 import Common.SrcPos
 import Common.Specifiers
 import Common.Var
 import Data.Table
-import Typing.Type
 
 
 default (Int, Double)
@@ -66,7 +54,6 @@ default (Int, Double)
 data State
     = State {
         stModule :: {-# UNPACK #-} !Var,
-        stFreshIdx :: {-# UNPACK #-} !Int,
         stAllowBreak :: Bool,
         stPurity :: Purity,
         stErrors :: [ErrInfo],
@@ -93,7 +80,7 @@ data Analysis
 newState :: String -> State
 {-# INLINE newState #-}
 newState name = State (prim name)
-    0 False Pure [] emptyTable [] newSrcPos
+    False Pure [] emptyTable [] newSrcPos
 
 runAnalyzer :: String -> Analyzer a -> Analysis
 runAnalyzer mdl a = runA a (newState mdl) go go
@@ -137,16 +124,8 @@ getModuleName = stModule <$!> getState
 enterDef :: Var -> Analyzer ()
 enterDef name = modifyState_ (\s -> s { stDefs = (name:stDefs s) })
 
-getTopDef :: Analyzer Var
-getTopDef = last . stDefs <$!> getState
-
 getCurrDef :: Analyzer Var
 getCurrDef = getDefs >>= \case
-    [] -> getModuleName
-    (def:_) -> return def
-
-getCurrDef' :: Analyzer Var
-getCurrDef' = getDefs >>= \case
     [] -> fail "getCurrDef': not in definition"
     (def:_) -> return def
 
@@ -159,15 +138,6 @@ exitDef = modifyState_  $ \s -> s {
         [] -> []
         (_:defs) -> defs
     }
-
-fresh :: Analyzer Type
-fresh = do
-    state <- modifyState $ \s ->
-        s { stFreshIdx = stFreshIdx s + 1 }
-    let i = stFreshIdx state
-    return (TypeVar (prim (letters !! i)))
-    where
-    letters = [1..] >>= flip replicateM ['a'..'z']
 
 pushScope :: Analyzer ()
 pushScope = modifyTable_ $ \tbl ->
@@ -189,34 +159,23 @@ inNewScope an = do
 
 define :: Var -> Analyzer a -> Analyzer a
 define !name analyzer = do
-    updatePosVar name
+    updatePos name
     enterDef name
     x <- analyzer
     exitDef
     return x
 
-updatePos :: SrcPos -> Analyzer ()
-updatePos UnknownPos = return ()
-updatePos p = modifyState_ $ \s -> s { stPos = p }
-
-updatePosVar :: Var -> Analyzer ()
-updatePosVar (Var _ p) = updatePos p
-
-updatePosVal :: Value -> Analyzer ()
-updatePosVal val = updatePos (valPos val)
-
-option :: a -> Analyzer a -> Analyzer a
-option def a = catch a <&> fromRight def
-
-optional :: Analyzer a -> Analyzer ()
-optional = void . catch
+updatePos :: HasSrcPos a => a -> Analyzer ()
+updatePos p = case getPos p of
+    UnknownPos -> return ()
+    pos -> modifyState_ $ \s -> s { stPos = pos }
 
 throw :: Error -> Analyzer a
 throw FalseError = Analyzer $ \ !s _ err -> err FalseError s
 throw e = Analyzer $ \ s _ err ->
     let es = stErrors s
         em = ErrInfo {
-                emPos = stPos s,
+                emPos = e <?> stPos s,
                 emError = Right e
             }
     in err e (s { stErrors = (em:es) })

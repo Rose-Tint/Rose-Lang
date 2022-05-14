@@ -1,7 +1,13 @@
 module Common.SrcPos (
+    Offset,
     Line,
     Col,
-    SrcPos(..),
+    SrcPos(UnknownPos, SrcPos),
+    HasSrcPos(..),
+    (<?>),
+    posOffset,
+    posLine,
+    posColumn,
     newSrcPos,
 ) where
 
@@ -26,9 +32,30 @@ data SrcPos
     deriving (Eq, Ord)
 
 
+class HasSrcPos a where
+    getPos :: a -> SrcPos
+
+
+(<?>) :: (HasSrcPos a, HasSrcPos b) => a -> b -> SrcPos
+a <?> b = case getPos a of
+    UnknownPos -> getPos b
+    pos -> pos
+
 newSrcPos :: SrcPos
 newSrcPos = SrcPos 0 0 0
 
+posOffset :: HasSrcPos a => a -> Offset
+posOffset = srcOffset . getPos
+
+posLine :: HasSrcPos a => a -> Line
+posLine = srcLine . getPos
+
+posColumn :: HasSrcPos a => a -> Col
+posColumn = srcCol . getPos
+
+
+instance HasSrcPos SrcPos where
+    getPos = id
 
 instance Pretty SrcPos where
     terse UnknownPos = "?"
