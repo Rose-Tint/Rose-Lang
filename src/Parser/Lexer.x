@@ -123,53 +123,54 @@ alexEOF = return TEOF
 type TokenAction = AlexInput -> Int -> Alex Token
 
 
-fromAlexPosn :: AlexPosn -> SrcPos
-fromAlexPosn (AlexPn off ln col) =
-    SrcPos off ln (fromIntegral col)
+fromAlexPosn :: AlexPosn -> Int -> SrcPos
+fromAlexPosn (AlexPn _off ln col) len =
+    let col' = fromIntegral col
+    in SrcPos ln col' ln (col' + fromIntegral len)
 
 mkVar :: (Var -> Token) -> TokenAction
 mkVar ctor (pos, _, _, str) len = return
-    (ctor (Var (take len str) (fromAlexPosn pos)))
+    (ctor (Var (take len str) (fromAlexPosn pos len)))
 
 hole :: TokenAction
 hole (pos, _, _, _) _ = return
-    (THole (Hole (fromAlexPosn pos)))
+    (THole (Hole (fromAlexPosn pos 1)))
 
-reserved :: Token -> TokenAction
-reserved tok _ 0 = lexError $ "("+|tok|+")"
-reserved tok _ _ = return tok
+reserved :: (SrcPos -> Token) -> TokenAction
+reserved tok (pos, _, _, _) len = return
+    (tok (fromAlexPosn pos len))
 
 integer :: Int -> TokenAction
 integer _ _ 0 = lexError "integral literal"
 integer base (pos, _, _, ('+':str)) len = return
     (TValue (IntLit
         (negate (readInt base (take len str)))
-        (fromAlexPosn pos)))
+        (fromAlexPosn pos len)))
 integer base (pos, _, _, ('-':str)) len = return
     (TValue (IntLit
         (negate (readInt base (take len str)))
-        (fromAlexPosn pos)))
+        (fromAlexPosn pos len)))
 integer base (pos, _, _, str) len = return
     (TValue (IntLit
         (readInt base (take len str))
-        (fromAlexPosn pos)))
+        (fromAlexPosn pos len)))
 
 float :: TokenAction
 float (pos, _, _, str) len =
     case readMaybe (take len str) :: Maybe Float of
         Nothing -> lexError "float literal"
         Just n -> return (TValue
-            (FloatLit n (fromAlexPosn pos)))
+            (FloatLit n (fromAlexPosn pos len)))
 
 double :: TokenAction
 double (pos, _, _, str) len =
     case readMaybe (take len str) :: Maybe Double of
         Nothing -> lexError "float literal"
         Just n -> return (TValue
-            (DoubleLit n (fromAlexPosn pos)))
+            (DoubleLit n (fromAlexPosn pos len)))
 
 char :: TokenAction
-char (pos, _, _, ('\\':ch:_)) _len =
+char (pos, _, _, ('\\':ch:_)) len =
     let ch' = case ch of
             'a' -> '\a'
             'b' -> '\b'
@@ -180,20 +181,20 @@ char (pos, _, _, ('\\':ch:_)) _len =
             'v' -> '\v'
             _ -> ch
     in return (TValue
-        (CharLit ch' (fromAlexPosn pos)))
+        (CharLit ch' (fromAlexPosn pos len)))
 char (pos, _, _, (ch:_)) 1 = return
-    (TValue (CharLit ch (fromAlexPosn pos)))
+    (TValue (CharLit ch (fromAlexPosn pos 1)))
 char _ _ = lexError "character literal"
 
 string :: TokenAction
 string (pos, _, _, str) len = return
-    (TValue (StringLit (take len str) (fromAlexPosn pos)))
+    (TValue (StringLit (take len str) (fromAlexPosn pos len)))
 
 lexError :: String -> Alex a
 lexError msg = do
     (pos_, _, _, input) <- alexGetInput
-    let pos = fromAlexPosn pos_
-        lno = posLine pos
+    let pos = fromAlexPosn pos_ 0
+        lno = posStartLine pos
         line = "..." ++ takeWhile (/= '\n') input
     alexError $
         "::"-|pos|-|Red|+": Error parsing a "+|msg|+":\n"

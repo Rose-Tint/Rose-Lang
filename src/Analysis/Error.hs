@@ -44,33 +44,38 @@ data ErrInfo
         emError :: Either Warning Error
     }
 
+
+fmtSrcLns :: Int -> Int -> String -> String
+fmtSrcLns st en = concatMap (\(lno, line) ->
+    "\n$p"+|5.>lno|+" | $R"+|line
+    ) . zip [st..en] . lines
+
 instance HasSrcPos Error where
-    getPos (TypeMismatch ex fnd) = fnd <?> ex
+    getPos (TypeMismatch _ex fnd) = getPos fnd
     getPos (Undefined var _) = getPos var
-    getPos (Redefinition orig new) = new <?> orig
+    getPos (Redefinition _orig new) = getPos new
     getPos (BindError var typ) = var <?> typ
     getPos (InfiniteType var typ) = typ <?> var
     getPos (MissingReturn name) = getPos name
     getPos _ = UnknownPos
 
-
 instance Pretty ([String], ErrInfo) where
     pretty (_, (ErrInfo pos@UnknownPos werr)) = case werr of
         Left wrn -> "::"-|pos|-":$yWarning: $R"+|wrn|+"\n"
         Right err -> "::"-|pos|-": $rError: $R"+|err|+"\n"
-    pretty (lns, (ErrInfo pos werr)) = case werr of
+    pretty (lns, (ErrInfo pos_ werr)) = case werr of
         Left wrn -> "::"-|pos|-":$yWarning: $R"+|wrn|+
-            "\n$p"+|5.>lno|+" | $R"+|line|+
-            "\n#8 $y#"+|col|+"~$r^$R\n"
+            fmtSrcLns stLn endLn (getCodeAsRed pos lns)|+
+            "\n#8 $y#"+|col|+" $r#"+|width|+"^$R\n"
         Right err -> "::"-|pos|-": $rError: $R"+|err|+
-            "\n$p"+|5.>lno|+" | $R"+|line|+
-            "\n#8 $y#"+|col|+"~$r^$R\n"
+            fmtSrcLns stLn endLn (getCodeAsRed pos lns)|+
+            "\n#8 $y#"+|col|+" $r#"+|width|+"^$R\n"
         where
-            col = posColumn pos - 1
-            lno = posLine pos
-            line| lno < 0 = "(NEGATIVE LINE NUMBER)"
-                | lno > length lns = "(EOF)"
-                | otherwise = lns !! (lno - 1)
+            pos = either (const pos_) (<?> pos_) werr
+            stLn = posStartLine pos
+            endLn = posEndLine pos
+            col = posStartCol pos
+            width = calcWidth pos
 
 instance Pretty Warning where
     pretty (ShadowsName orig new) =
@@ -78,8 +83,8 @@ instance Pretty Warning where
         "> shadows `"
         +|orig|+"`<ln "+|origLine|+">\n"
         where
-            newLine = posLine new
-            origLine = posLine orig
+            newLine = posStartLine new
+            origLine = posStartLine orig
 
 instance Pretty Error where
     pretty (TypeMismatch ex fnd) =
@@ -96,13 +101,13 @@ instance Pretty Error where
         "\n    Originally defined on line "+|origLine|+
         "\n    But later defined on line "+|newLine
         where
-            newLine = posLine new
-            origLine = posLine orig
+            newLine = posStartLine new
+            origLine = posStartLine orig
     pretty (BindError _var _t2) = "Type-Binding error"
     pretty (InfiniteType tv typ) =
         "Cannot create the infinite type `"+|tv|+" ~> "+|typ|+"`"
     pretty (MissingReturn name) =
         "Missing return statement in function body of `$y"
         +|name|+"$R`"
-    pretty (OtherError msg) = show msg ++ "\n"
+    pretty (OtherError msg) = show msg
     pretty FalseError = ""

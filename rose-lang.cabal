@@ -61,11 +61,12 @@ common general
         Typing.Kind,
         Typing.Primitives,
         Typing.Scheme,
+        Typing.Solver,
         Typing.Substitution,
         Typing.Type,
         Typing.TypeDecl,
         Typing.TypeEnv,
-        Typing.Unification,
+        -- Typing.Unification,
         Utils,
         Utils.FilePath,
         Utils.String

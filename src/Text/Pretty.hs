@@ -5,10 +5,8 @@ module Text.Pretty (
     Color(..),
     Pretty(..),
 
-    -- color,
     uncolor,
-    -- colored,
-    -- reset,
+    processString,
 
     sepsT,
     seps,
@@ -20,8 +18,6 @@ module Text.Pretty (
     indentCatLnsT,
     indentCatLns,
     indentCatLnsD,
-
-    processString,
 
     (.<),
     (.^),
@@ -44,8 +40,7 @@ module Text.Pretty (
 ) where
 
 import Data.Time (NominalDiffTime)
-import Text.Printf hiding (printf)
-import qualified Text.Printf as P
+import Text.Printf
 
 import Data.Char (isDigit)
 import Data.Int
@@ -158,36 +153,6 @@ alignR n pc str
     | otherwise = replicate (n - strLen) pc ++ str
     where
         strLen = length str
-
-color :: String -> String
-color [] = pretty Reset
-color [ch] = [ch]
-color ('\\':('$':rest)) = ('$':color rest)
-color ('$':(ch:rest)) = clrStr ++ color rest
-    where
-        clrStr = case ch of
-            'B' -> pretty Black
-            'r' -> pretty Red
-            'y' -> pretty Yellow
-            'g' -> pretty Green
-            'b' -> pretty Blue
-            'p' -> pretty Purple
-            'c' -> pretty Cyan
-            'w' -> pretty White
-            'R' -> pretty Reset
-            _   -> ['$', ch]
-color (c:cs) = (c:color cs)
-
-colored :: String -> Color -> String
-{-# INLINE colored #-}
-colored str clr = pretty clr ++ str ++ pretty Reset
-
-reset :: String -> String
-{-# INLINE reset #-}
-reset str = pretty Reset ++ str
-
-printf :: (PrintfType a) => String -> a
-printf = P.printf . color
 
 uncolor :: String -> String
 uncolor [] = []

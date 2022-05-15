@@ -32,53 +32,54 @@ import Typing.TypeDecl
 %lexer { lexer } { TEOF }
 %monad { Alex }
 
+-- when 'using' a token, it will use its position
 %tokentype { Token }
 %token
     -- keywords
-    using           { TUsing      }
-    pure            { TPure       }
-    impure          { TImpure     }
-    let             { TLet        }
-    mut             { TMut        }
-    intern          { TIntern     }
-    export          { TExport     }
-    extern          { TExtern     }
-    import          { TImport     }
-    return          { TReturn     }
-    if              { TIf         }
-    then            { TThen       }
-    else            { TElse       }
-    match           { TMatch      }
-    loop            { TLoop       }
-    break           { TBreak      }
-    continue        { TContinue   }
-    impl            { TImpl       }
-    trait           { TTrait      }
-    data            { TData       }
+    using           { TUsing $$    }
+    pure            { TPure $$     }
+    impure          { TImpure $$   }
+    let             { TLet $$      }
+    mut             { TMut $$      }
+    intern          { TIntern $$   }
+    export          { TExport $$   }
+    extern          { TExtern $$   }
+    import          { TImport $$   }
+    return          { TReturn $$   }
+    if              { TIf $$       }
+    then            { TThen $$     }
+    else            { TElse $$     }
+    match           { TMatch $$    }
+    loop            { TLoop $$     }
+    break           { TBreak $$    }
+    continue        { TContinue $$ }
+    impl            { TImpl $$     }
+    trait           { TTrait $$    }
+    data            { TData $$     }
     -- reserved symbols
-    "="             { TEq         }
-    ":"             { TColon      }
-    ";"             { TSemi       }
-    "|"             { TPipe       }
-    "->"            { TArrow      }
-    "=>"            { TEqArrow    }
-    ","             { TComma      }
+    "="             { TEq $$       }
+    ":"             { TColon $$    }
+    ";"             { TSemi $$     }
+    "|"             { TPipe $$     }
+    "->"            { TArrow $$    }
+    "=>"            { TEqArrow $$  }
+    ","             { TComma $$    }
     -- groupers
-    "("             { TLParen     }
-    ")"             { TRParen     }
-    "{"             { TLBrace     }
-    "}"             { TRBrace     }
-    "["             { TLBracket   }
-    "]"             { TRBracket   }
-    "<"             { TLAngle     }
-    ">"             { TRAngle     }
+    "("             { TLParen $$   }
+    ")"             { TRParen $$   }
+    "{"             { TLBrace $$   }
+    "}"             { TRBrace $$   }
+    "["             { TLBracket $$ }
+    "]"             { TRBracket $$ }
+    "<"             { TLAngle $$   }
+    ">"             { TRAngle $$   }
     -- literals
-    literal         { TValue $$   }
+    literal         { TValue $$    }
     -- identifiers
-    big_id          { TBig $$     }
-    small_id        { TSmall $$   }
-    infix_id        { TInfix $$   }
-    "_"             { THole $$    }
+    big_id          { TBig $$      }
+    small_id        { TSmall $$    }
+    infix_id        { TInfix $$    }
+    "_"             { THole $$     }
 
 %nonassoc infix_id
 %left big_id small_id

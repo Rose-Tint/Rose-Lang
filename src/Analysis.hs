@@ -11,23 +11,15 @@ import Analysis.Validator
 import AST.Expr
 import Builder
 import Text.Pretty
-import Typing.Inferable
 
 
 analyze :: String -> [Expr] -> Analysis
 analyze name = runAnalyzer name . mapM validate
 
-typeCheck :: [Expr] -> BuilderIO ()
-typeCheck exprs = do
-    let Inf !errs !_env = makeInference exprs
-    printAnalysisErrors errs
-    return ()
-
 runAnalysis :: [Expr] -> BuilderIO Analysis
 runAnalysis es = do
     name <- getModule
     debug ("Analyzing ["+|name|+"]\n")
-    _env <- typeCheck es
     let res = analyze name es
     trace "Symbol-Table.txt" (arTable res)
     printAnalysisErrors $ arErrors res
