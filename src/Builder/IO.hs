@@ -1,40 +1,67 @@
 module Builder.IO (
-    mReadFile,
+    bReadFile,
     createTraceDir,
+    message,
+    status,
+    debug,
+    warn,
+    fatal,
+    trace,
 ) where
 
+import System.Exit (exitFailure)
 import System.Directory (createDirectoryIfMissing)
 
-import Builder.CmdLine
 import Builder.Internal
-import Utils.Paths
+import Cmd
+import Utils.FilePath
+import Text.Pretty
 
 
-mReadFile :: FilePath -> BuilderIO (Maybe String)
-mReadFile path = do
+bReadFile :: FilePath -> Builder ()
+bReadFile path = do
     skip <- hasBeenVisited path
-    if skip then do
-        -- module has already been parsed
-        updateState $ \s -> s { stSource = "" }
-        return Nothing
+    if skip then modify $ \s -> s { sourceCode = "" }
     else do
-        src <- readFile <#> path
-        baseDir <- cmdBuildDir . stCmdLine <$> getState
-        updateState $ \s -> s {
-            stFile = path,
-            stModule = pathToModule path,
-            stBuildDir = baseDir ++ pathToDir path,
-            stSource = src
+        src <- io $ readFile path
+        baseDir <- asks baseBuildDir
+        modify $ \s -> s {
+            filePath = path,
+            moduleName = pathToModule path,
+            currBuildDir = baseDir ++ pathToDir path,
+            sourceCode = src
             }
         createTraceDir
-        return (Just src)
 
-createTraceDir :: BuilderIO (Maybe FilePath)
-createTraceDir = do
-    state <- getState
-    let dir = stBuildDir state
-    if cmdTrace (stCmdLine state) then do
-        createDirectoryIfMissing True <#> dir
-        return (Just dir)
-    else
-        return Nothing
+createTraceDir :: Builder ()
+createTraceDir = cmdTrace ??> do
+    dir <- asks baseBuildDir
+    io $ createDirectoryIfMissing True dir
+
+message, status, debug
+    :: Pretty a => a -> Builder ()
+message = myPutStr 1 . terse
+status = myPutStr 2 . pretty
+debug = myPutStr 3 . detailed
+
+warn :: String -> Builder ()
+warn str = do
+    wError ?!> fatal str
+    myPutStr 1 str
+
+fatal :: String -> Builder a
+fatal str = do
+    myPutStr 0 str
+    io $ putChar '\n'
+    io exitFailure
+
+trace :: Pretty a => FilePath -> a -> Builder ()
+trace path a = do
+    dir <- asks baseBuildDir
+    cmdTrace ??> io (writeFile
+        (dir ++ path)
+        (uncolor $! processString (detailed a)))
+
+myPutStr :: Int -> String -> Builder ()
+myPutStr thresh str = ((thresh <=).verbosity) ??> io
+    (putStr (processString str))

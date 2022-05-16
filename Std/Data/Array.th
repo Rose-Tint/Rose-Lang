@@ -1,8 +1,8 @@
 pure set<Int -> a -> [a] -> [a]>
 
-pure fill<a -> [a] -> [a]>
-fill a arr {
-    loop (let mut i = 0; i < length arr; i = i + 1;)
-        set arr i a;
-    return arr;
-}
+-- pure fill<a -> [a] -> [a]>
+-- fill a arr {
+--     loop (let mut i = 0; i < length arr; i = i + 1;)
+--         set arr i a;
+--     return arr;
+-- }

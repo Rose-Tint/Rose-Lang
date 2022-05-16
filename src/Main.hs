@@ -1,15 +1,33 @@
 module Main (main) where
 
-import Control.Monad (unless)
+import Control.Monad (unless, forM_)
 import Data.Time (diffUTCTime, getCurrentTime)
 
+import Analysis
 import Builder
-import Builder.CmdLine
-import Pretty (printf)
+import Cmd
+import Common.Module
+import Common.Var
+import Parser
+import Text.Pretty
+import Utils.FilePath (modToPath)
 
 
-default (Int, Double)
+build :: Builder ()
+build = asks cmdFiles >>= mapM_ buildFile
 
+buildFile :: FilePath -> Builder ()
+buildFile [] = return ()
+buildFile path = hasBeenVisited path >>= \skip ->
+    if skip then return () else do
+        bReadFile path
+        name <- gets moduleName
+        message ("Building Module ["+|name|+"]\n")
+        Module imports tree <- parseFile
+        forM_ imports $ \(Import (Var modName _) _) ->
+            buildFile (modToPath modName)
+        (_, _) <- runAnalysis tree
+        finalizeVisit
 
 main :: IO ()
 main = do
@@ -18,8 +36,7 @@ main = do
     unless (null errs) $
         putStrLn (concat errs)
     timeStart <- getCurrentTime
-    buildM build cmd
+    runBuilder build cmd
     timeEnd <- getCurrentTime
-    unless (cmdVerb cmd <= 0) $ printf
-        "Finished in %s\n"
-        (show (diffUTCTime timeEnd timeStart))
+    unless (verbosity cmd <= 0) $ putStrLn $
+        "Finished in "+|diffUTCTime timeEnd timeStart|+"\n"
