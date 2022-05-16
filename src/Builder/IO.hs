@@ -39,9 +39,8 @@ createTraceDir = cmdTrace ??> do
     dir <- gets currBuildDir
     io $ createDirectoryIfMissing True dir
 
-success, message, status, debug
+message, status, debug
     :: Pretty a => a -> Builder ()
-success = myPutStr 1 . terse
 message = myPutStr 1 . terse
 status = myPutStr 2 . pretty
 debug = myPutStr 3 . detailed
