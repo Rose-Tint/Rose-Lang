@@ -4,6 +4,7 @@ module Data.Trie (
     empty, singleton, fromList,
     -- Insertion
     push, insert, insertWith,
+    insertNext,
     -- Query
     lookup, search, findWithDefault,
     assocsWithPrefix, keysWithPrefix, elemsWithPrefix,
@@ -387,24 +388,24 @@ isMemberOf str = isNothing . lookup str
 --     cs `isMemberOf` chn!c
 
 
+insertNext :: a -> Trie a -> Trie a
+insertNext a Empty = node a
+insertNext a (Link chn []) = Node chn a
+insertNext a (Link chn (c:cs)) =
+    Node (oneChild c (Link chn cs)) a
+insertNext a trie@(Node chn _) =
+    let (c, _ch) = nextAvailChild chn
+    in updateChildAt c (insertNext a) trie
+
+
 nextAvailKey :: Trie a -> String
 nextAvailKey Empty = ""
-nextAvailKey (Link chn com) = case next of
-    Empty -> com ++ [ch]
-    t -> com ++ (ch:nextAvailKey t)
-    where
-        (ch, next) = foldl1 (\b a -> case b of
-                (_ch, Empty) -> b
-                _ -> a
-            ) (A.assocs chn)
-nextAvailKey (Node chn _) = case next of
-    Empty -> [ch]
-    t -> (ch:nextAvailKey t)
-    where
-        (ch, next) = foldl1 (\b a -> case b of
-                (_ch, Empty) -> b
-                _ -> a
-            ) (A.assocs chn)
+nextAvailKey (Link chn com) = case nextAvailChild chn of
+    (ch, Empty) -> com ++ [ch]
+    (ch, t) -> com ++ (ch:nextAvailKey t)
+nextAvailKey (Node chn _) = case nextAvailChild chn of
+    (ch, Empty) -> [ch]
+    (ch, t) -> (ch:nextAvailKey t)
 
 
 {- %%%%%%%%%% Pretty %%%%%%%%%% -}
@@ -502,6 +503,13 @@ updateChildAt :: Char -> (Trie a -> Trie a) -> Trie a
 {-# INLINE updateChildAt #-}
 updateChildAt !k !f !trie = let !child = getChildAt k trie
     in setChildAt k (f child) trie
+
+
+nextAvailChild :: Children a -> (Char, Trie a)
+nextAvailChild = foldl1 (\b a -> case b of
+        (_ch, Empty) -> b
+        _ -> a
+    ) . A.assocs
 
 
 data KeyDiff
