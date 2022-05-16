@@ -8,6 +8,8 @@ import Common.Var
 import Text.Pretty
 
 
+infixr 9 :->
+
 data Type
     -- | A defined type (i.e. Int, Maybe a)
     = Type !Var [Type]
@@ -16,6 +18,7 @@ data Type
     | Type :-> Type
     | TupleType [Type]
     | ArrayType Type
+    deriving (Eq)
 
 
 -- | Helpful for things like sum-type constructors
