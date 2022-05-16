@@ -1,0 +1,25 @@
+TODO:
+    - Change Rose file-extensions
+        - from ".th"
+        - to ".ro" or ".rose"
+    - Implement context and constraints
+    - Allow constructor-operators
+        - decide syntactic difference
+            - initial symbol, or something else?
+    - Rename `Expr` to `Top`
+    - Rework the command line
+    - change `NewVar`'s `TypeDecl` parameter to just `Type`
+    - Add `SpanPos` ctor for `SrcPos`
+
+IN-PROGRESS:
+    - WRITE TESTS
+    - LLVM back-end
+    - add Type inference
+        - type-system already (mostly) implemented, just not used.
+        - idea to deal a dynamic type-env that allows
+          yet-to-be-defined identifiers
+            - use `State` while analyzing top-level expressions, or
+            - allow `Solver` to modify a type-env when solving
+    - seperate certain statements from expressions
+        - Match, IfElse,
+    - Add a 'compound' statement

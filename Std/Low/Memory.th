@@ -1,0 +1,26 @@
+data Pointer a = intern Ptr<Int>
+
+
+impure malloc<Int -> Pointer a>
+
+impure new<a -> Pointer a>
+new a {
+    let mut ptr = malloc (memSizeOf a);
+    setPtr a ptr;
+    return ptr;
+}
+
+-- is this pure due to depending only
+-- on the input?
+impure memSizeOf<a -> Int>
+
+impure deref<Pointer a -> a>
+
+impure (*=)<Pointer a -> a -> Void>
+
+impure free<Pointer a -> Void>
+
+impure addressOf<a -> Pointer a>
+
+pure nullptr<Pointer>
+nullptr = Ptr 0;

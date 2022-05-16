@@ -1,0 +1,32 @@
+import Std.Low.Resource
+import Std.IO.Output
+import Std.IO.Input
+
+
+using FilePath = String
+
+data OpenMode
+    = Write
+    | Append
+    | Read
+    | ReadWrite
+
+
+impl Resource FilePath {
+    close [Path p] = closeFile p;
+    with [Path p] f {
+        let hdl<Handle> = openFile p ReadWrite;
+        let res<b> = f hdl;
+        close hdl;
+        return res;
+    }
+}
+
+
+impure openFile<FilePath -> OpenMode -> Handle>
+
+impure readFile<FilePath -> String>
+readFile p = with p hGetContents;
+
+impure appendFile<FilePath -> String -> Void>
+appendFile p = with p hPutStr;

@@ -1,27 +1,22 @@
 Memory Layouts:
 
+
 - Primitives:
-  - `(U)Int`: dynamic
-  - `(U)Int{N}`: {N} bits
-  - `Array`:
-    - 32 bits for length, then contiguous values
-  - `String`: exactly an `Array Char`
+  - `(U)Int`: (un)signed 16-bit integer
+  - `(U)Int{N}`: {N} bits where N is a power of 2
+  - `[]`: 16 bits for length, then contiguous values
+  - `String`: stored the same as a `[]`
 
 - User-Defined:
   - a datatype with ONLY nullary constructores will
-      henceforth be referred to as an enum
-  - 8 bits indicating the constructor is prepended
-    - maybe a bitfield??
-  - primitives are stored normally, except for:
-    - `(U)Int`
-    - `(U)Integer`
-    - `Array`
-    - enums
-  - everything else gets stored as a heap pointer
+      henceforth be referred to as an 'enum'
+  - prefixed by an 8-bit (bitfield) indicating the
+      constructor (mainly used for pattern-matching??)
+  - all user-defined types are boxed by default
   - for example, given:
       ```
-      export data Foo := Foo => Int8, Int8;
-      export data Bar := Bar => Int8, Foo;
+      data Foo := Foo => Int8, Int8;
+      data Bar := Bar => Int8, Foo;
       ```
       a value constructed as `Foo 10 (Bar 27 74)`
       would have a memory layout that looks like
@@ -33,21 +28,24 @@ Memory Layouts:
       +----------+----------+----------+----------+
       | address2 |        1 |       27 |       74 |
       +----------+----------+----------+----------+
-  - a memory optimization can be made for enums: make
-      the constructor id/number a bitfield. should be
-      helpful somehow... right??
   - because of immutability, pointers make moving and
       copying much faster. for example, consider:
       ```
-      export data Tuple a b := Tuple => a, b;
+      data Tuple a b := Tuple => a, b;
 
-      export pure shiftLeft => Tuple a b, c, Tuple b c
-      swap [Tuple a b] c := (Tuple b c);
+      pure swap => Tuple a b, Tuple b a;
+      swap [Tuple a b] := Tuple b a;
       ```
       in this example, the memory layout goes
-      from: | address1 | 1 | ADDRESSa | ADDRESSb |
-      to:   | address4 | 1 | ADDRESSb | ADDRESSc |
-      which might look like this is NASM
+      from: `| address1 | 1 | ADDRESSa | ADDRESSb |`
+      to:   `| address4 | 1 | ADDRESSb | ADDRESSc |`
+      which might look something to the effect of
+      this (at full optimization) is NASM
+      ```NASM
+      ;rdi = address of the Tuple
+      swap:
+        mov rdx, [rdi + 1] ;1st elem of the tuple
+        mov rcx, [rdi + 2] ;2nd elem of the tuple
+        mov [rdx + 2], rdx
+        mov [rdi + 1], rcx
       ```
-      mov [ADDRESSa], [ADDRESSb]
-      mov [ADDRESSb], [ADDRESSc]

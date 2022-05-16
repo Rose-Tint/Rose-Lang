@@ -1,81 +1,107 @@
 cabal-version: 2.4
 
-
--- package information
 name:               rose-lang
 version:            0.1.0.0
 synopsis:           a new language written in haskell
-author:             Rose Aetherius: roseaetherius@gmail.com
-maintainer:         Rose Aetherius: roseaetherius@gmail.com
+author:             Rose Aetherius<roseaetherius@gmail.com>
+maintainer:         Rose Aetherius<roseaetherius@gmail.com>
 category:           Language
+license:            MIT
+license-file:       LICENSE
 extra-source-files: README.md
 
--- package information
 build-type:         Simple
 
 
 common general
+    hs-source-dirs: src
     other-modules:
-        Analyzer.Analyzer,
-        Analyzer.Error,
-        Analyzer.Prims,
-        Analyzer.State,
-        Analyzer.SymbolTable,
-        Build,
-        Builder.Builder,
-        Builder.CmdLine,
-        Builder.Output,
-        Builder.State,
-        CmdLine,
-        CmdLine.Flags,
-        CmdLine.Warnings,
-        Color,
-        Parser.Data,
-        Parser.Error,
-        Parser.Keywords,
-        Parser.LangDef,
+        Analysis,
+        Analysis.Analyzer,
+        Analysis.Error,
+        Analysis.Table,
+        Analysis.Validator,
+        AST,
+        AST.Ctor,
+        AST.Expr,
+        AST.Literal,
+        AST.Pattern,
+        AST.Stmt,
+        AST.Value,
+        Builder,
+        Builder.Internal,
+        Builder.IO,
+        Cmd,
+        Cmd.Flags,
+        Cmd.Warnings,
+        -- CodeGen,
+        -- CodeGen.LLVM.Base,
+        -- CodeGen.LLVM.ToLLVM,
+        Common.Module,
+        Common.Specifiers,
+        Common.SrcPos,
+        Common.Var,
+        -- Control.Concurrent.Threading,
+        Data.Table,
+        Data.Table.Datatype,
+        Data.Table.Global,
+        Data.Table.Scoped,
+        Data.Table.Trait,
+        Data.Trie,
+        Data.VarMap,
+        Parser,
+        Parser.Lexer,
         Parser.Parser,
-        Pretty,
-        SymbolTable,
-        SymbolTable.SymbolData,
-        SymbolTable.SymbolMap,
-        SymbolTable.Trie,
-        Threading,
-        Typing.Checker,
-        Typing.Types,
-        Typing.Traits,
-        Utils
+        Parser.Token,
+        Text.Pretty,
+        Typing.Constraint,
+        Typing.Infer,
+        Typing.Inferable,
+        Typing.Kind,
+        Typing.Primitives,
+        Typing.Scheme,
+        Typing.Solver,
+        Typing.Substitution,
+        Typing.Type,
+        Typing.TypeDecl,
+        Typing.TypeEnv,
+        -- Typing.Unification,
+        Utils,
+        Utils.FilePath,
+        Utils.String
+
+    build-tool-depends:
+        alex:alex   >= 3.2,
+        happy:happy >= 1.20
     build-depends:
-        base >= 4.7.0.0,
-        -- i tried bytestring, but observed 0
-        -- performance improvement, so text is
-        -- better because of unicode support
-        text,
-        parsec,
-        containers,
-        time,
-        array,
-        directory
+        array        >= 0.5.3,
+        base         >= 4.12,
+        bytestring   >= 0.10.8,
+        containers   >= 0.6,
+        directory    >= 1.3.3,
+        time         >= 1.8,
+        transformers
+
     default-language:
         Haskell2010
     default-extensions:
         BangPatterns
     other-extensions:
         Rank2Types,
+        FlexibleInstances,
         DefaultSignatures,
         TypeSynonymInstances
+
     ghc-options:
         -threaded
         -fhide-source-paths
-        -fshow-warning-groups
         -Wall
         -Wextra
         -Wcompat
         -Wredundant-constraints
+        -Wmissing-export-lists
         -Wno-unused-do-bind
         -Werror
-        -Wwarn=unused-imports
-        -Wwarn=unused-top-binds
 
 
 executable Rose
@@ -89,3 +115,14 @@ executable Rose-Dev
     main-is: Main.hs
     ghc-options:
         -O0
+        -Wwarn=unused-imports
+        -Wwarn=unused-top-binds
+
+executable Rose-Profile
+    import: general
+    main-is: Main.hs
+    ghc-options:
+        -- -prof
+        -fprof-auto
+        -O2
+        "-with-rtsopts=-N -p -s -h -i0.1"

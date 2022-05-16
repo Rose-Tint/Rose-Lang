@@ -1,0 +1,6 @@
+import Std.IO.Handle
+
+
+impure hPutChar<Char -> Void>
+impure hPrint<String -> Void>
+impure hPrintLn<String -> Void>

@@ -1,0 +1,74 @@
+data Ordering
+    = LT
+    | EQ
+    | GT
+
+
+trait Eq a {
+    pure (==)<a -> a -> Boolean>
+    pure (==)<a -> a -> Boolean>
+}
+
+trait Ord a {
+    pure (<)<a -> a -> Boolean>
+    pure (<=)<a -> a -> Boolean>
+    pure (>)<a -> a -> Boolean>
+    pure (>=)<a -> a -> Boolean>
+    pure (<=>)<a -> a -> Ordering>
+}
+
+trait Logical a {
+    pure asBool<a -> Boolean>
+    pure (&&)<a -> a -> Boolean>
+    pure (||)<a -> a -> Boolean>
+    pure (^^)<a -> a -> Boolean>
+    pure not<a -> Boolean>
+}
+
+
+pure min<Ord a : a -> a -> a>
+min a b = match (a <=> b) {
+    -- [LT, EQ] => a;
+    [GT] => b;
+    _ => a;
+}
+
+pure max<Ord a : a -> a -> a>
+max a b = match (a <=> b) {
+    -- [LT, EQ] => b;
+    [GT] => a;
+    _ => b;
+}
+
+pure clamp<Ord a : a -> a -> a -> a>
+clamp lo hi = min hi . max lo;
+
+
+impl Ord {
+    (<) = not . (>=);
+    a <= b = (a < b) || (a == b);
+    (>) = not . (<=);
+    a >= b = (a > b) || (a == b);
+}
+
+impl Logical {
+    a && b = asBool a && asBool b;
+    a || b = asBool a || asBool b;
+    a ^^ b = asBool a ^^ asBool b;
+    not = not . asBool;
+}
+
+impl Logical Int {
+    asBool [0] = False;
+    asBool n = True;
+}
+
+impl Logical Boolean {
+    asBool b = b;
+    [True] && b = b;
+    [False] && b = False;
+    [True] || b = True;
+    [False] || b = b;
+    [True] ^^ b = not b;
+    [False] ^^ b = b;
+}

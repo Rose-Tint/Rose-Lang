@@ -1,0 +1,19 @@
+trait Default a {
+    pure default<a>
+}
+
+impl Default Int {
+    default = 0;
+}
+
+impl Default Boolean {
+    default = False;
+}
+
+impl Default Char {
+    default = '\0';
+}
+
+impl Default String {
+    default = "\0";
+}

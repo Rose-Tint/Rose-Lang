@@ -1,0 +1,38 @@
+import Std.Data.Default
+import Std.Function
+
+
+trait Pretty a {
+    pure pretty<a -> String>
+}
+
+
+pure (+|)<Pretty a : String -> a -> String>
+str +| a = str ++ pretty a;
+
+pure (|+)<Pretty a : a -> String -> String>
+a |+ str = pretty a ++ str;
+
+pure (|+|)<Pretty a, Pretty b : a -> b -> String>
+a |+| b = pretty a ++ pretty b;
+
+
+impl Pretty Char {
+    pretty = charToString;
+}
+
+impl Pretty String {
+    pretty = id;
+}
+
+impl Pretty Int {
+    pretty n {
+        let mut x<Int> = n;
+        let mut str<String> = default;
+        loop (x < 10) {
+            str = append (intToChar (x % 10)) str;
+            x = x / 10;
+        }
+        return str;
+    }
+}
