@@ -16,6 +16,7 @@ module Data.Trie (
     -- Other
     assocs, keys, elems,
     isEmpty, size, isMemberOf,
+    nextAvailKey,
     -- Pretty
     prettyTrie, printTrie,
 ) where
@@ -384,6 +385,26 @@ isMemberOf str = isNothing . lookup str
 --         NoPrefix -> False
 -- isMemberOf str@(c:cs) (Node chn _) =
 --     cs `isMemberOf` chn!c
+
+
+nextAvailKey :: Trie a -> String
+nextAvailKey Empty = ""
+nextAvailKey (Link chn com) = case next of
+    Empty -> com ++ [ch]
+    t -> com ++ (ch:nextAvailKey t)
+    where
+        (ch, next) = foldl1 (\b a -> case b of
+                (_ch, Empty) -> b
+                _ -> a
+            ) (A.assocs chn)
+nextAvailKey (Node chn _) = case next of
+    Empty -> [ch]
+    t -> (ch:nextAvailKey t)
+    where
+        (ch, next) = foldl1 (\b a -> case b of
+                (_ch, Empty) -> b
+                _ -> a
+            ) (A.assocs chn)
 
 
 {- %%%%%%%%%% Pretty %%%%%%%%%% -}
