@@ -28,8 +28,6 @@ module Analysis.Table (
 
 import Prelude hiding (lookup)
 
-import Control.Monad ((<$!>))
-
 import Analysis.Analyzer
 import Common.Specifiers
 import Common.SrcPos
@@ -50,7 +48,7 @@ import Data.Table
 -- get that from just a `Var`
 -- searchDatatypes :: Var -> Analyzer Datatype
 -- searchDatatypes name = do
---     typs <- tblTypes <$!> getTable
+--     typs <- gets (tblTypes . table)
 --     case lookup name typs of
 --         Nothing -> do
 --             let dta = undefined
@@ -62,7 +60,7 @@ import Data.Table
 -- get that from just a `Var`
 -- searchTraits :: Var -> Analyzer Trait
 -- searchTraits name = do
---     trts <- tblTraits <$!> getTable
+--     trts <- gets (tblTraits . table)
 --     case lookup name trts of
 --         Nothing -> do
 --             let dta = undefined
@@ -74,7 +72,7 @@ import Data.Table
 -- global it is
 -- searchGlobals :: Var -> Analyzer Global
 -- searchGlobals name = do
---     glbs <- tblGlobals <$!> getTable
+--     glbs <- gets (tblGlobals . table)
 --     case lookup name glbs of
 --         Nothing -> do
 --             eT <- peekExpType
@@ -91,7 +89,7 @@ import Data.Table
 -- just no.
 -- searchScopeds :: Var -> Analyzer Scoped
 -- searchScopeds name = do
---     scps <- tblScopeds <$!> getTable
+--     scps <- gets (tblScopeds . table)
 --     go scps
 --     where
 --         go [] = searchGlobals name
@@ -99,40 +97,60 @@ import Data.Table
 --             return (lookup name scp)
 
 findDatatype :: Var -> Analyzer Datatype
-findDatatype name = lookupType name >>= maybe
-    (throwUndefined name) return
+findDatatype name = do
+    mData <- lookupType name
+    case mData of
+        Nothing -> do
+            throwUndefined name
+            return undefined -- TODO:!!!
+        Just dta -> return dta
 
 findTrait :: Var -> Analyzer Trait
-findTrait name = lookupTrait name >>= maybe
-    (throwUndefined name) return
+findTrait name = do
+    mData <- lookupTrait name
+    case mData of
+        Nothing -> do
+            throwUndefined name
+            return undefined -- TODO:!!!
+        Just dta -> return dta
 
 findGlobal :: Var -> Analyzer Global
-findGlobal name = lookupGlobal name >>= maybe
-    (throwUndefined name) return
+findGlobal name = do
+    mData <- lookupGlobal name
+    case mData of
+        Nothing -> do
+            throwUndefined name
+            return undefined -- TODO:!!!
+        Just dta -> return dta
 
 findScoped :: Var -> Analyzer Scoped
-findScoped name = lookupScoped name >>= maybe
-    (throwUndefined name) return
+findScoped name = do
+    mData <- lookupScoped name
+    case mData of
+        Nothing -> do
+            throwUndefined name
+            return undefined -- TODO:!!!
+        Just dta -> return dta
 
 
 lookupType :: Var -> Analyzer (Maybe Datatype)
 lookupType name = do
-    types <- tblTypes <$!> getTable
+    types <- gets (tblTypes . table)
     return $! lookup name types
 
 lookupTrait :: Var -> Analyzer (Maybe Trait)
 lookupTrait name = do
-    trts <- tblTraits <$!> getTable
+    trts <- gets (tblTraits . table)
     return $! lookup name trts
 
 lookupGlobal :: Var -> Analyzer (Maybe Global)
 lookupGlobal name = do
-    glbs <- tblGlobals <$!> getTable
+    glbs <- gets (tblGlobals . table)
     return $! lookup name glbs
 
 lookupScoped :: Var -> Analyzer (Maybe Scoped)
 lookupScoped name = do
-    scps <- tblScopeds <$!> getTable
+    scps <- gets (tblScopeds . table)
     go scps
     where
         go :: ScopedMaps -> Analyzer (Maybe Scoped)
@@ -143,36 +161,36 @@ lookupScoped name = do
 
 
 modifyDatatype :: Var -> (Datatype -> Datatype) -> Analyzer ()
-modifyDatatype name f = modifyTable_ $ \tbl ->
+modifyDatatype name f = modifyTable $ \tbl ->
     tbl { tblTypes = adjust f name (tblTypes tbl) }
 
 modifyTrait :: Var -> (Trait -> Trait) -> Analyzer ()
-modifyTrait name f = modifyTable_ $ \tbl ->
+modifyTrait name f = modifyTable $ \tbl ->
     tbl { tblTraits = adjust f name (tblTraits tbl) }
 
 
 pushDatatype :: Var -> Visib -> Analyzer Datatype
 pushDatatype name vis = do
     let dta = Datatype vis [] (getPos name)
-    modifyTable_ (insertType name dta)
+    modifyTable (insertType name dta)
     return dta
 
 pushTrait :: Var -> Visib -> Analyzer Trait
 pushTrait name vis = do
     let dta = Trait vis [] [] (getPos name)
-    modifyTable_ (insertTrait name dta)
+    modifyTable (insertTrait name dta)
     return dta
 
 pushUndefTrait :: Var -> Analyzer Trait
 pushUndefTrait name = do
     let dta = Trait Export [] [] (getPos name)
-    modifyTable_ (insertTrait name dta)
+    modifyTable (insertTrait name dta)
     return dta
 
 pushCtor :: Var -> Visib -> Var -> Analyzer Global
 pushCtor name vis parent = do
     let dta = Constructor vis parent (getPos name)
-    modifyTable_ (insertGlobal name dta)
+    modifyTable (insertGlobal name dta)
     modifyDatatype parent (\d -> d { dtCtors = (name:dtCtors d) })
     return dta
 
@@ -180,13 +198,13 @@ pushUndefCtor :: Var -> Analyzer Global
 pushUndefCtor name = do
     -- !!!TODO: undefined
     let dta = Constructor Export (prim "UNDEFINED") (getPos name)
-    modifyTable_ (insertGlobal name dta)
+    modifyTable (insertGlobal name dta)
     return dta
 
 pushFunction :: Var -> Visib -> Analyzer Global
 pushFunction name vis = do
     let dta = Function vis Nothing (getPos name)
-    modifyTable_ (insertGlobal name dta)
+    modifyTable (insertGlobal name dta)
     return dta
 
 pushUndefFunc :: Var -> Analyzer Global
@@ -194,24 +212,24 @@ pushUndefFunc name = do
     -- TODO: get current/expoected purity
     -- instead of `Nothing` or `Unsafe`
     let dta = Function Export Nothing (getPos name)
-    modifyTable_ (insertGlobal name dta)
+    modifyTable (insertGlobal name dta)
     return dta
 
 pushFunction' :: Var -> Visib -> Purity -> Analyzer Global
 pushFunction' name vis pur = do
     let dta = Function vis (Just pur) (getPos name)
-    modifyTable_ (insertGlobal name dta)
+    modifyTable (insertGlobal name dta)
     return dta
 
 pushMethod :: Var -> Visib -> Purity -> Var -> Analyzer Global
 pushMethod name vis pur parent = do
     let dta = Method vis (Just pur) parent (getPos name)
-    modifyTable_ (insertGlobal name dta)
+    modifyTable (insertGlobal name dta)
     modifyTrait parent (\t -> t { trtMeths = (name:trtMeths t) })
     return dta
 
 pushScoped :: Var -> Mutab -> Analyzer Scoped
 pushScoped name mut = do
     let dta = Scp mut (getPos name)
-    modifyTable_ (insertScoped name dta)
+    modifyTable (insertScoped name dta)
     return dta

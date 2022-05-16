@@ -128,7 +128,7 @@ inferStmt (IfElse cond trueBody falseBody) = do
     constrain cT boolType
     etb <- inferStmt trueBody
     efb <- inferStmt falseBody
-    mergeStmtInfs etb efb
+    mergeStmts etb efb
 inferStmt (Loop init' cond iter body) = do
     inferStmt init'
     case cond of
@@ -158,26 +158,28 @@ inferStmt (ValStmt val) = do
 inferStmt (Compound body) = do
     foldM (\b stmt -> do
         i <- inferStmt stmt
-        mergeStmtInfs b i
+        mergeStmts b i
         ) Nothing body
 inferStmt _ = return Nothing
 
 inferCases :: Type -> [MatchCase] -> Infer (Maybe Type)
 inferCases _ [] = return Nothing
-inferCases vT cases = foldM (\prev (Case ptrn body) -> do
-    ptT <- infer ptrn
-    constrain ptT vT
-    mbT <- inferStmt body
-    mergeStmtInfs prev mbT
+inferCases vT cases =
+    foldM (\prev (Case ptrn body) -> do
+        ptT <- infer ptrn
+        constrain ptT vT
+        mbT <- inferStmt body
+        mergeStmts prev mbT
     ) Nothing cases
 
 -- if both bodies guarantee a return, then this can
 -- as well. otherwise it cannot be guaranteed.
-mergeStmtInfs :: Maybe Type -> Maybe Type -> Infer (Maybe Type)
-mergeStmtInfs Nothing Nothing = return Nothing
-mergeStmtInfs (Just typ) Nothing = return (Just typ)
-mergeStmtInfs Nothing (Just typ) = return (Just typ)
-mergeStmtInfs (Just t1) (Just t2) = do
+mergeStmts :: Maybe Type -> Maybe Type
+    -> Infer (Maybe Type)
+mergeStmts Nothing Nothing = return Nothing
+mergeStmts (Just typ) Nothing = return (Just typ)
+mergeStmts Nothing (Just typ) = return (Just typ)
+mergeStmts (Just t1) (Just t2) = do
     constrain t2 t1
     return (Just t2)
 

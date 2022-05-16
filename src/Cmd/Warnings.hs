@@ -1,59 +1,51 @@
 {-# OPTIONS_GHC -Wno-missing-signatures #-}
 
-module Cmd.Warnings (Warning,
+module Cmd.Warnings (
+    Warnings(..),
+    defaultWarnings,
     warningOptions,
-    isWEnabledFor,
-    enableWarningFor,
-    w_default,
-    w_error,
-    w_name_shadowing,
-    w_unused_imports,
-    w_unused_interns,
 ) where
 
-import Data.Bits
-import Data.Int (Int64)
 import System.Console.GetOpt
 
-default (Int64)
 
+data Warnings = Warnings {
+    wError :: Bool,
+    nameShadowing :: Bool,
+    unusedImports :: Bool,
+    unusedInterns :: Bool
+    }
 
-newtype Warning = W Int64
-    deriving (Show, Eq, Ord)
+defaultWarnings :: Warnings
+defaultWarnings = Warnings {
+    wError = False,
+    nameShadowing = False,
+    unusedImports = False,
+    unusedInterns = False
+    }
 
+setWAll :: Warnings -> Warnings
+setWAll w = w {
+    nameShadowing = True,
+    unusedImports = True,
+    unusedInterns = True
+    }
 
-warningOptions :: [OptDescr Warning]
+warningOptions :: [OptDescr (Warnings -> Warnings)]
 warningOptions = [
-        Option "W" ["Wall"]           (NoArg w_all)
+        Option "W" ["Wall"]
+            (NoArg setWAll)
             "Turns on most warnings (not all though...)",
-        Option "E" ["Werror"]         (NoArg w_error)
+        Option "E" ["Werror"]
+            (NoArg (\w -> w { wError = True }))
             "Treat all warnings as errors",
-        Option "" ["Wname-shadowing"] (NoArg w_name_shadowing)
+        Option "" ["Wname-shadowing"]
+            (NoArg (\w -> w { nameShadowing = True }))
             "Emit a warning when a name shadows an existing name",
-        Option "" ["Wunused-imports"] (NoArg w_unused_imports)
+        Option "" ["Wunused-imports"]
+            (NoArg (\w -> w { unusedImports = True }))
             "Emit a warning if a module is imported yet unused",
-        Option "" ["Wunused-interns"] (NoArg w_unused_interns)
-            "Emit a warning if something is 'intern'-qualified,\
-                \but never used"
+        Option "" ["Wunused-interns"]
+            (NoArg (\w -> w { unusedInterns = True }))
+            "Emit a warning if something is 'intern'-qualified,but never used"
     ]
-
-isWEnabledFor :: Warning -> Warning -> Bool
-isWEnabledFor (W w1) (W w2) = w1 .&. w2 /= 0
-
-enableWarningFor :: Warning -> Warning -> Warning
-enableWarningFor (W w1) (W w2) = W (w1 .|. w2)
-
-w :: Int64 -> Warning
-w = W . (^(2 :: Int64))
-w_default = foldr enableWarningFor (W 0) [
-        w_name_shadowing,
-        w_unused_imports
-    ]
-w_all = foldr enableWarningFor w_default [
-        w_name_shadowing,
-        w_unused_imports
-    ]
-w_error = w 1
-w_name_shadowing = w 2
-w_unused_imports = w 3
-w_unused_interns = w 4

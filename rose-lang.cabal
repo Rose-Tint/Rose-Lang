@@ -33,7 +33,6 @@ common general
         Builder.IO,
         Cmd,
         Cmd.Flags,
-        Cmd.Options,
         Cmd.Warnings,
         -- CodeGen,
         -- CodeGen.LLVM.Base,

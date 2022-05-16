@@ -5,73 +5,105 @@ module Cmd (
     readCmdLine,
 ) where
 
+import Control.Monad (foldM)
 import System.Console.GetOpt
+import System.Directory
 import System.Environment (getArgs)
 import System.Exit (exitSuccess)
 
 import Cmd.Flags
-import Cmd.Options
 import Cmd.Warnings
+import Utils.String (mReadInt)
 
 
 default (Int, Double)
 
 
+data CmdOpt
+    = Verbose (Maybe String)
+    | BuildDir FilePath
+    | Trace
+    | Threaded
+    | Help
+    | Flag (Flags -> Flags)
+    | Warning (Warnings -> Warnings)
+
 -- everything is strict for concurrency safety
 data CmdLine = CmdLine {
-        cmdFiles :: ![String],
-        cmdVerb :: !Int,
-        cmdBuildDir :: !FilePath,
-        cmdTrace :: !Bool,
-        cmdErrors :: ![String],
-        cmdShadowing :: !Bool,
-        cmdThreaded :: !Bool,
-        cmdFlags :: !Flags,
-        cmdWarns :: !Warning
+    cmdFiles :: [String],
+    verbosity :: Int,
+    baseBuildDir :: FilePath,
+    cmdTrace :: Bool,
+    cmdErrors :: [String],
+    warnings :: Warnings,
+    flags :: Flags,
+    threaded :: Bool
     }
 
 
-help :: IO Flag
-help = do
-    let header = "Usage: rose [FILES...] [OPTIONS...]"
-    putStrLn $! usageInfo header optionOptions
-    exitSuccess
+options :: [OptDescr CmdOpt]
+options = [
+        Option "v" ["verbose"]
+            (OptArg Verbose "LEVEL")
+            "Controls the amount and detail of messages",
+        Option "T"  ["trace"]
+            (NoArg Trace)
+            "Low-level debug info. Not neeeded for end users",
+        Option "B" ["build-dir"]
+            (ReqArg BuildDir "DIRECTORY")
+            "Directory to put build files",
+        Option ""  ["threaded"]
+            (NoArg Threaded)
+            "Turns on multi-threaded building",
+        Option "h" ["help"]
+            (NoArg Help)
+            "Displays help information"
+    ]
+    ++ (fmap Warning <$> warningOptions)
+    ++ (fmap Flag <$> flagOptions)
 
-setFlags :: [Flag] -> CmdLine -> CmdLine
-{-# INLINABLE setFlags #-}
-setFlags [] cmd = cmd
-setFlags (flg:flgs) cmd = setFlags flgs $! case flg of
-    Verbosity v -> cmd { cmdVerb = v }
-    BuildDir dir -> cmd { cmdBuildDir = dir ++ "/" }
-    Trace -> cmd { cmdTrace = True }
-    Threaded -> cmd { cmdThreaded = True }
-    Flag f -> cmd { cmdFlags = f (cmdFlags cmd) }
-    Warn w -> cmd { cmdWarns = enableWarningFor w (cmdWarns cmd) }
+defaultCmd :: CmdLine
+defaultCmd = CmdLine {
+    cmdFiles = [],
+    verbosity = 1,
+    baseBuildDir = "Rose-Build/",
+    cmdTrace = False,
+    cmdErrors = [],
+    warnings = defaultWarnings,
+    flags = defaultFlags,
+    threaded = False
+    }
 
-mkCmdLine :: IO [Flag] -> [String] -> [String] -> IO CmdLine
-mkCmdLine flgs fnames errs = do
-    flgs' <- flgs
-    let cmd = CmdLine {
-            cmdFiles = fnames,
-            cmdVerb = 1,
-            cmdErrors = errs,
-            cmdTrace = False,
-            cmdBuildDir = "Rose-Build/",
-            cmdShadowing = True,
-            cmdThreaded = False,
-            cmdFlags = f_default,
-            cmdWarns = w_default
-        }
-    return $! setFlags flgs' cmd
-
-options :: [OptDescr (IO Flag)]
-options = [Option "h" ["help"] (NoArg help) "Displays help information"]
-    ++ optionOptions
-    ++ (fmap (pure . Warn) <$> warningOptions)
-    ++ (fmap (pure . Flag) <$> flagOptions)
+readCmdOpts :: CmdLine -> [CmdOpt] -> IO CmdLine
+readCmdOpts = foldM (\cmd opt -> case opt of
+        Verbose Nothing -> return $ cmd
+            { verbosity = 2 }
+        Verbose (Just str) -> case mReadInt 10 str of
+            Nothing -> error
+                "error reading verbosity level"
+            Just n -> return $ cmd { verbosity = n }
+        BuildDir dir -> do
+            dir' <- makeAbsolute dir
+            return $ cmd { baseBuildDir = (dir' ++ "/") }
+        Trace -> return $ cmd { cmdTrace = True }
+        Threaded -> return $ cmd { cmdTrace = True }
+        Help -> do
+            putStrLn $! usageInfo header options
+            exitSuccess
+        Flag f -> return $ cmd { flags = f (flags cmd) }
+        Warning f -> return $ cmd
+            { warnings = f (warnings cmd) }
+        )
+    where
+        header = "Usage: rose [FILES...] [OPTIONS...]"
 
 readCmdLine :: IO CmdLine
 readCmdLine = do
     args <- reverse <$> getArgs
-    let (opts, nons, errs) = getOpt RequireOrder options args
-    mkCmdLine (reverse <$> sequence opts) nons errs
+    let (opts, nons, errs) = getOpt
+            RequireOrder options args
+        cmd = defaultCmd {
+            cmdFiles = reverse nons,
+            cmdErrors = errs
+            }
+    readCmdOpts cmd opts
