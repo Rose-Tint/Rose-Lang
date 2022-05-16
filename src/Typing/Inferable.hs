@@ -33,6 +33,17 @@ class Inferable a where
     infer :: a -> Infer Type
 
 
+instance Inferable Type where
+    infer (Type name tps) =
+        Type name <$> mapM infer tps
+    infer TypeVar{} = fresh
+    infer (t1 :-> t2) = do
+        t1' <- infer t1
+        t2' <- infer t2
+        tv <- fresh
+        constrain t1' (t2' :-> tv)
+        return tv
+
 instance Inferable Literal where
     infer IntLit{} = return intType
     infer FloatLit{} = return floatType
