@@ -20,6 +20,7 @@ import Data.Table.Scoped as T
 import Data.Table.Trait as T
 import Data.VarMap as T
 import Text.Pretty
+import Typing.TypeEnv
 import Utils.String
 
 
@@ -39,13 +40,14 @@ data Table
         tblTypes :: !DataMap,
         tblTraits :: !TraitMap,
         tblGlobals :: !GlobalMap,
-        tblScopeds :: !ScopedMaps
+        tblScopeds :: !ScopedMaps,
+        tblEnv :: TypeEnv
     }
     -- deriving (Eq)
 
 
 emptyTable :: Table
-emptyTable = Table empty empty empty []
+emptyTable = Table empty empty empty [] emptyEnv
 
 insertType :: Var -> Datatype -> Table -> Table
 insertType sym dta tbl = tbl {
@@ -70,12 +72,12 @@ insertScoped sym dta tbl =
         (scp:scps) -> tbl { tblScopeds = (insert' scp:scps) }
 
 getSimilarVars :: Var -> Table -> [Var]
-getSimilarVars (Var name _) (Table typs trts glbs scps) =
+getSimilarVars (Var name _) tbl =
     concat [
-        filtKeys getPos typs,
-        filtKeys getPos trts,
-        filtKeys getPos glbs,
-        concatMap (filtKeys getPos) scps
+        filtKeys getPos (tblTypes tbl),
+        filtKeys getPos (tblTraits tbl),
+        filtKeys getPos (tblGlobals tbl),
+        concatMap (filtKeys getPos) (tblScopeds tbl)
     ]
     where
         filtKeys :: (a -> SrcPos) -> Trie a -> [Var]
@@ -88,5 +90,5 @@ getSimilarVars (Var name _) (Table typs trts glbs scps) =
 
 
 instance Pretty Table where
-    pretty (Table types trts glbs scps) =
+    pretty (Table types trts glbs scps _env) =
         types|+"\n\n"+|trts|+"\n\n"+|glbs|+"\n\n"+|scps

@@ -4,6 +4,7 @@ module Builder.Internal (
     gets,
     modify,
     asks,
+    ask,
 
     Builder,
     Stream,
@@ -39,7 +40,7 @@ data BldState = BldState {
         filePath :: FilePath,
         moduleName :: String,
         -- current build directory, as opposed to
-        -- cmdBuildDir, which is the base
+        -- baseBuildDir, which is the base
         currBuildDir :: FilePath,
         -- list of visited files
         visitedFiles :: Set FilePath,
@@ -65,8 +66,8 @@ f ??> bld = do
     when flg (bld >> return ())
 
 infix 9 ?!>
-(?!>) :: Warning -> Builder a -> Builder ()
-(?!>) wrn = ((isWEnabledFor wrn . cmdWarns) ??>)
+(?!>) :: (Warnings -> Bool) -> Builder a -> Builder ()
+(?!>) wrn = ((wrn . warnings) ??>)
 
 io :: IO a -> Builder a
 io = lift . lift
@@ -84,7 +85,7 @@ hasBeenVisited path = do
 
 finalizeVisit :: Builder ()
 finalizeVisit = do
-    baseDir <- asks cmdBuildDir
+    baseDir <- asks baseBuildDir
     modify $ \s -> s {
         visitedFiles = insert (filePath s) (visitedFiles s),
         sourceCode = "",

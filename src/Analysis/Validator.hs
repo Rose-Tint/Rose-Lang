@@ -2,9 +2,7 @@ module Analysis.Validator (
     validate,
 ) where
 
-import Prelude hiding (fail)
-
-import Control.Monad (forM, (<$!>))
+import Control.Monad (forM)
 
 import Analysis.Analyzer
 import Analysis.Error
@@ -94,9 +92,9 @@ instance Validator Value where
                 (name{_varPos=getPos dta}) name
         return (CtorCall name)
     validate (Tuple arr) =
-        Tuple <$!> mapM validate arr
+        Tuple <$> mapM validate arr
     validate (Array arr) =
-        Array <$!> mapM validate arr
+        Array <$> mapM validate arr
     validate (Lambda params bdy) = do
         -- params' <- mapM validate params
         bdy' <- validate bdy
@@ -153,22 +151,24 @@ instance Validator Stmt where
         val' <- validate val
         return (ValStmt val')
     validate Break = do
-        allowed <- stAllowBreak <$> getState
-        if allowed then return Break else
-            fail "illegal `break`"
+        allowed <- gets allowBreak
+        if allowed then return Continue else do
+            otherError "illegal `continue`"
+            return Break
     validate Continue = do
-        allowed <- stAllowBreak <$> getState
-        if allowed then return Continue else
-            fail "illegal `continue`"
+        allowed <- gets allowBreak
+        if allowed then return Continue else do
+            otherError "illegal `continue`"
+            return Continue
     validate NullStmt = return NullStmt
     validate (Compound bdy) =
         Compound <$> inNewScope (mapM validate bdy)
 
 instance Validator Expr where
-    validate expr@(FuncDecl pur vis name _typ) = define name $! do
+    validate expr@(FuncDecl pur vis name _typ) = do
         pushFunction' name vis pur
         return expr
-    validate (FuncDef name params body) = define name $! do
+    validate (FuncDef name params body) = do
         mData <- lookupGlobal name
         _dta <- case mData of
             Nothing -> pushUndefFunc name
@@ -176,16 +176,16 @@ instance Validator Expr where
         params' <- mapM validate params
         body' <- validateBody body
         return (FuncDef name params' body')
-    validate expr@(DataDef vis name _tps ctors) = define name $! do
+    validate expr@(DataDef vis name _tps ctors) = do
         pushDatatype name vis
         mapM_ validate ctors
         return expr
-    validate expr@(TraitDecl vis _ctx name _tps fns) = define name $! do
+    validate expr@(TraitDecl vis _ctx name _tps fns) = do
         pushTrait name vis
         mapM_ validate fns
         return expr
     -- TODO:
-    validate (TraitImpl ctx name types fns) = define name $! do
+    validate (TraitImpl ctx name types fns) = do
         mData <- lookupTrait name
         case mData of
             Nothing -> do
@@ -200,11 +200,12 @@ instance Validator Expr where
 
 instance Validator Ctor where
     validate ctor@(SumType name vis _types) = do
-        parent <- getCurrDef
-        define name $! pushCtor name vis parent
+        pushCtor name vis name
         return ctor
-    validate (Record _name _vis _flds) = fail
-        "Validator.validate: `Record`s are not yet implemented"
+    validate ctor@Record{} = do
+        otherError $! "validate: "++
+            "`Record`s are not fully implemented"
+        return ctor
 
 
 validateBody :: Stmt -> Analyzer Stmt

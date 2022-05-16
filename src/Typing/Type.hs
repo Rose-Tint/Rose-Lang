@@ -1,6 +1,7 @@
 module Typing.Type  (
     Type(..),
     typeToList,
+    -- renameTypeVars,
 ) where
 
 import Common.SrcPos
@@ -38,3 +39,30 @@ instance Pretty Type where
     pretty (t1 :-> t2) = "("+|t1|+" -> "+|t2|+")"
     pretty (TupleType types) = "("+|", "`seps`types|+")"
     pretty (ArrayType typ) = "["+|typ|+"]"
+
+
+-- renameTypeVars :: Type -> Type
+-- renameTypeVars = snd . go 0
+--     where
+--         for :: Int -> [Type] -> (Int, [Type])
+--         for !_ [] = []
+--         for !i (t:ts) =
+--             let (i', t') = go i t
+--                 (i'', ts') = for (i' + 1) ts
+--             in (i'', (t':ts'))
+--         go :: Int -> Type -> (Int, Type)
+--         go i (Type name types) =
+--             let (i', types') = for i types
+--             in (i', Type name types')
+--         go i (TypeVar name) =
+--             (i + 1, TypeVar (name ++ show i))
+--         go i (t1 :-> t2) =
+--             let (i', t1') = go i t1
+--                 (i'', t2') = go i' t2
+--             in (i'', t1' :-> t2')
+--         go i (ArrayType typ) =
+--             let (i', typ') = go i typ
+--             in (i, ArrayType typ')
+--         go i (TupleType types) =
+--             let (i', types') = for i types
+--             in (i', TupleType types')

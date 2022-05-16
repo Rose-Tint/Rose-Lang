@@ -1,10 +1,11 @@
 module Cmd (
     module Cmd.Flags,
     module Cmd.Warnings,
-    Cmd(..),
-    readCmd,
+    CmdLine(..),
+    readCmdLine,
 ) where
 
+import Control.Monad (foldM)
 import System.Console.GetOpt
 import System.Directory
 import System.Environment (getArgs)
@@ -20,7 +21,6 @@ default (Int, Double)
 
 data CmdOpt
     = Verbose (Maybe String)
-    | Silent
     | BuildDir FilePath
     | Trace
     | Threaded
@@ -54,7 +54,7 @@ options = [
             "Directory to put build files",
         Option ""  ["threaded"]
             (NoArg Threaded)
-            "Turns on multi-threaded building"
+            "Turns on multi-threaded building",
         Option "h" ["help"]
             (NoArg Help)
             "Displays help information"
@@ -78,7 +78,7 @@ readCmdOpts :: CmdLine -> [CmdOpt] -> IO CmdLine
 readCmdOpts = foldM (\cmd opt -> case opt of
         Verbose Nothing -> return $ cmd
             { verbosity = 2 }
-        Verbose (Just str) -> case mReadInt str of
+        Verbose (Just str) -> case mReadInt 10 str of
             Nothing -> error
                 "error reading verbosity level"
             Just n -> return $ cmd { verbosity = n }

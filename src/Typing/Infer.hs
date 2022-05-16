@@ -36,7 +36,11 @@ import Typing.TypeEnv
 type Constraint = (Type, Type)
 
 data InfState = InfState {
-    stFreshIndex :: Int
+    -- allowBreak :: Bool,
+    -- purity :: Purity,
+    -- table :: Table,
+    -- stPos :: SrcPos,
+    freshIdx :: Int
     }
 
 type Infer a = RWST
@@ -56,8 +60,8 @@ runInfer env inf =
 
 fresh :: Infer Type
 fresh = do
-    modify $ \s -> s { stFreshIndex = stFreshIndex s + 1 }
-    i <- gets stFreshIndex
+    modify $ \s -> s { freshIdx = freshIdx s + 1 }
+    i <- gets freshIdx
     return (TypeVar (prim (letters !! i)))
     where
         letters = [1..]

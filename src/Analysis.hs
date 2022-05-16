@@ -1,29 +1,31 @@
 module Analysis (
-    Analysis(..),
     runAnalysis,
 ) where
 
 import Control.Monad (forM_)
 
-import Analysis.Analyzer
+import Analysis.Analyzer hiding (gets)
 import Analysis.Error
 import Analysis.Validator
 import AST.Expr
 import Builder
+import Cmd (CmdLine)
+import Data.Table (Table)
 import Text.Pretty
 
 
-analyze :: String -> [Expr] -> Analysis
-analyze name = runAnalyzer name . mapM validate
+analyze :: CmdLine -> [Expr] -> ([Expr], Table, [ErrInfo])
+analyze cmd = runAnalyzer cmd . mapM validate
 
-runAnalysis :: [Expr] -> Builder Analysis
+runAnalysis :: [Expr] -> Builder ([Expr], Table)
 runAnalysis es = do
-    name <- getModule
+    name <- gets moduleName
+    cmd <- ask
     debug ("Analyzing ["+|name|+"]\n")
-    let res = analyze name es
-    trace "Symbol-Table.txt" (arTable res)
-    printAnalysisErrors (arErrors res)
-    return res
+    let (es', tbl, errs) = analyze cmd es
+    trace "Symbol-Table.txt" tbl
+    printAnalysisErrors errs
+    return (es', tbl)
 
 printAnalysisErrors :: [ErrInfo] -> Builder ()
 printAnalysisErrors [] = return ()

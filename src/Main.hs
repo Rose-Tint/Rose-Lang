@@ -26,7 +26,7 @@ buildFile path = hasBeenVisited path >>= \skip ->
         Module imports tree <- parseFile
         forM_ imports $ \(Import (Var modName _) _) ->
             buildFile (modToPath modName)
-        _ <- runAnalysis tree
+        (_, _) <- runAnalysis tree
         finalizeVisit
 
 main :: IO ()
@@ -38,5 +38,5 @@ main = do
     timeStart <- getCurrentTime
     runBuilder build cmd
     timeEnd <- getCurrentTime
-    unless (cmdVerb cmd <= 0) $ putStrLn $
+    unless (verbosity cmd <= 0) $ putStrLn $
         "Finished in "+|diffUTCTime timeEnd timeStart|+"\n"

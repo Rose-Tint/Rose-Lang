@@ -3,46 +3,45 @@
 
 module Analysis.Analyzer (
     Analyzer,
-    Analysis(..),
-    State(..),
+    Warnings(..),
+    Flags(..),
+
+    allowBreak,
+    purity,
+    table,
 
     newState,
     runAnalyzer,
 
-    getState,
-    modifyState,
-    modifyState_,
-
-    getTable,
-    setTable,
+    askW,
+    askF,
+    modify,
     modifyTable,
-    modifyTable_,
-
-    getModuleName,
-
+    gets,
     pushScope,
     popScope,
     inNewScope,
-
-    getCurrDef,
-    define,
-
     updatePos,
 
-    fail,
     throw,
+    otherError,
     throwUndefined,
     warn,
-    catch,
 ) where
 
-import Prelude hiding (fail)
+import Prelude
 
 import Control.Monad ((<$!>))
-import Control.Monad.Trans.State
-import Control.Monad.Fail
+import Control.Monad.Trans.RWS.CPS
 
 import Analysis.Error
+import Cmd (
+    CmdLine,
+    Warnings(..),
+    Flags(..),
+    warnings,
+    flags,
+    )
 import Common.SrcPos
 import Common.Specifiers
 import Common.Var
@@ -59,17 +58,19 @@ data AnState = AnState {
         stPos :: SrcPos
     }
 
-type Analyzer a = WriterT [ErrInfo] (State AnState) a
+type Analyzer = RWS
+    CmdLine -- for flags and warnings
+    [ErrInfo]
+    AnState
 
 
 newState :: AnState
-newState name = AnState False emptyTable newSrcPos
+newState = AnState False Pure emptyTable newSrcPos
 
-runAnalyzer :: Analyzer a -> ([ErrInfo], a)
-runAnalyzer an = evalState (runWriterT an) newState
-
-typeEnv :: AnState -> TypeEnv
-typeEnv = gets (tblEnv . table)
+runAnalyzer :: CmdLine -> Analyzer a -> (a, Table, [ErrInfo])
+runAnalyzer cmd an =
+    let (a, st, errs) = runRWS an cmd newState
+    in (a, table st, errs)
 
 modifyTable :: (Table -> Table) -> Analyzer ()
 modifyTable f = modify $ \s -> s { table = f (table s) }
@@ -85,6 +86,12 @@ popScope = modifyTable $ \tbl -> tbl {
         (_:scps) -> scps
     }
 
+askW :: (Warnings -> Bool) -> Analyzer Bool
+askW w = w <$!> asks warnings
+
+askF :: (Flags -> Bool) -> Analyzer Bool
+askF f = f <$!> asks flags
+
 inNewScope :: Analyzer a -> Analyzer a
 inNewScope an = do
     pushScope
@@ -98,7 +105,7 @@ updatePos p = case getPos p of
     pos -> modify $ \s -> s { stPos = pos }
 
 throw :: Error -> Analyzer ()
-throw FalseError = Analyzer $ \ !s _ err -> err FalseError s
+throw FalseError = return ()
 throw e = do
     pos <- gets stPos
     tell [ErrInfo pos (Right e)]
@@ -108,7 +115,10 @@ warn w = do
     pos <- gets stPos
     tell [ErrInfo pos (Left w)]
 
-throwUndefined :: Var -> Analyzer a
+otherError :: String -> Analyzer ()
+otherError = throw . OtherError
+
+throwUndefined :: Var -> Analyzer ()
 throwUndefined sym = do
-    syms <- getSimilarVars sym <$!> getTable
+    syms <- gets (getSimilarVars sym . table)
     throw $ Undefined sym syms

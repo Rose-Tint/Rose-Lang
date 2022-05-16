@@ -1,7 +1,6 @@
 module Builder.IO (
     bReadFile,
     createTraceDir,
-    success,
     message,
     status,
     debug,
@@ -25,7 +24,7 @@ bReadFile path = do
     if skip then modify $ \s -> s { sourceCode = "" }
     else do
         src <- io $ readFile path
-        baseDir <- asks cmdBuildDir
+        baseDir <- asks baseBuildDir
         modify $ \s -> s {
             filePath = path,
             moduleName = pathToModule path,
@@ -36,7 +35,7 @@ bReadFile path = do
 
 createTraceDir :: Builder ()
 createTraceDir = cmdTrace ??> do
-    dir <- gets currBuildDir
+    dir <- asks baseBuildDir
     io $ createDirectoryIfMissing True dir
 
 message, status, debug
@@ -47,7 +46,7 @@ debug = myPutStr 3 . detailed
 
 warn :: String -> Builder ()
 warn str = do
-    w_error ?!> fatal str
+    wError ?!> fatal str
     myPutStr 1 str
 
 fatal :: String -> Builder a
@@ -58,11 +57,11 @@ fatal str = do
 
 trace :: Pretty a => FilePath -> a -> Builder ()
 trace path a = do
-    dir <- gets currBuildDir
+    dir <- asks baseBuildDir
     cmdTrace ??> io (writeFile
         (dir ++ path)
         (uncolor $! processString (detailed a)))
 
 myPutStr :: Int -> String -> Builder ()
-myPutStr thresh str = ((thresh <=).cmdVerb) ??> io
+myPutStr thresh str = ((thresh <=).verbosity) ??> io
     (putStr (processString str))
