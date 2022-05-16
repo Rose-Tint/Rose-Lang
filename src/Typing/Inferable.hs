@@ -43,6 +43,9 @@ instance Inferable Type where
         tv <- fresh
         constrain t1' (t2' :-> tv)
         return tv
+    infer (TupleType types) =
+        TupleType <$> mapM infer types
+    infer (ArrayType typ) = ArrayType <$> infer typ
 
 instance Inferable Literal where
     infer IntLit{} = return intType
