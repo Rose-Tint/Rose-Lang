@@ -1,8 +1,4 @@
-<<<<<<< HEAD:src/Middle/Table/Trie.hs
-module Middle.Table.Trie (
-=======
 module Data.Trie (
->>>>>>> reorg:src/Data/Trie.hs
     Trie,
     -- Construction
     empty, singleton, fromList,
