@@ -12,11 +12,11 @@ import Text.Pretty
 parse :: String -> Either String Module
 parse str = runAlex str rose
 
-parseFile :: BuilderIO Module
+parseFile :: Builder Module
 parseFile = do
-    name <- getModule
+    name <- gets moduleName
     debug ("Parsing   ["+|name|+"]\n")
-    src <- getSource
+    src <- gets sourceCode
     case parse src of
         Left msg -> fatal $ Red|+|name|+|msg|+"\n"
         Right parseTree -> do

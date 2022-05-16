@@ -1,5 +1,5 @@
 module Builder.IO (
-    mReadFile,
+    bReadFile,
     createTraceDir,
     success,
     message,
@@ -10,7 +10,6 @@ module Builder.IO (
     trace,
 ) where
 
-import Control.Monad (when)
 import System.Exit (exitFailure)
 import System.Directory (createDirectoryIfMissing)
 
@@ -20,67 +19,51 @@ import Utils.FilePath
 import Text.Pretty
 
 
-mReadFile :: FilePath -> BuilderIO (Maybe String)
-mReadFile path = do
+bReadFile :: FilePath -> Builder ()
+bReadFile path = do
     skip <- hasBeenVisited path
-    if skip then do
-        -- module has already been parsed
-        updateState $ \s -> s { stSource = "" }
-        return Nothing
+    if skip then modify $ \s -> s { sourceCode = "" }
     else do
-        src <- readFile <#> path
-        baseDir <- cmdBuildDir . stCmdLine <$> getState
-        updateState $ \s -> s {
-            stFile = path,
-            stModule = pathToModule path,
-            stBuildDir = baseDir ++ pathToDir path,
-            stSource = src
+        src <- io $ readFile path
+        baseDir <- asks cmdBuildDir
+        modify $ \s -> s {
+            filePath = path,
+            moduleName = pathToModule path,
+            currBuildDir = baseDir ++ pathToDir path,
+            sourceCode = src
             }
         createTraceDir
-        return (Just src)
 
-createTraceDir :: BuilderIO (Maybe FilePath)
-createTraceDir = do
-    state <- getState
-    let dir = stBuildDir state
-    if cmdTrace (stCmdLine state) then do
-        createDirectoryIfMissing True <#> dir
-        return (Just dir)
-    else
-        return Nothing
+createTraceDir :: Builder ()
+createTraceDir = cmdTrace ??> do
+    dir <- gets currBuildDir
+    io $ createDirectoryIfMissing True dir
 
 success, message, status, debug
-    :: Pretty a => a -> BuilderIO ()
+    :: Pretty a => a -> Builder ()
 success = myPutStr 1 . terse
 message = myPutStr 1 . terse
 status = myPutStr 2 . pretty
 debug = myPutStr 3 . detailed
 
-warn :: String -> BuilderIO ()
+warn :: String -> Builder ()
 warn str = do
-    ws <- cmdWarns . stCmdLine <$> getState
-    -- -Werror sets negative
-    if w_error `isWEnabledFor` ws then
-        fatal str
-    else
-        myPutStr 1 str
+    w_error ?!> fatal str
+    myPutStr 1 str
 
-fatal :: String -> BuilderIO a
+fatal :: String -> Builder a
 fatal str = do
     myPutStr 0 str
-    putChar <#> '\n'
-    liftBuild exitFailure
+    io $ putChar '\n'
+    io exitFailure
 
-trace :: Pretty a => FilePath -> a -> BuilderIO ()
+trace :: Pretty a => FilePath -> a -> Builder ()
 trace path a = do
-    doTrace <- cmdTrace . stCmdLine <$> getState
-    dir <- stBuildDir <$> getState
-    when doTrace <#> writeFile
+    dir <- gets currBuildDir
+    cmdTrace ??> io (writeFile
         (dir ++ path)
-        (uncolor (processString (detailed a)))
+        (uncolor $! processString (detailed a)))
 
-myPutStr :: Int -> String -> BuilderIO ()
-myPutStr thresh str = do
-    verb <- cmdVerb . stCmdLine <$> getState
-    when (verb >= thresh) $
-        putStr <#> processString str
+myPutStr :: Int -> String -> Builder ()
+myPutStr thresh str = ((thresh <=).cmdVerb) ??> io
+    (putStr (processString str))

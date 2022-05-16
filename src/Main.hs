@@ -13,23 +13,21 @@ import Text.Pretty
 import Utils.FilePath (modToPath)
 
 
-build :: BuilderIO ()
-build = do
-    cmd <- stCmdLine <$> getState
-    mapM_ buildFile (cmdFiles cmd)
+build :: Builder ()
+build = asks cmdFiles >>= mapM_ buildFile
 
-buildFile :: FilePath -> BuilderIO ()
+buildFile :: FilePath -> Builder ()
 buildFile [] = return ()
 buildFile path = hasBeenVisited path >>= \skip ->
     if skip then return () else do
-        mReadFile path
-        name <- stModule <$> getState
+        bReadFile path
+        name <- gets moduleName
         message ("Building Module ["+|name|+"]\n")
         Module imports tree <- parseFile
-        _ <- analyzeExprs tree
-        finalizeVisit
         forM_ imports $ \(Import (Var modName _) _) ->
             buildFile (modToPath modName)
+        _ <- analyzeExprs tree
+        finalizeVisit
 
 main :: IO ()
 main = do
@@ -38,7 +36,7 @@ main = do
     unless (null errs) $
         putStrLn (concat errs)
     timeStart <- getCurrentTime
-    buildM build cmd
+    runBuilder build cmd
     timeEnd <- getCurrentTime
     unless (cmdVerb cmd <= 0) $ putStrLn $
         "Finished in "+|diffUTCTime timeEnd timeStart|+"\n"

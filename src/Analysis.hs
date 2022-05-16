@@ -29,26 +29,26 @@ typeCheck exprs = runInfer inf okay err
         err s _ = TypeCheck (Inf.stErrors s) emptyEnv
         inf = foldM inferExpr emptyEnv exprs
 
-analyzeExprs :: [Expr] -> BuilderIO Analysis
+analyzeExprs :: [Expr] -> Builder Analysis
 analyzeExprs es = do
-    name <- getModule
+    name <- gets moduleName
     debug ("Analyzing ["+|name|+"]\n")
-    _env <- handleTypeCheck (typeCheck es)
+    -- _env <- handleTypeCheck (typeCheck es)
     let res = analyze name es
     trace "Symbol-Table.txt" (arTable res)
-    printAnalysisErrors $ arErrors res
+    printAnalysisErrors (arErrors res)
     return res
 
-printAnalysisErrors :: [ErrInfo] -> BuilderIO ()
+printAnalysisErrors :: [ErrInfo] -> Builder ()
 printAnalysisErrors [] = return ()
 printAnalysisErrors es = do
-    lns <- lines <$> getSource
-    name <- getModule
+    lns <- gets (lines . sourceCode)
+    name <- gets moduleName
     forM_ es $ \e -> case emError e of
         Right FalseError -> return ()
         _ -> message $ "\n"+|name|+|(lns, e)|+"\n"
 
-handleTypeCheck :: TypeCheck -> BuilderIO TypeEnv
+handleTypeCheck :: TypeCheck -> Builder TypeEnv
 handleTypeCheck (TypeCheck errs env) = do
     printAnalysisErrors errs
     return env
