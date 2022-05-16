@@ -16,20 +16,20 @@ import Text.Pretty
 analyze :: String -> [Expr] -> Analysis
 analyze name = runAnalyzer name . mapM validate
 
-runAnalysis :: [Expr] -> BuilderIO Analysis
+runAnalysis :: [Expr] -> Builder Analysis
 runAnalysis es = do
     name <- getModule
     debug ("Analyzing ["+|name|+"]\n")
     let res = analyze name es
     trace "Symbol-Table.txt" (arTable res)
-    printAnalysisErrors $ arErrors res
+    printAnalysisErrors (arErrors res)
     return res
 
-printAnalysisErrors :: [ErrInfo] -> BuilderIO ()
+printAnalysisErrors :: [ErrInfo] -> Builder ()
 printAnalysisErrors [] = return ()
 printAnalysisErrors es = do
-    lns <- lines <$> getSource
-    name <- getModule
+    lns <- gets (lines . sourceCode)
+    name <- gets moduleName
     forM_ es $ \e -> case emError e of
         Right FalseError -> return ()
         _ -> message $ "\n"+|name|+|(lns, e)|+"\n"

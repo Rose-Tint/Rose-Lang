@@ -1,22 +1,33 @@
 {-# LANGUAGE Rank2Types #-}
 
 module Builder.Internal (
-    BuilderT,
+    gets,
+    modify,
+    asks,
+
     Builder,
-    BuilderIO,
     Stream,
-    State(..),
-    mkState,
-    buildM,
-    liftBuild, (<#>),
-    getState, updateState,
-    getModule, getSource,
+    runBuilder,
+    (??>),
+    (?!>),
+    io,
     hasBeenVisited,
     finalizeVisit,
+    filePath,
+    moduleName,
+    currBuildDir,
+    visitedFiles,
+    sourceCode,
 ) where
 
-import Control.Monad ((<$!>))
-import Data.Functor.Identity (Identity)
+import Control.Monad (when)
+import Control.Monad.Trans.Class (lift)
+import Control.Monad.Trans.Reader
+import Control.Monad.Trans.State hiding (gets, modify)
+import qualified Control.Monad.Trans.State as S (
+    gets,
+    modify,
+    )
 import Data.Set (Set, empty, insert, member)
 
 import Cmd
@@ -24,91 +35,59 @@ import Cmd
 
 type Stream = String
 
-data State = State {
-        stCmdLine :: CmdLine,
-        stFile :: FilePath,
-        stModule :: String,
+data BldState = BldState {
+        filePath :: FilePath,
+        moduleName :: String,
         -- current build directory, as opposed to
         -- cmdBuildDir, which is the base
-        stBuildDir :: FilePath,
+        currBuildDir :: FilePath,
         -- list of visited files
-        stVisited :: Set FilePath,
-        stSource :: String
+        visitedFiles :: Set FilePath,
+        sourceCode :: Stream
     }
 
--- TODO: Decide if this should also be in the
--- IO Monad (m (IO b) for the addition of a
--- thread manager
--- UPDATE: i tried it. i had file writing and
--- console output launching in new threads that
--- are waited for after the Builder runs (i
--- _did_ forget to try to launch each building
--- file in a new thread, but that can be easily
--- done without any modifications to BuilderT).
--- it was slower (if only a little bit, yet
--- observably and consistently).
-newtype BuilderT m a = Builder {
-        unB :: forall b. State
-            -> (a -> State -> m b)
-            -> m b
-    }
-
-type Builder = BuilderT Identity
-type BuilderIO = BuilderT IO
+type Builder a = ReaderT
+    CmdLine
+    (StateT BldState IO)
+    a
 
 
-instance Functor (BuilderT m) where
-    fmap f b = Builder $ \ !s go ->
-        unB b s (go . f)
+newState :: BldState
+newState = BldState [] [] [] empty ""
 
-instance Applicative (BuilderT m) where
-    pure a = Builder $ \ !s !go -> go a s
-    fb <*> ab = fb >>= (<$!> ab)
+runBuilder :: Builder a -> CmdLine -> IO a
+runBuilder bld cmd = evalStateT (runReaderT bld cmd) newState
 
-instance Monad (BuilderT m) where
-    -- :: Builder m a -> (a -> Builder m b) -> Builder m b
-    b >>= m = Builder $ \ !s !go ->
-        let go' x s' = let !x' = m x in unB x' s' go
-        in unB b s go'
+infixr 9 ??>
+(??>) :: (CmdLine -> Bool) -> Builder a -> Builder ()
+f ??> bld = do
+    flg <- asks f
+    when flg (bld >> return ())
 
+infix 9 ?!>
+(?!>) :: Warning -> Builder a -> Builder ()
+(?!>) wrn = ((isWEnabledFor wrn . cmdWarns) ??>)
 
-mkState :: CmdLine -> State
-{-# INLINE mkState #-}
-mkState cmd = State cmd [] [] [] empty ""
+io :: IO a -> Builder a
+io = lift . lift
 
-buildM :: Monad m => BuilderT m a -> CmdLine -> m a
-buildM (Builder b) !cmd = b (mkState cmd) go
-    where
-        go x _ = return x
+gets :: (BldState -> a) -> Builder a
+gets = lift . S.gets
 
-liftBuild :: Monad m => m a -> BuilderT m a
-liftBuild m = Builder $ \ !s go -> m >>= (`go` s)
+modify :: (BldState -> BldState) -> Builder ()
+modify = lift . S.modify
 
-(<#>) :: Monad m => (a -> m b) -> a -> BuilderT m b
-(<#>) = (liftBuild .)
-
-getState :: BuilderT m State
-getState = Builder $ \ !s go -> go s s
-
-updateState :: (State -> State) -> BuilderT m ()
-updateState f = Builder $ \ !s go -> go () (f s)
-
-getModule :: BuilderT m String
-getModule = stModule <$!> getState
-
-getSource :: BuilderT m Stream
-getSource = stSource <$!> getState
-
-hasBeenVisited :: FilePath -> BuilderT m Bool
+hasBeenVisited :: FilePath -> Builder Bool
 hasBeenVisited path = do
-    visited <- stVisited <$> getState
+    visited <- gets visitedFiles
     return (path `member` visited)
 
-finalizeVisit :: BuilderT m ()
+finalizeVisit :: Builder ()
 finalizeVisit = do
-    baseDir <- cmdBuildDir . stCmdLine <$> getState
-    updateState $ \s -> s {
-        stVisited = insert (stFile s) (stVisited s),
-        stSource = "",
-        stBuildDir = baseDir
+    baseDir <- asks cmdBuildDir
+    modify $ \s -> s {
+        visitedFiles = insert (filePath s) (visitedFiles s),
+        sourceCode = "",
+        currBuildDir = baseDir
         }
+    return ()
