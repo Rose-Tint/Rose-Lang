@@ -10,11 +10,12 @@ module Typing.Substitution (
     (~>),
 ) where
 
-import Data.Foldable (fold, foldl')
+import Data.Foldable (fold, foldMap)
 import qualified Data.Set as S
 
 import Data.VarMap
 import Common.Var
+import Data.Table
 import Typing.Scheme
 import Typing.Type
 
@@ -25,7 +26,7 @@ type Subst = VarMap Type
 nullSubst :: Subst
 nullSubst = empty
 
-compose :: [Subst] -> Subst
+compose :: Foldable t => t Subst -> Subst
 compose = fold
 
 infixl 8 <|>
@@ -49,11 +50,10 @@ instance Substable Type where
     apply s (t1 :-> t2) = apply s t1 :-> apply s t2
     apply s (TupleType types) = TupleType (apply s <$> types)
     apply s (ArrayType typ) = ArrayType (apply s typ)
-    ftv (Type _ types) = fold (ftv <$> types)
+    ftv (Type _ types) = foldMap ftv types
     ftv (TypeVar nm) = S.singleton nm
     ftv (t1 :-> t2) = ftv t1 `S.union` ftv t2
-    ftv (TupleType types) = foldl'
-        (\tvs -> S.union tvs . ftv) S.empty types
+    ftv (TupleType types) = foldMap ftv types
     ftv (ArrayType typ) = ftv typ
 
 instance Substable Scheme where
@@ -65,9 +65,20 @@ instance Substable Scheme where
 
 instance Substable a => Substable [a] where
     apply = fmap . apply
-    ftv = foldr (S.union . ftv) S.empty
+    ftv = foldMap ftv
 
--- | For `TypeEnv` to avoid an orphan instance
-instance Substable (VarMap Scheme) where
-    apply = (<$>) . apply
-    ftv = ftv . elems
+instance Substable a => Substable (VarMap a) where
+    apply = fmap . apply
+    ftv = foldMap ftv
+
+instance Substable Func where
+    apply sub func = func { funcType = apply sub (funcType func) }
+    ftv = ftv . funcType
+
+instance Substable Table where
+    apply sub (Table types trts glbs scps) =
+        Table types trts
+        (apply sub <$> glbs)
+        (fmap (apply sub) <$> scps)
+    ftv (Table _ _ glbs scps) =
+        foldMap ftv (glbs:scps)

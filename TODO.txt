@@ -16,10 +16,14 @@ IN-PROGRESS:
     - LLVM back-end
     - add Type inference
         - type-system already (mostly) implemented, just not used.
-        - idea to deal a dynamic type-env that allows
-          yet-to-be-defined identifiers
-            - use `State` while analyzing top-level expressions, or
-            - allow `Solver` to modify a type-env when solving
-    - seperate certain statements from expressions
-        - Match, IfElse,
-    - Add a 'compound' statement
+    - ideas to allow `Infer` (and `Solver`?) to update
+      the symbol-table:
+        - use `State` while analyzing top-level expressions, or
+        - allow `Solver` to modify a type-env when solving
+        - `Infer = WriterT Cons (StateT Int Analyzer)`
+            - the problem is, Analyzer imports Infer.
+            - i could make `Infer` a transformer to be
+              able to use in monadically in Analyzer,
+              but that doesnt give access to the table.
+        - Maybe just completely give up on Analyzer, but
+          it would violate "seperation of concerns"

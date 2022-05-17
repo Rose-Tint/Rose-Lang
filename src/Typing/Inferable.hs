@@ -13,20 +13,20 @@ import qualified Data.Array as A (elems)
 
 import AST
 import Analysis.Error
+import Data.Table
 import Typing.Infer
 import Typing.Primitives
 import Typing.Scheme
 import Typing.Solver
 import Typing.Type
-import Typing.TypeEnv
 import Typing.TypeDecl
 
 
-makeInference :: Inferable a =>
-    TypeEnv -> a -> Either Error Scheme
+makeInference :: Inferable a => Table -> a
+    -> Either Error Scheme
 makeInference env a = case runInfer env (infer a) of
     Left err -> Left err
-    Right (cons, typ) -> runSolver typ cons
+    Right (typ, cons, _tbl) -> runSolver typ cons
 
 
 class Inferable a where
@@ -56,24 +56,27 @@ instance Inferable Literal where
 
 instance Inferable Value where
     infer (Literal lit) = infer lit
-    infer (VarVal name) = searchEnv name
+    infer (VarVal name) = searchScopeds name
     infer (Application v1 v2) = do
         t1 <- infer v1
         t2 <- infer v2
         tv <- fresh
         constrain t1 (t2 :-> tv)
         return tv
-    infer (CtorCall name) = searchEnv name
+    infer (CtorCall name) = searchGlobals name
     infer (Lambda ps body) = do
-        env <- ask
-        tv <- fresh
-        (psT, env') <- foldM (\(psT, env1) p -> do
-            tv' <- fresh
-            let scheme = Forall [] tv'
-                env2 = extend p scheme env1
-            return ((tv :-> psT), env2)
-            ) (tv, env) ps
-        bT <- local (const env') (infer body)
+        (psT, bT) <- inNewScope $ do
+            tv <- fresh
+            psT <- foldM (\psT p -> do
+                tv' <- fresh
+                pushParam p tv'
+                -- TODO: should this be switched??
+                constrain tv' psT
+                return (tv' :-> psT)
+                ) tv ps
+            bT <- infer body
+            return (psT, bT)
+        constrain psT bT
         return (psT :-> bT)
     infer (Tuple arr) =
         tupleOf <$> mapM infer (A.elems arr)
@@ -103,16 +106,20 @@ instance Inferable Value where
             ) tv cases
 
 instance Inferable Pattern where
-    infer (Param name) = searchEnv name
+    infer (Param name) = do
+        tv <- fresh
+        pushParam name tv
+        return tv
     infer Hole{} = fresh
-    infer (CtorPtrn name []) = searchEnv name
+    infer (CtorPtrn name []) = searchGlobals name
     infer (CtorPtrn name (arg:args)) = do
-        t1 <- searchEnv name
+        t1 <- searchGlobals name
         t2 <- applyPtrns arg args
-        constrain t2 t1
+        tv <- fresh
+        constrain t1 (t2 :-> tv)
         return (t2 :-> t1)
     infer (TuplePtrn args) =
-        TupleType <$> mapM infer args
+        tupleOf <$> mapM infer args
     infer (LitPtrn lit) = infer lit
     infer (OrPtrn p1 p2) = do
         t1 <- infer p1
@@ -129,41 +136,57 @@ inferStmt :: Stmt -> Infer (Maybe Type)
 inferStmt (IfElse cond trueBody falseBody) = do
     cT <- infer cond
     constrain cT boolType
-    etb <- inferStmt trueBody
-    efb <- inferStmt falseBody
+    etb <- allowJumpsIn $ inferStmt trueBody
+    efb <- allowJumpsIn $ inferStmt falseBody
     mergeStmts etb efb
 inferStmt (Loop init' cond iter body) = do
     inferStmt init'
     case cond of
-            ValStmt val -> do
-                cT <- infer val
-                constrain cT boolType
-            _ -> error "invalid condition expression"
+        ValStmt val -> do
+            cT <- infer val
+            constrain cT boolType
+        _ -> throw $ OtherError
+            "invalid condition expression"
     inferStmt iter
-    inferStmt body
+    allowJumpsIn $ inferStmt body
     return Nothing
 inferStmt (Match val cases) = do
     vT <- infer val
-    inferCases vT cases
-inferStmt (NewVar _mut _name (TypeDecl _ typ) val) = do
+    allowJumpsIn $ inferCases vT cases
+inferStmt (NewVar mut name (TypeDecl _ typ) val) = do
+    -- 'cleanses' the type
+    typ' <- infer typ
+    pushScoped mut name typ'
     vT <- infer val
-    constrain typ vT
+    constrain vT typ'
     return Nothing
 inferStmt (Reassignment name val) = do
     vT <- infer val
-    nT <- searchEnv name
+    nT <- findScoped name
     constrain vT nT
     return Nothing
 inferStmt (Return val) = Just <$> infer val
 inferStmt (ValStmt val) = do
     infer val
     return Nothing
-inferStmt (Compound body) = do
+inferStmt (Compound body) =
     foldM (\b stmt -> do
         i <- inferStmt stmt
         mergeStmts b i
         ) Nothing body
-inferStmt _ = return Nothing
+inferStmt Break = do
+    legal <- gets jumpAllowed
+    if not legal then
+        throw $ OtherError "illegal `break`"
+    else
+        return Nothing
+inferStmt Continue = do
+    legal <- gets jumpAllowed
+    if not legal then
+        throw $ OtherError "illegal `continue`"
+    else
+        return Nothing
+inferStmt NullStmt = return Nothing
 
 inferCases :: Type -> [MatchCase] -> Infer (Maybe Type)
 inferCases _ [] = return Nothing

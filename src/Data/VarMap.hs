@@ -21,10 +21,6 @@ module Data.VarMap (
 import Prelude hiding (lookup)
 
 import Common.Var
-import Data.Table.Datatype
-import Data.Table.Global
-import Data.Table.Scoped
-import Data.Table.Trait
 import Data.Trie hiding (
     singleton,
     insert,
@@ -36,7 +32,6 @@ import Data.Trie hiding (
     isMemberOf,
     )
 import qualified Data.Trie as T
-import Text.Pretty
 
 
 type VarMap = Trie
@@ -66,35 +61,3 @@ adjust f = T.adjust f . varName
 
 isMemberOf :: Var -> Trie a -> Bool
 isMemberOf = T.isMemberOf . varName
-
-
-instance Pretty (Trie Datatype) where
-    pretty = detailed
-    detailed t = "Datatypes:\n"++
-        "+-Symbol#10-+-Position--+-Visib.-+-Kind#12-+\n"
-        +|unlineAssocsD t
-
-instance Pretty (Trie Global) where
-    pretty = detailed
-    detailed t = "Globals:\n"++
-        "+-Symbol#10-+-Position--+-Visib.-+-Purity-+-Type#30-+\n"
-        +|unlineAssocsD t
-
-instance Pretty [(Trie Scoped)] where
-    pretty = detailed
-    detailed ts = "Scopeds:\n"++
-        "+-Symbol#10-+-Position--+-Mutab.-+-Type#30-+\n"
-        +|(unlines $! unlineAssocsD <$> ts)
-
-instance Pretty (Trie Trait) where
-    pretty = detailed
-    detailed t = "Traits:\n"++
-        "+-Symbol#10-+-Position--+-Visib.-+-Kind#12-+\n"
-        +|unlineAssocsD t
-
-
-unlineAssocsD :: Pretty a => Trie a -> String
-unlineAssocsD t = unlines strs
-    where
-        strs = (\(key, dta) -> "| "+|15.>key|+" "*|dta) <$> assocs'
-        assocs' = T.assocs t

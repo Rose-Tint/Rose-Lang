@@ -32,6 +32,7 @@ module Analysis.Analyzer (
 import Prelude
 
 import Control.Monad ((<$!>))
+import Control.Monad.Trans.Class
 import Control.Monad.Trans.RWS.CPS
 
 import Analysis.Error
@@ -46,6 +47,7 @@ import Common.SrcPos
 import Common.Specifiers
 import Common.Var
 import Data.Table
+import Data.VarMap (empty)
 
 
 default (Int, Double)

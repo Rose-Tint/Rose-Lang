@@ -1,8 +1,11 @@
 module Common.Var (
     Var(..),
     prim,
+    isSmall,
+    isLarge,
 ) where
 
+import Data.Char
 import Data.Function (on)
 import Data.Ord (comparing)
 
@@ -35,3 +38,10 @@ instance Pretty Var where
 
 prim :: String -> Var
 prim s = Var s UnknownPos
+
+isSmall :: Var -> Bool
+isSmall = not . isLarge
+
+isLarge :: Var -> Bool
+isLarge (Var "" _) = False
+isLarge (Var (c:_) _) = isUpper c
