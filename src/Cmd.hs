@@ -1,6 +1,7 @@
 module Cmd (
     module Cmd.Flags,
     module Cmd.Warnings,
+    Task(..),
     CmdLine(..),
     readCmdLine,
 ) where
@@ -19,6 +20,10 @@ import Utils.String (mReadInt)
 default (Int, Double)
 
 
+data Task
+    = Build CmdLine
+    | Repl
+
 data CmdOpt
     = Verbose (Maybe String)
     | BuildDir FilePath
@@ -34,7 +39,6 @@ data CmdLine = CmdLine {
     verbosity :: Int,
     baseBuildDir :: FilePath,
     cmdTrace :: Bool,
-    cmdErrors :: [String],
     warnings :: Warnings,
     flags :: Flags,
     threaded :: Bool
@@ -68,7 +72,6 @@ defaultCmd = CmdLine {
     verbosity = 1,
     baseBuildDir = "Rose-Build/",
     cmdTrace = False,
-    cmdErrors = [],
     warnings = defaultWarnings,
     flags = defaultFlags,
     threaded = False
@@ -97,13 +100,30 @@ readCmdOpts = foldM (\cmd opt -> case opt of
     where
         header = "Usage: rose [FILES...] [OPTIONS...]"
 
-readCmdLine :: IO CmdLine
+-- the input strings get reversed because `getOpt`
+-- expects options first, but we want files first.
+getOptions :: [String] -> ([CmdOpt], [String], [String])
+getOptions = getOpt RequireOrder options . reverse
+
+-- | Reads the command line, and it returns a tuple.
+-- if the first value in the tuple is `Nothing`, then
+-- that means a REPL is to be run.
+--
+-- TODO: find a better way to signal for the repl.
+readCmdLine :: IO (Task, [String])
 readCmdLine = do
-    args <- reverse <$> getArgs
-    let (opts, nons, errs) = getOpt
-            RequireOrder options args
-        cmd = defaultCmd {
-            cmdFiles = reverse nons,
-            cmdErrors = errs
-            }
-    readCmdOpts cmd opts
+    args <- getArgs
+    case args of
+        ("repl":args') ->
+            let errs = ("args not allowed: "++) . show <$> args'
+            in return (Repl, errs)
+        _ -> do
+            let (opts, nons, errs) = getOptions args
+                    -- :: ([CmdOpt], [String], [String])
+                cmd = defaultCmd {
+                    -- reverse the files to preserve
+                    -- their input order
+                    cmdFiles = reverse nons 
+                    }
+            cmd' <- readCmdOpts cmd opts
+            return (Build cmd', errs)

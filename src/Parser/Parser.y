@@ -1,5 +1,5 @@
 {
-module Parser.Parser (rose) where
+module Parser.Parser (runAlex, rose, replP) where
 
 import Data.Array (listArray)
 
@@ -28,6 +28,7 @@ import Typing.TypeDecl
 -}
 
 %name rose Module
+%name replP Term
 %error { parseError }
 %lexer { lexer } { TEOF }
 %monad { Alex }

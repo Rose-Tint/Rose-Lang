@@ -4,8 +4,7 @@ module Parser (
 
 import Common.Module
 import Builder
-import Parser.Lexer
-import Parser.Parser
+import Parser.Parser (runAlex, rose)
 import Text.Pretty
 
 

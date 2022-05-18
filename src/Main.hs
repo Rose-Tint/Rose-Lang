@@ -2,6 +2,7 @@ module Main (main) where
 
 import Control.Monad (unless, forM_)
 import Data.Time (diffUTCTime, getCurrentTime)
+import System.Exit (exitFailure)
 
 import Analysis
 import Builder
@@ -9,12 +10,19 @@ import Cmd
 import Common.Module
 import Common.Var
 import Parser
+import Repl
 import Text.Pretty
 import Utils.FilePath (modToPath)
 
 
 build :: Builder ()
-build = asks cmdFiles >>= mapM_ buildFile
+build = do
+    timeStart <- io getCurrentTime
+    files <- asks cmdFiles
+    mapM_ buildFile files
+    timeEnd <- io getCurrentTime
+    let diff = diffUTCTime timeEnd timeStart
+    message ("Finished in "+|diff|+"\n")
 
 buildFile :: FilePath -> Builder ()
 buildFile [] = return ()
@@ -31,12 +39,10 @@ buildFile path = hasBeenVisited path >>= \skip ->
 
 main :: IO ()
 main = do
-    cmd <- readCmdLine
-    let errs = cmdErrors cmd
-    unless (null errs) $
-        putStrLn (concat errs)
-    timeStart <- getCurrentTime
-    runBuilder build cmd
-    timeEnd <- getCurrentTime
-    unless (verbosity cmd <= 0) $ putStrLn $
-        "Finished in "+|diffUTCTime timeEnd timeStart|+"\n"
+    (task, errs) <- readCmdLine
+    unless (null errs) $ do
+        mapM_ putStrLn errs
+        exitFailure
+    case task of
+        Repl -> repl
+        Build cmd -> runBuilder build cmd

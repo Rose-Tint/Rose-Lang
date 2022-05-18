@@ -49,6 +49,7 @@ common general
         Parser.Lexer,
         Parser.Parser,
         Parser.Token,
+        Repl,
         Text.Pretty,
         Typing.Constraint,
         Typing.Infer,
