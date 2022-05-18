@@ -6,6 +6,7 @@ module Typing.Scheme (
 ) where
 
 import Common.Var
+import Text.Pretty
 import Typing.Type
 
 
@@ -13,3 +14,9 @@ import Typing.Type
 -- haskell example: `forall a b. a -> b`
 -- using set-symbols: ∀ab. a -> b
 data Scheme = Forall [Var] Type
+
+
+instance Pretty Scheme where
+    terse (Forall _ typ) = pretty typ
+    pretty (Forall vs typ) = 
+        "forall "+|" "`seps`vs|+" . "+|typ

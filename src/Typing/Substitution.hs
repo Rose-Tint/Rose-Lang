@@ -67,6 +67,10 @@ instance Substable a => Substable [a] where
     apply = fmap . apply
     ftv = foldMap ftv
 
+instance (Substable a, Substable b) => Substable (a, b) where
+    apply s (a, b) = (apply s a, apply s b)
+    ftv (a, b) = ftv a <> ftv b
+
 instance Substable a => Substable (VarMap a) where
     apply = fmap . apply
     ftv = foldMap ftv
