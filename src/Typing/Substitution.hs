@@ -10,7 +10,7 @@ module Typing.Substitution (
     (~>),
 ) where
 
-import Data.Foldable (fold, foldMap)
+import Data.Foldable (fold)
 import qualified Data.Set as S
 
 import Data.VarMap
@@ -44,8 +44,7 @@ class Substable a where
     ftv :: a -> S.Set Var
 
 instance Substable Type where
-    apply s (Type nm types) =
-        Type nm (apply s <$> types)
+    apply s (Type nm types) = Type nm (apply s <$> types)
     apply s typ@(TypeVar nm) = findWithDefault typ nm s
     apply s (t1 :-> t2) = apply s t1 :-> apply s t2
     apply s (TupleType types) = TupleType (apply s <$> types)

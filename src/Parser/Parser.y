@@ -298,8 +298,8 @@ NewVarTypeDecl :: { TypeDecl }
     | {- empty -}   { typeDecl [] (TypeVar (prim "")) } -- thats not right...
 
 FuncCall :: { Value }
-    : Term infix_id Term    { Application (VarVal $2) $1 }
-    | infix_id              { VarVal $1 }
+    : Term infix_id         { Application (VarVal $2) $1 }
+    | "(" infix_id ")"      { VarVal $2 }
     | big_id                { CtorCall $1 }
     | Term Term %prec APP   { Application $1 $2 }
 

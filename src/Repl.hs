@@ -3,7 +3,7 @@ module Repl (repl) where
 import Control.Monad.Trans.Class (lift)
 import Control.Monad.Trans.Except
 import Data.List (stripPrefix, isPrefixOf)
-import System.IO (hFlush, stdout, stdin, hSetEcho)
+import System.IO
 import System.Exit (exitSuccess)
 
 import Analysis.Error
@@ -36,7 +36,7 @@ print' a = do
 
 prompt :: Repl String
 prompt = do
-    lift $ putStr "? |"
+    lift $ putStr "? | "
     lift $ hFlush stdout
     str <- lift getLine
     case stripPrefix ":{" str of
@@ -47,7 +47,7 @@ prompt = do
 
 promptMulti :: Repl String
 promptMulti = do
-    lift $ putStr "+ |"
+    lift $ putStr "+ | "
     lift $ hFlush stdout
     str <- lift getLine
     if ":}" `isPrefixOf` str then
@@ -97,7 +97,7 @@ evalInput = prompt >>= eval
 
 repl :: IO ()
 repl = do
-    hSetEcho stdin False
+    hSetEcho stderr False
     eith <- runExceptT evalInput
     case eith of
         Left err -> putStr $ processString $

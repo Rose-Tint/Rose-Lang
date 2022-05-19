@@ -3,7 +3,7 @@
 {-# OPTIONS_GHC -Wno-orphans #-}
 
 module Data.VarMap (
-    module Data.Trie,
+    module M',
     VarMap,
     -- Construction
     singleton, fromList,
@@ -21,43 +21,40 @@ module Data.VarMap (
 import Prelude hiding (lookup)
 
 import Common.Var
-import Data.Trie hiding (
-    singleton,
-    insert,
-    fromList,
-    lookup,
-    findWithDefault,
-    delete,
-    adjust,
-    isMemberOf,
+import Data.Map as M' (
+    assocs,
+    empty,
+    union,
     )
-import qualified Data.Trie as T
+import qualified Data.Map as M
 
 
-type VarMap = Trie
+-- type VarMap = Trie
+type VarMap = M.Map String
 
 
-singleton :: Var -> a -> Trie a
-singleton = T.singleton . varName
+singleton :: Var -> a -> VarMap a
+singleton = M.singleton . varName
 
-insert :: Var -> a -> Trie a -> Trie a
-insert = T.insert . varName
+insert :: Var -> a -> VarMap a -> VarMap a
+insert = M.insert . varName
 
-fromList :: [(Var, a)] -> Trie a
-fromList [] = empty
+fromList :: [(Var, a)] -> VarMap a
+fromList [] = M.empty
 fromList ((k,v):kvs) = insert k v (fromList kvs)
 
-lookup :: Var -> Trie a -> Maybe a
-lookup = T.lookup . varName
+lookup :: Var -> VarMap a -> Maybe a
+lookup = M.lookup . varName
 
-findWithDefault :: a -> Var -> Trie a -> a
-findWithDefault def = T.findWithDefault def . varName
+findWithDefault :: a -> Var -> VarMap a -> a
+findWithDefault def = M.findWithDefault def . varName
 
-delete :: Var -> Trie a -> Trie a
-delete = T.delete . varName
+delete :: Var -> VarMap a -> VarMap a
+delete = M.delete . varName
 
-adjust :: (a -> a) -> Var -> Trie a -> Trie a
-adjust f = T.adjust f . varName
+adjust :: (a -> a) -> Var -> VarMap a -> VarMap a
+adjust f = M.adjust f . varName
 
-isMemberOf :: Var -> Trie a -> Bool
-isMemberOf = T.isMemberOf . varName
+isMemberOf :: Var -> VarMap a -> Bool
+isMemberOf = M.member . varName
+-- isMemberOf = M.isMemberOf . varName

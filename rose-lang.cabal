@@ -43,7 +43,7 @@ common general
         Common.Var,
         -- Control.Concurrent.Threading,
         Data.Table,
-        Data.Trie,
+        -- Data.Trie,
         Data.VarMap,
         Parser,
         Parser.Lexer,

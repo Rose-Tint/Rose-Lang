@@ -2,16 +2,16 @@ module Analysis (
     runAnalysis,
 ) where
 
-import Control.Monad (forM_)
+-- import Control.Monad (forM_)
 
 -- import Analysis.Analyzer hiding (gets)
-import Analysis.Error
+-- import Analysis.Error
 -- import Analysis.Validator
 import AST.Expr
 import Builder
-import Cmd (CmdLine)
+-- import Cmd (CmdLine)
 import Data.Table
-import Text.Pretty
+-- import Text.Pretty
 
 
 -- analyze :: CmdLine -> [Expr] -> ([Expr], Table, [ErrInfo])

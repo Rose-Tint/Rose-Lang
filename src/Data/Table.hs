@@ -61,13 +61,13 @@ data Trait = Trait {
     traitPos :: SrcPos
     }
 
-type DataMap = Trie Data
+type DataMap = VarMap Data
 
-type TraitMap = Trie Trait
+type TraitMap = VarMap Trait
 
-type GlobalMap = Trie Func
+type GlobalMap = VarMap Func
 
-type ScopedMaps = [Trie Func]
+type ScopedMaps = [VarMap Func]
 
 data Table = Table {
     tblTypes :: DataMap,
@@ -79,7 +79,7 @@ data Table = Table {
 
 emptyTable :: Table
 emptyTable = Table
-    (M.fromList [
+    (fromList [
         (prim "Bool", primData
             boolType
             [prim "True", prim "False"]
@@ -90,13 +90,25 @@ emptyTable = Table
         (prim "String", primData stringType []),
         (prim "Char", primData charType []),
         (prim "[]", primData
-            (arrayOf (TypeVar (prim "a")))
+            (arrayOf (TypeVar (prim "a0")))
             []),
         (prim "(,)", primData
-            (arrayOf (TypeVar (prim "a")))
+            (arrayOf (TypeVar (prim "a0")))
             [])
-    ]) empty empty []
+    ])
+    empty
+    (fromList [
+        (prim "True", primFunc boolType),
+        (prim "False", primFunc boolType),
+        (prim "+", primFunc (intType :-> intType :-> intType)),
+        (prim ".", primFunc (
+            (tv "a1" :-> tv "a2") :-> (tv "a0" :-> tv "a1") :-> tv "a2")),
+        (prim "++", primFunc (stringType :-> stringType :-> stringType))
+    ])
+    []
     where
+        tv = TypeVar . prim
+        primFunc t = Func t Export Pure Imut UnknownPos
         primData t cs = Data t Export cs UnknownPos
 
 insertType :: Var -> Data -> Table -> Table
@@ -163,7 +175,7 @@ getSimilarVars (Var name _) tbl =
         concatMap filtKeys (tblScopeds tbl)
     ]
     where
-        filtKeys :: HasSrcPos a => Trie a -> [Var]
+        filtKeys :: HasSrcPos a => VarMap a -> [Var]
         filtKeys = mapMaybe (\(key, scp) ->
             if areSimilar name key then
                 Just (Var key (getPos scp))

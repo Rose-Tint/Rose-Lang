@@ -21,6 +21,9 @@ import Typing.Solver
 import Typing.Type
 import Typing.TypeDecl
 
+import Text.Pretty
+import Debug.Trace
+
 
 makeInference :: Inferable a => Table -> a
     -> Either Error Scheme
@@ -55,12 +58,15 @@ instance Inferable Literal where
     infer StringLit{} = return stringType
 
 instance Inferable Value where
-    infer (Literal lit) = infer lit
+    infer (Literal lit) = let !_ = traceId ("LITERAL"+|lit) in infer lit
     infer (VarVal name) = searchScopeds name
     infer (Application v1 v2) = do
         t1 <- infer v1
         t2 <- infer v2
         tv <- fresh
+        let !_ = traceId ("v1, v2     : "+|", "`seps`[v1,v2])
+        let !_ = traceId ("t1, t2, tv : "+|", "`seps`[t1,t2,tv])
+        let !_ = traceId ("~~~~~~~~~~~~")
         constrain t1 (t2 :-> tv)
         return tv
     infer (CtorCall name) = searchGlobals name

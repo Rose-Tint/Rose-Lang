@@ -12,9 +12,6 @@ import Typing.Type
 import Typing.Scheme
 import Typing.Substitution
 
-import Text.Pretty
-import Debug.Trace
-
 
 -- Constraint: `(t1, t2)` states that an occurrence
 -- of `t1` returns a type of `t2` (i think???)
@@ -27,14 +24,11 @@ type Solver a = Except Error a
 
 runSolver :: Type -> Cons -> Either Error Scheme
 runSolver typ cons =
-    case runExcept (solver (nullSubst, cons)) of
+    case runExcept (solver (nullSubst, reverse cons)) of
         Left err -> Left err
         Right sub ->
             let typ' = apply sub typ
-                vars = S.toList (ftv typ')
-                !_ = traceShowId (fmap (
-                    \(a,b)->"("+|a|+","+|b|+"),") cons)
-                !_ = traceShowId (pretty <$> vars)
+                vars = S.toList (ftv typ' <> ftv sub)
             in Right (Forall vars typ')
 
 -- |Unifies two types according to the following rules.
@@ -53,9 +47,10 @@ unify t1@(Type nm1 ts1) t2@(Type nm2 ts2)
     | nm1 /= nm2 = throwE (TypeMismatch t1 t2)
     | length ts1 == length ts2 = unifyMany ts1 ts2
 unify (l1 :-> l2) (r1 :-> r2) = do
-    s1 <- unify l1 r1
-    s2 <- unify (apply s1 l2) (apply s1 r2)
-    return $! s2 <|> s1
+    unifyMany [l1, l2] [r1, r2]
+    -- s1 <- unify l1 r1
+    -- s2 <- unify (apply s1 l2) (apply s1 r2)
+    -- return $! s2 <|> s1
 unify (ArrayType t1) (ArrayType t2) = unify t1 t2
 unify (TupleType ts1) (TupleType ts2) = unifyMany ts1 ts2
 unify t1 t2 = throwE (TypeMismatch t1 t2)
@@ -65,7 +60,7 @@ unifyMany [] [] = return nullSubst
 unifyMany (t1:ts1) (t2:ts2) = do
     s1 <- unify t1 t2
     s2 <- unifyMany (apply s1 ts1) (apply s1 ts2)
-    return $! s1 <|> s2
+    return $! s2 <|> s1
 unifyMany _ _ = throwE $ OtherError
     "Unification Error"
 
