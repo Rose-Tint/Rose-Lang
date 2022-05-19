@@ -1,6 +1,7 @@
 module Typing.Type  (
     Type(..),
     typeToList,
+    foldTypes,
     -- renameTypeVars,
 ) where
 
@@ -26,6 +27,10 @@ data Type
 typeToList :: Type -> [Type]
 typeToList (t1 :-> t2) = (t1:typeToList t2)
 typeToList t = [t]
+
+foldTypes :: [Type] -> Type -> Type
+foldTypes [] typ = typ
+foldTypes (t1:ts) t2 = t1 :-> foldTypes ts t2
 
 
 instance HasSrcPos Type where
