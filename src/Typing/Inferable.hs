@@ -8,7 +8,7 @@ module Typing.Inferable (
 
 import Prelude hiding (lookup)
 
-import Control.Monad (foldM)
+import Control.Monad (foldM, forM)
 import qualified Data.Array as A (elems)
 
 import AST
@@ -21,6 +21,8 @@ import Typing.Solver
 import Typing.Type
 import Typing.TypeDecl
 
+
+-- inferTopLevel :: [Expr] -> 
 
 makeInference :: Inferable a => Table -> a
     -> Either Error Scheme
@@ -198,10 +200,53 @@ inferCases vT cases =
         mergeStmts prev mbT
     ) Nothing cases
 
+inferTop :: Expr -> Infer ()
+inferTop (FuncDecl pur vis name typ) = do
+    pushGlobal name vis typ
+    return ()
+inferTop (FuncDef name params body) = do
+    typ <- searchGlobals name
+    (pT, bT) <- inNewScope $ do
+        tv <- searchGlobals name
+        psT <- foldM (\psT p -> do
+            typ <- 
+            pushScoped 
+            pushParam p tv'
+            -- TODO: should this be switched??
+            constrain tv' psT
+            return (tv' :-> psT)
+            ) tv params
+        bT <- infer body
+        return (psT, bT)
+    pushUndefGlobal name (pT :-> bT)
+    return ()
+inferTop (DataDef vis name tps ctors) = do
+    tvs <- mapM (const fresh) tps
+    let typ = Type name tvs
+    ctors' <- forM ctors $ \case
+        Record name' vis fields -> do
+            types <- forM fields $ \(Field name'' typ') -> do
+                pushGlobal name'' vis typ'
+                return $! typ'
+            let typ' = foldTypes types typ
+            pushGlobal name' vis typ'
+            return name'
+        SumType name' vis types -> do
+            let typ' = foldTypes types typ
+            pushGlobal name' vis typ'
+            return name'
+    pushData name vis typ ctors'
+    return ()
+inferTop (TraitDecl _vis _ctx name _tps fns) = do
+    mapM_ inferTop fns
+inferTop (TraitImpl _ctx _name _types fns) = do
+    mapM_ inferTop fns
+inferTop (TypeAlias _vis _alias _typ) = do
+    return ()
+
 -- if both bodies guarantee a return, then this can
 -- as well. otherwise it cannot be guaranteed.
-mergeStmts :: Maybe Type -> Maybe Type
-    -> Infer (Maybe Type)
+mergeStmts :: Maybe Type -> Maybe Type -> Infer (Maybe Type)
 mergeStmts Nothing Nothing = return Nothing
 mergeStmts (Just typ) Nothing = return (Just typ)
 mergeStmts Nothing (Just typ) = return (Just typ)
@@ -218,3 +263,7 @@ applyPtrns v1 (v2:vs) = do
     let typ = t2 :-> tv
     constrain t1 typ
     return typ
+
+applyParams :: [Pattern] -> Type -> Infer Type
+applyParams [] typ = typ
+applyParams (p:ps) (t :-> ts) = do

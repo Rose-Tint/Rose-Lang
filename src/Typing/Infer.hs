@@ -1,6 +1,8 @@
 {-# LANGUAGE Rank2Types #-}
 
 module Typing.Infer (
+    AnalyzerT,
+    Analyzer,
     Infer,
     runInfer,
     fresh,
@@ -14,15 +16,16 @@ module Typing.Infer (
 
     pushUndefCtor,
     pushUndefGlobal,
+    pushGlobal,
     pushParam,
     pushScoped,
+    pushData,
 
     gets,
-    modify,
-    modifyEnv,
     updatePos,
     allowJumpsIn,
     jumpAllowed,
+    setPurityIn,
     purity,
 
     findScoped,
@@ -52,7 +55,7 @@ import Typing.Substitution
 import Typing.Type
 
 
-data InfState = InfState {
+data AnState = AnState {
     jumpAllowed :: Bool,
     purity :: Purity,
     table :: Table,
@@ -62,14 +65,16 @@ data InfState = InfState {
 
 type Cons = [(Type, Type)]
 
-type Infer =
-    StateT InfState
+type AnalyzerT = StateT AnState
+type Analyzer = State AnState
+
+type Infer = AnalyzerT
     (WriterT Cons
     (Except Error))
 
 
-mkState :: Table -> InfState
-mkState tbl = InfState {
+mkState :: Table -> AnState
+mkState tbl = AnState {
     jumpAllowed = False,
     purity = Pure,
     table = tbl,
@@ -93,7 +98,7 @@ throwUndef name = do
     similars <- gets (getSimilarVars name . table)
     throw (Undefined name similars)
 
-updatePos :: HasSrcPos a => a -> Infer ()
+updatePos :: Monad m => HasSrcPos a => a -> AnalyzerT m ()
 updatePos p = case getPos p of
     UnknownPos -> return ()
     pos -> modify $ \s -> s { position = pos }
@@ -101,7 +106,7 @@ updatePos p = case getPos p of
 freshLetters :: [String]
 freshLetters = [1..] >>= flip replicateM ['a'..'z']
 
-fresh :: Infer Type
+fresh :: Monad m => AnalyzerT m Type
 fresh = do
     i <- gets freshIdx
     pos <- gets position
@@ -109,17 +114,25 @@ fresh = do
     modify $ \s -> s { freshIdx = i + 1 }
     return (TypeVar var)
 
-modifyEnv :: (Table -> Table) -> Infer ()
+modifyEnv :: Monad m => (Table -> Table) -> AnalyzerT m ()
 modifyEnv f = modify $ \s -> s { table = f (table s) }
 
-inNewScope :: Infer a -> Infer a
+inNewScope :: Monad m => AnalyzerT m a -> AnalyzerT m a
 inNewScope m = do
     modifyEnv addScope
     x <- m
     modifyEnv remScope
     return $! x
 
-allowJumpsIn :: Infer a -> Infer a
+setPurityIn :: Monad m => Purity -> AnalyzerT m a -> AnalyzerT m a
+setPurityIn pur m = do
+    prev <- gets purity
+    modify (\s -> s { purity = pur })
+    x <- m
+    modify (\s -> s { purity = prev })
+    return $! x
+
+allowJumpsIn :: Monad m => AnalyzerT m a -> AnalyzerT m a
 allowJumpsIn m = do
     prev <- gets jumpAllowed
     modify $ \s -> s { jumpAllowed = True }
@@ -127,34 +140,48 @@ allowJumpsIn m = do
     modify $ \s -> s { jumpAllowed = prev }
     return $! x
 
-pushUndefCtor :: Var -> Type -> Infer Func
+pushUndefCtor :: Monad m => Var -> Type -> AnalyzerT m Func
 pushUndefCtor name typ = do
     let dta = mkCtor name Export typ
     modifyEnv (insertGlobal name dta)
     return dta
 
-pushUndefGlobal :: Var -> Type -> Infer Func
+pushUndefGlobal :: Monad m => Var -> Type -> AnalyzerT m Func
 pushUndefGlobal name typ = do
     pur <- gets purity
     let dta = Func typ Export pur Imut (getPos name)
     modifyEnv (insertGlobal name dta)
     return dta
 
-pushScoped :: Mutab -> Var -> Type -> Infer Func
+pushGlobal :: Monad m => Var -> Visib -> Type -> AnalyzerT m Func
+pushGlobal name vis typ = do
+    pur <- gets purity
+    let dta = Func typ vis pur Imut (getPos name)
+    modifyEnv (insertGlobal name dta)
+    return dta
+
+pushScoped :: Monad m => Mutab -> Var -> Type -> AnalyzerT m Func
 pushScoped mut name typ = do
     pur <- gets purity
     let dta = Func typ Intern pur mut (getPos name)
     modifyEnv (insertScoped name dta)
     return dta
 
-pushParam :: Var -> Type -> Infer Func
-pushParam name typ = do
+pushParam :: Monad m => Var -> AnalyzerT m Func
+pushParam name = do
     pur <- gets purity
+    typ <- fresh
     let dta = Func typ Intern pur Imut (getPos name)
     modifyEnv (insertScoped name dta)
     return dta
 
-searchGlobals :: Var -> Infer Type
+pushData :: Monad m => Var -> Visib -> Type -> [Var] -> AnalyzerT m Data
+pushData name vis typ ctors = do
+    let dta = Data typ vis ctors (getPos name)
+    modifyEnv (insertType name dta)
+    return dta
+
+searchGlobals :: Monad m => Var -> AnalyzerT m Type
 searchGlobals name = do
     mData <- gets (lookupGlobal name . table)
     case mData of
@@ -164,7 +191,7 @@ searchGlobals name = do
             return tv
         Just dta -> return $! funcType dta
 
-searchScopeds :: Var -> Infer Type
+searchScopeds :: Monad m => Var -> AnalyzerT m Type
 searchScopeds name = do
     mData <- gets (lookupScoped name . table)
     case mData of
@@ -181,13 +208,13 @@ findScoped name = do
         Nothing -> throwUndef name
         Just dta -> return $! funcType dta
 
-instantiate :: Scheme -> Infer Type
+instantiate :: Monad m => Scheme -> AnalyzerT m Type
 instantiate (Forall vars typ) = do
     vars' <- mapM (const fresh) vars
     let sub = M.fromList (zip vars vars')
     return $! apply sub typ
 
-generalize :: Type -> Infer Scheme
+generalize :: Monad m => Type -> AnalyzerT m Scheme
 generalize typ = do
     env <- gets table
     let vars = S.toList (ftv typ `S.difference` ftv env)
