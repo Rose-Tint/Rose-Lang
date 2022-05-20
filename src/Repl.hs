@@ -57,10 +57,9 @@ promptMulti = do
         return $! str ++ ('\n':rest)
 
 readCmd :: String -> Repl Cmd
-readCmd ('t':rest) =
-    case runAlex rest replP of
-        Left err -> throwE err
-        Right val -> return (TypeOf val)
+readCmd ('t':rest) = case runAlex rest replP of
+    Left err -> throwE err
+    Right val -> return (TypeOf val)
 readCmd ('l':rest) = return (Load (words rest))
 readCmd ('m':rest) = return (Load (modToPath <$> words rest))
 readCmd ('q':_) = return Quit
@@ -76,9 +75,7 @@ eval (':':rest) = readCmd rest >>= \case
         print' "Thanks for playing!"
         lift exitSuccess
     TypeOf val -> case makeInference emptyTable (infer val) of
-        Left err ->
-            let src = lines (tail rest)
-            in throwE ("<stdin>"+|(src,err))
+        Left err -> throwE ("<stdin>"+|(lines (tail rest),err))
         Right scheme -> print' scheme
     Help -> print' "\
 \Usage: [COMMAND] [EXPRESSION]\n\
