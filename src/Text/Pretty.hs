@@ -156,17 +156,17 @@ alignR n pc str
 
 uncolor :: String -> String
 uncolor [] = []
-uncolor ('\027':'[':'0':'m':str) = uncolor str
-uncolor ('\027':'[':'3':_:'m':str) = uncolor str
+uncolor (_:'[':'0':'m':str) = uncolor str
+uncolor (_:'[':'3':_:'m':str) = uncolor str
 uncolor (c:cs) = (c:uncolor cs)
 
 -- |Does some formatting, such as repeating characters
 processString :: String -> String
 processString [] = []
 processString (ch:chs) = case ch of
-    '\\' -> case chs of
-        [] -> []
-        (ch':chs') -> (ch':processString chs')
+    -- '\\' -> case chs of
+    --     [] -> []
+    --     (ch':chs') -> (ch':processString chs')
     '#' -> case span isDigit chs of
         (numStr, (ch':chs')) ->
             let count = readInt 10 numStr
@@ -189,15 +189,15 @@ processString (ch:chs) = case ch of
 
 
 instance Pretty Color where
-    pretty Black  = "\027[30m"
-    pretty Red    = "\027[31m"
-    pretty Green  = "\027[32m"
-    pretty Yellow = "\027[33m"
-    pretty Blue   = "\027[34m"
-    pretty Purple = "\027[35m"
-    pretty Cyan   = "\027[36m"
-    pretty White  = "\027[37m"
-    pretty Reset  = "\027[0m"
+    pretty Black  = "\ESC[30m"
+    pretty Red    = "\ESC[31m"
+    pretty Green  = "\ESC[32m"
+    pretty Yellow = "\ESC[33m"
+    pretty Blue   = "\ESC[34m"
+    pretty Purple = "\ESC[35m"
+    pretty Cyan   = "\ESC[36m"
+    pretty White  = "\ESC[37m"
+    pretty Reset  = "\ESC[0m"
 
 instance PrintfArg Color where
     formatArg = formatString . pretty
