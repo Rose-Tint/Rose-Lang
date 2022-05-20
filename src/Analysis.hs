@@ -12,9 +12,6 @@ import Text.Pretty
 import Typing.Inferable
 
 
--- analyze :: CmdLine -> [Expr] -> ([Expr], Table, [ErrInfo])
--- analyze cmd = runAnalyzer cmd . mapM validate
-
 runAnalysis :: [Expr] -> Builder Table
 runAnalysis exprs = do
     name <- gets moduleName

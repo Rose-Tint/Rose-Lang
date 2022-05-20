@@ -35,7 +35,7 @@ bReadFile path = do
 
 createTraceDir :: Builder ()
 createTraceDir = cmdTrace ??> do
-    dir <- asks baseBuildDir
+    dir <- gets currBuildDir
     io $ createDirectoryIfMissing True dir
 
 message, status, debug
@@ -57,7 +57,7 @@ fatal str = do
 
 trace :: Pretty a => FilePath -> a -> Builder ()
 trace path a = do
-    dir <- asks baseBuildDir
+    dir <- gets currBuildDir
     cmdTrace ??> io (writeFile
         (dir ++ path)
         (uncolor $! processString (detailed a)))

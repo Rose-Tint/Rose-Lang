@@ -50,11 +50,7 @@ unify typ (TypeVar nm) = bind nm typ
 unify t1@(Type nm1 ts1) t2@(Type nm2 ts2)
     | nm1 /= nm2 = throwE (TypeMismatch t1 t2)
     | length ts1 == length ts2 = unifyMany ts1 ts2
-unify (l1 :-> l2) (r1 :-> r2) = do
-    unifyMany [l1, l2] [r1, r2]
-    -- s1 <- unify l1 r1
-    -- s2 <- unify (apply s1 l2) (apply s1 r2)
-    -- return $! s2 <|> s1
+unify (l1 :-> l2) (r1 :-> r2) = unifyMany [l1, l2] [r1, r2]
 unify (ArrayType t1) (ArrayType t2) = unify t1 t2
 unify (TupleType ts1) (TupleType ts2) = unifyMany ts1 ts2
 unify t1 t2 = throwE (TypeMismatch t1 t2)

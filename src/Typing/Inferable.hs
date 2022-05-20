@@ -22,9 +22,6 @@ import Typing.Solver
 import Typing.Type
 import Typing.TypeDecl
 
--- import Text.Pretty
--- import Debug.Trace
-
 
 inferTopLevel :: [Expr] -> Either ErrInfo Table
 inferTopLevel [] = Right emptyTable
@@ -137,7 +134,6 @@ instance Inferable Pattern where
     infer (CtorPtrn name args) = do
         updatePos name
         t1 <- searchGlobals name
-        -- t2 <- applyPtrns arg args
         t2 <- applyParams args t1
         -- tv <- fresh
         -- constrain t1 (t2 :-> tv)

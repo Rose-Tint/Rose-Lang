@@ -5,16 +5,10 @@
 module Data.VarMap (
     module M',
     VarMap,
-    -- Construction
     singleton, fromList,
-    -- Insertion
     insert,
-    -- Query
     lookup, findWithDefault,
-    -- Deletion/Updating
     delete, adjust,
-    -- Combination
-    -- Other
     isMemberOf,
 ) where
 
@@ -58,4 +52,3 @@ adjust f = M.adjust f . varName
 
 isMemberOf :: Var -> VarMap a -> Bool
 isMemberOf = M.member . varName
--- isMemberOf = M.isMemberOf . varName

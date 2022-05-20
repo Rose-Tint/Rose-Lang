@@ -44,12 +44,8 @@ instance Pretty Type where
     pretty (Type name []) = pretty name
     pretty (Type name types) = name|+" "+|" "`seps`types
     pretty (TypeVar name) = pretty name
-    -- pretty (t1@(_ :-> _) :-> t2) =
-        -- "("+|t1|+")"+|" -> "`seps`typeToList typ
     pretty (t1@(_ :-> _) :-> t2) = "("+|t1|+") -> "+|t2
     pretty (t1 :-> t2) = t1|+" -> "+|t2
-    -- pretty typ@(_ :-> _) = seps " -> " typeToList typ
-    -- pretty (t1 :-> t2) = "("+|t1|+" -> "+|t2|+")"
     pretty (TupleType types) = "("+|", "`seps`types|+")"
     pretty (ArrayType typ) = "["+|typ|+"]"
 
