@@ -7,10 +7,13 @@ import qualified Data.Set as S
 
 import Analysis.Error
 import Common.Var
-import Data.VarMap (singleton)
+import qualified Data.VarMap as M
 import Typing.Type
 import Typing.Scheme
 import Typing.Substitution
+
+-- import Debug.Trace
+-- import Text.Pretty
 
 
 -- Constraint: `(t1, t2)` states that an occurrence
@@ -24,7 +27,7 @@ type Solver a = Except Error a
 
 runSolver :: Type -> Cons -> Either Error Scheme
 runSolver typ cons =
-    case runExcept (solver (nullSubst, reverse cons)) of
+    case runExcept (solver (nullSubst, cons)) of
         Left err -> Left err
         Right sub ->
             let typ' = apply sub typ
@@ -70,7 +73,7 @@ bind :: Var -> Type -> Solver Subst
 bind nm typ
     | typ == TypeVar nm = return nullSubst
     | nm ~> typ = throwE (InfiniteType nm typ)
-    | otherwise = return $! singleton nm typ
+    | otherwise = return $! M.singleton nm typ
 
 -- | Composes constraints and applies their solution,
 -- eventually converging on the 'most general rule',
@@ -80,5 +83,9 @@ solver :: Unifier -> Solver Subst
 solver (s1, cs1) = case cs1 of
     [] -> return s1
     ((t1, t2):cs) -> do
+        -- let !_ = traceId ("....... t1: "+|t1)
+        -- let !_ = traceId ("....... t2: "+|t2)
         s2 <- unify t1 t2
+        -- let !_ = traceId ("....... s2: "+|concatMap
+        --         (\(k, v) -> "\n"+|k|+": "+|v) (M.assocs (s2 <|> s1)))
         solver (s2 <|> s1, apply s2 cs)
