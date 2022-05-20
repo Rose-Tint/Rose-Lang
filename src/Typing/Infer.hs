@@ -82,6 +82,9 @@ mkState tbl = AnState {
     freshIdx = 0
     }
 
+-- runInfer' :: Monad m => Infer a -> AnalyzerT m a
+-- runInfer' t
+
 runInfer :: Table -> Infer a
     -> Either Error (a, Cons, Table)
 runInfer tbl inf = case runExcept wsResult of

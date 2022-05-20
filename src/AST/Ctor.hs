@@ -11,19 +11,29 @@ import Typing.Type
 import Typing.TypeDecl
 
 
-data Field = Field !Var Type
+data Field = Field {
+    fieldName :: Var,
+    fieldType :: Type
+    }
 
 data Ctor
-    = Record !Var Visib [Field]
-    | SumType !Var Visib [Type]
+    = Record {
+        ctorName :: Var,
+        ctorVisib :: Visib,
+        recordFields :: [Field]
+    }
+    | SumType {
+        ctorName :: Var,
+        ctorVisib :: Visib,
+        sumTypes :: [Type]
+    }
 
 
 instance HasSrcPos Field where
-    getPos (Field name _) = getPos name
+    getPos = getPos . fieldName
 
 instance HasSrcPos Ctor where
-    getPos (Record name _ _) = getPos name
-    getPos (SumType name _ _) = getPos name
+    getPos = getPos . ctorName
 
 instance Pretty Field where
     pretty (Field name typ) =

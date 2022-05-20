@@ -3,7 +3,7 @@
 module Typing.Inferable (
     makeInference,
     infer,
-    inferStmt,
+    inferTop,
 ) where
 
 import Prelude hiding (lookup)
@@ -13,6 +13,7 @@ import qualified Data.Array as A (elems)
 
 import AST
 import Analysis.Error
+import Common.Specifiers
 import Data.Table
 import Typing.Infer
 import Typing.Primitives
@@ -69,23 +70,18 @@ instance Inferable Value where
         let !_ = traceId ("v1, v2     : "+|", "`seps`[v1,v2])
         let !_ = traceId ("t1, t2, tv : "+|", "`seps`[t1,t2,tv])
         let !_ = traceId ("~~~~~~~~~~~~")
-        constrain t1 (t2 :-> tv)
+        constrain (t2 :-> tv) t1
         return tv
     infer (CtorCall name) = searchGlobals name
-    infer (Lambda ps body) = do
-        (psT, bT) <- inNewScope $ do
-            tv <- fresh
-            psT <- foldM (\psT p -> do
-                tv' <- fresh
-                pushParam p tv'
-                -- TODO: should this be switched??
-                constrain tv' psT
-                return (tv' :-> psT)
-                ) tv ps
-            bT <- infer body
-            return (psT, bT)
-        constrain psT bT
-        return (psT :-> bT)
+    infer (Lambda ps body) = inNewScope $ do
+        pTs <- mapM (const fresh) ps
+        tv <- fresh
+        let typ = foldTypes pTs tv
+        _aftParsT <- applyParams (Param <$> ps) typ
+        bT <- infer body
+        constrain tv bT
+        -- return (aftParsT :-> bT)
+        return typ
     infer (Tuple arr) =
         tupleOf <$> mapM infer (A.elems arr)
     infer (Array arr) = do
@@ -113,21 +109,20 @@ instance Inferable Value where
             return bT
             ) tv cases
 
+-- TODO: Consider un-instantiating??
 instance Inferable Pattern where
-    infer (Param name) = do
-        tv <- fresh
-        pushParam name tv
-        return tv
+    infer (Param name) =
+        funcType <$> pushParam name
     infer Hole{} = fresh
-    infer (CtorPtrn name []) = searchGlobals name
-    infer (CtorPtrn name (arg:args)) = do
+    infer (CtorPtrn name args) = do
         t1 <- searchGlobals name
-        t2 <- applyPtrns arg args
-        tv <- fresh
-        constrain t1 (t2 :-> tv)
-        return (t2 :-> t1)
-    infer (TuplePtrn args) =
-        tupleOf <$> mapM infer args
+        -- t2 <- applyPtrns arg args
+        t2 <- applyParams args t1
+        -- tv <- fresh
+        -- constrain t1 (t2 :-> tv)
+        -- return (t2 :-> t1)
+        return t2
+    infer (TuplePtrn args) = tupleOf <$> mapM infer args
     infer (LitPtrn lit) = infer lit
     infer (OrPtrn p1 p2) = do
         t1 <- infer p1
@@ -207,47 +202,48 @@ inferCases vT cases =
     ) Nothing cases
 
 inferTop :: Expr -> Infer ()
-inferTop (FuncDecl pur vis name typ) = do
+inferTop (FuncDecl _pur vis name (TypeDecl _ typ)) = do
     pushGlobal name vis typ
     return ()
-inferTop (FuncDef name params body) = do
-    typ <- searchGlobals name
-    (pT, bT) <- inNewScope $ do
-        tv <- searchGlobals name
-        psT <- foldM (\psT p -> do
-            typ <- 
-            pushScoped 
-            pushParam p tv'
-            -- TODO: should this be switched??
-            constrain tv' psT
-            return (tv' :-> psT)
-            ) tv params
-        bT <- infer body
-        return (psT, bT)
-    pushUndefGlobal name (pT :-> bT)
+inferTop (FuncDef name params body) = inNewScope $ do
+    sT <- searchGlobals name
+    aftParsT <- applyParams params sT
+    bT <- inferStmt body >>= \case
+        Nothing -> throw (MissingReturn name)
+        Just typ -> return typ
+    tv <- fresh
+    -- Does this get reversed?
+    constrain (aftParsT :-> tv) bT
+    constrain (aftParsT :-> bT) sT
+    pushUndefGlobal name (aftParsT :-> bT)
     return ()
 inferTop (DataDef vis name tps ctors) = do
     tvs <- mapM (const fresh) tps
     let typ = Type name tvs
-    ctors' <- forM ctors $ \case
-        Record name' vis fields -> do
-            types <- forM fields $ \(Field name'' typ') -> do
-                pushGlobal name'' vis typ'
-                return $! typ'
-            let typ' = foldTypes types typ
-            pushGlobal name' vis typ'
-            return name'
-        SumType name' vis types -> do
-            let typ' = foldTypes types typ
-            pushGlobal name' vis typ'
-            return name'
-    pushData name vis typ ctors'
+    let ctorNames = map ctorName ctors
+    mapM_ (inferCtor typ) ctors
+    pushData name vis typ ctorNames
     return ()
-inferTop (TraitDecl _vis _ctx name _tps fns) = do
+inferTop (TraitDecl _vis _ctx _name _tps fns) = do
     mapM_ inferTop fns
 inferTop (TraitImpl _ctx _name _types fns) = do
     mapM_ inferTop fns
 inferTop (TypeAlias _vis _alias _typ) = do
+    return ()
+
+-- |Creates globals for the `Ctor` and, if applicable,
+-- its fields.
+inferCtor :: Type -> Ctor -> Infer ()
+inferCtor pT (Record name vis fields) = do
+    types <- forM fields $ \(Field name' typ) -> do
+        pushGlobal name' vis typ
+        return $! typ
+    let typ = foldTypes types pT
+    pushGlobal name vis typ
+    return ()
+inferCtor pT (SumType name vis types) = do
+    let typ = foldTypes types pT
+    pushGlobal name vis typ
     return ()
 
 -- if both bodies guarantee a return, then this can
@@ -260,16 +256,49 @@ mergeStmts (Just t1) (Just t2) = do
     constrain t2 t1
     return (Just t2)
 
-applyPtrns :: Pattern -> [Pattern] -> Infer Type
-applyPtrns val [] = infer val
-applyPtrns v1 (v2:vs) = do
-    t1 <- infer v1
-    t2 <- applyPtrns v2 vs
-    tv <- fresh
-    let typ = t2 :-> tv
-    constrain t1 typ
-    return typ
+-- applyPtrns :: Pattern -> [Pattern] -> Infer Type
+-- applyPtrns val [] = infer val
+-- applyPtrns v1 (v2:vs) = do
+--     t1 <- infer v1
+--     t2 <- applyPtrns v2 vs
+--     tv <- fresh
+--     let typ = t2 :-> tv
+--     constrain t1 typ
+--     return typ
 
 applyParams :: [Pattern] -> Type -> Infer Type
-applyParams [] typ = typ
-applyParams (p:ps) (t :-> ts) = do
+applyParams [] typ = return typ
+applyParams (p:ps) (typ :-> types) = do
+    typ' <- go p
+    constrain typ' typ
+    applyParams ps types
+    where
+        -- this is different from just inferring b/c
+        -- it takes `typ` into account
+        go ptrn = case ptrn of
+            Param name -> do
+                pushScoped Imut name typ
+                return typ
+            Hole _ -> return typ
+            CtorPtrn name args -> do
+                dType <- searchGlobals name
+                typ' <- applyParams args dType
+                constrain typ' typ
+                return typ'
+            TuplePtrn ptrns' -> do
+                -- not quite right...
+                types' <- mapM (const fresh) ptrns'
+                let typ' = foldr1 (:->) types'
+                typ'' <- applyParams ptrns' typ'
+                constrain typ'' typ
+                return typ''
+            LitPtrn lit -> infer lit
+            OrPtrn p1 p2 -> do
+                t1 <- go p1
+                t2 <- go p2
+                constrain t1 t2
+                return t2
+applyParams pars typ = do
+    tvs <- mapM (const fresh) pars
+    tv <- fresh
+    throw (TypeMismatch (typ :-> foldTypes tvs tv) typ)
