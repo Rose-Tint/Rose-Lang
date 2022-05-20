@@ -61,8 +61,8 @@ common general
         Typing.Substitution,
         Typing.Type,
         Typing.TypeDecl,
-        Utils,
         Utils.FilePath,
+        Utils.List,
         Utils.String
 
     build-tool-depends:
