@@ -2,37 +2,36 @@ module Analysis (
     runAnalysis,
 ) where
 
--- import Control.Monad (forM_)
+import Control.Monad (forM_)
 
--- import Analysis.Analyzer hiding (gets)
--- import Analysis.Error
--- import Analysis.Validator
+import Analysis.Error
 import AST.Expr
 import Builder
--- import Cmd (CmdLine)
 import Data.Table
--- import Text.Pretty
+import Text.Pretty
+import Typing.Inferable
 
 
 -- analyze :: CmdLine -> [Expr] -> ([Expr], Table, [ErrInfo])
 -- analyze cmd = runAnalyzer cmd . mapM validate
 
-runAnalysis :: [Expr] -> Builder ([Expr], Table)
-runAnalysis _es = do
-    return ([], emptyTable)
-    -- name <- gets moduleName
-    -- cmd <- ask
-    -- debug ("Analyzing ["+|name|+"]\n")
-    -- let (es', tbl, errs) = analyze cmd es
-    -- trace "Symbol-Table.txt" tbl
-    -- printAnalysisErrors errs
-    -- return (es', tbl)
+runAnalysis :: [Expr] -> Builder Table
+runAnalysis exprs = do
+    name <- gets moduleName
+    debug ("Analyzing ["+|name|+"]\n")
+    tbl <- case inferTopLevel exprs of
+        Left err -> do
+            printAnalysisErrors [err]
+            return emptyTable
+        Right tbl -> return tbl
+    trace "Symbol-Table.txt" tbl
+    return tbl
 
--- printAnalysisErrors :: [ErrInfo] -> Builder ()
--- printAnalysisErrors [] = return ()
--- printAnalysisErrors es = do
---     lns <- gets (lines . sourceCode)
---     name <- gets moduleName
---     forM_ es $ \e -> case emError e of
---         Right FalseError -> return ()
---         _ -> message $ "\n"+|name|+|(lns, e)|+"\n"
+printAnalysisErrors :: [ErrInfo] -> Builder ()
+printAnalysisErrors [] = return ()
+printAnalysisErrors es = do
+    lns <- gets (lines . sourceCode)
+    name <- gets moduleName
+    forM_ es $ \e -> case emError e of
+        Right FalseError -> return ()
+        _ -> message $ "\n"+|name|+|(lns, e)|+"\n"

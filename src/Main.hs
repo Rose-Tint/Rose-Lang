@@ -34,7 +34,7 @@ buildFile path = hasBeenVisited path >>= \skip ->
         Module imports tree <- parseFile
         forM_ imports $ \(Import (Var modName _) _) ->
             buildFile (modToPath modName)
-        (_, _) <- runAnalysis tree
+        _ <- runAnalysis tree
         finalizeVisit
 
 main :: IO ()

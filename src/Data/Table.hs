@@ -20,6 +20,7 @@ module Data.Table (
     addScope,
     remScope,
     emptyTable,
+    unionTable,
 
     getSimilarVars,
 ) where
@@ -76,6 +77,11 @@ data Table = Table {
     tblScopeds :: ScopedMaps
     }
 
+
+unionTable :: Table -> Table -> Table
+unionTable (Table tys1 trs1 gls1 scs1) (Table tys2 trs2 gls2 scs2) =
+    Table (tys1 <> tys2) (trs1 <> trs2) (gls1 <> gls2)
+    (zipWith (<>) scs1 scs2)
 
 emptyTable :: Table
 emptyTable = Table

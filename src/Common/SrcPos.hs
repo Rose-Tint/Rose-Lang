@@ -11,8 +11,7 @@ module Common.SrcPos (
     posEndLine,
     posStartCol,
     posStartLine,
-    calcWidth,
-    getCodeAsRed,
+    normPos,
 ) where
 
 import Data.Int (Int8)
@@ -55,6 +54,15 @@ a <?> b = case getPos a of
     UnknownPos -> getPos b
     pos -> pos
 
+normPos :: HasSrcPos a => a -> SrcPos
+normPos a = case getPos a of
+    UnknownPos -> UnknownPos
+    SrcPos sl sc el ec -> SrcPos
+        (min sl el)
+        (min sc ec)
+        (max el sl)
+        (max ec sc)
+
 newSrcPos :: SrcPos
 newSrcPos = SrcPos 0 0 0 0
 
@@ -70,43 +78,21 @@ posEndLine = srcEndLine . getPos
 posEndCol :: HasSrcPos a => a -> Col
 posEndCol = srcEndCol . getPos
 
--- | returns the source code in its range
-getCodeAsRed :: HasSrcPos a => a -> [String] -> String
-getCodeAsRed _ [] = []
-getCodeAsRed a lines' = case getPos a of
-    UnknownPos -> error "unknown position"
-    SrcPos sl_ sc_ el_ ec_ ->
-        let sc = fromIntegral (min sc_ ec_)
-            ec = fromIntegral (max sc_ ec_)
-            sl = fromIntegral (max sl_ el_)
-            el = fromIntegral (max sl_ el_)
-            -- lns = take (1 + el - sl) (drop sl lines')
-            lns = drop (sl - 1) (take el lines')
-            -- lns = lines'
-        in case lns of
-            [] -> error "invalid position"
-            (ln:lns') ->
-                let (preSC, postSC) = splitAt sc ln
-                    (middle, postEC) = case lns' of
-                        [] -> splitAt ec postSC
-                        tailLns ->
-                            let (midLns, lastLn) = splitLast tailLns
-                                (preEC, postEC') = splitAt ec (head lastLn)
-                                middle' = concatMap ("$r"++) midLns
-                            in (postSC++middle'++preEC, postEC')
-                in preSC++"$r"+|middle|+"$R"++postEC
-    where
-        splitLast l = splitAt (length l - 1) l
-
--- | Calculates the differene between columns
-calcWidth :: HasSrcPos a => a -> Int
-calcWidth a = case getPos a of
-    UnknownPos -> error "invalid position"
-    SrcPos _ sc _ ec -> fromIntegral (ec - sc)
-
 
 instance HasSrcPos SrcPos where
     getPos = id
+
+instance HasSrcPos a => HasSrcPos (Maybe a) where
+    getPos Nothing = UnknownPos
+    getPos (Just a) = getPos a
+
+instance (HasSrcPos a, HasSrcPos b) => HasSrcPos (Either a b) where
+    getPos (Left a) = getPos a
+    getPos (Right b) = getPos b
+
+instance HasSrcPos a => HasSrcPos [a] where
+    getPos [] = UnknownPos
+    getPos (x:xs) = x <?> xs
 
 instance Pretty SrcPos where
     terse UnknownPos = "?"

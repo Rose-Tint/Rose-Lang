@@ -1,3 +1,5 @@
+{-# LANGUAGE LambdaCase #-}
+
 module Repl (repl) where
 
 import Control.Monad.Trans.Class (lift)
@@ -6,9 +8,7 @@ import Data.List (stripPrefix, isPrefixOf)
 import System.IO
 import System.Exit (exitSuccess)
 
-import Analysis.Error
 import AST.Value
-import Common.SrcPos
 import Data.Table (emptyTable)
 import Parser.Parser (runAlex, replP)
 import Typing.Inferable
@@ -70,20 +70,17 @@ readCmd str = throwE ("unknown command: '"+|str|+"'")
 
 eval :: String -> Repl ()
 eval [] = return ()
-eval (':':rest) = do
-    cmd <- readCmd rest
-    case cmd of
-        Load _ -> throwE "'load' not yet implemented"
-        Quit -> do
-            print' "Thanks for playing!"
-            lift exitSuccess
-        TypeOf val -> case makeInference emptyTable val of
-            Left err ->
-                let errInfo = ErrInfo (getPos err) (Right err)
-                    src = lines (tail rest)
-                in throwE ("<stdin>"+|(src,errInfo))
-            Right scheme -> print' scheme
-        Help -> print' "\
+eval (':':rest) = readCmd rest >>= \case
+    Load _ -> throwE "'load' not yet implemented"
+    Quit -> do
+        print' "Thanks for playing!"
+        lift exitSuccess
+    TypeOf val -> case makeInference emptyTable (infer val) of
+        Left err ->
+            let src = lines (tail rest)
+            in throwE ("<stdin>"+|(src,err))
+        Right scheme -> print' scheme
+    Help -> print' "\
 \Usage: [COMMAND] [EXPRESSION]\n\
 \Commands:\n\
 \    :q          Exits REPL\n\

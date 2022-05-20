@@ -4,6 +4,7 @@ module Typing.Infer (
     AnalyzerT,
     Analyzer,
     Infer,
+    runAnalyzer,
     runInfer,
     fresh,
 
@@ -70,7 +71,7 @@ type Analyzer = State AnState
 
 type Infer = AnalyzerT
     (WriterT Cons
-    (Except Error))
+    (Except ErrInfo))
 
 
 mkState :: Table -> AnState
@@ -82,11 +83,13 @@ mkState tbl = AnState {
     freshIdx = 0
     }
 
--- runInfer' :: Monad m => Infer a -> AnalyzerT m a
--- runInfer' t
+runAnalyzer :: Analyzer a -> (a, Table)
+runAnalyzer an =
+    let (a, s) = runState an (mkState emptyTable)
+    in (a, table s)
 
 runInfer :: Table -> Infer a
-    -> Either Error (a, Cons, Table)
+    -> Either ErrInfo (a, Cons, Table)
 runInfer tbl inf = case runExcept wsResult of
     Left err -> Left err
     Right ((a, s), cons) -> Right (a, cons, table s)
@@ -94,7 +97,10 @@ runInfer tbl inf = case runExcept wsResult of
         wsResult = runWriterT (runStateT inf (mkState tbl))
 
 throw :: Error -> Infer a
-throw = lift . lift . throwE
+throw err  = do
+    pos <- gets position
+    let ei = ErrInfo pos (Right err)
+    lift (lift (throwE ei))
 
 throwUndef :: Var -> Infer a
 throwUndef name = do

@@ -1,11 +1,12 @@
 module Typing.Solver (
-    runSolver
+    runSolver,
 ) where
 
 import Control.Monad.Trans.Except
 import qualified Data.Set as S
 
 import Analysis.Error
+import Common.SrcPos
 import Common.Var
 import qualified Data.VarMap as M
 import Typing.Type
@@ -25,10 +26,10 @@ type Unifier = (Subst, Cons)
 type Solver a = Except Error a
 
 
-runSolver :: Type -> Cons -> Either Error Scheme
+runSolver :: Type -> Cons -> Either ErrInfo Scheme
 runSolver typ cons =
     case runExcept (solver (nullSubst, cons)) of
-        Left err -> Left err
+        Left err -> Left (ErrInfo (err <?> typ) (Right err))
         Right sub ->
             let typ' = apply sub typ
                 vars = S.toList (ftv typ' <> ftv sub)
@@ -88,4 +89,5 @@ solver (s1, cs1) = case cs1 of
         s2 <- unify t1 t2
         -- let !_ = traceId ("....... s2: "+|concatMap
         --         (\(k, v) -> "\n"+|k|+": "+|v) (M.assocs (s2 <|> s1)))
-        solver (s2 <|> s1, apply s2 cs)
+        let s3 = s2 <|> s1
+        solver (s3, apply s3 cs)

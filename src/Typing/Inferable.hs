@@ -3,7 +3,7 @@
 module Typing.Inferable (
     makeInference,
     infer,
-    inferTop,
+    inferTopLevel,
 ) where
 
 import Prelude hiding (lookup)
@@ -26,11 +26,16 @@ import Typing.TypeDecl
 -- import Debug.Trace
 
 
--- inferTopLevel :: [Expr] -> 
+inferTopLevel :: [Expr] -> Either ErrInfo Table
+inferTopLevel [] = Right emptyTable
+inferTopLevel exprs = case runInfer emptyTable inf of
+    Left err -> Left err
+    Right ((), _cons, tbl) -> Right tbl
+    where
+        inf = mapM_ inferTop exprs
 
-makeInference :: Inferable a => Table -> a
-    -> Either Error Scheme
-makeInference env a = case runInfer env (infer a) of
+makeInference :: Table -> Infer Type -> Either ErrInfo Scheme
+makeInference tbl inf = case runInfer tbl inf of
     Left err -> Left err
     Right (typ, cons, _tbl) -> runSolver typ cons
 
@@ -54,11 +59,21 @@ instance Inferable Type where
     infer (ArrayType typ) = ArrayType <$> infer typ
 
 instance Inferable Literal where
-    infer IntLit{} = return intType
-    infer FloatLit{} = return floatType
-    infer DoubleLit{} = return doubleType
-    infer CharLit{} = return charType
-    infer StringLit{} = return stringType
+    infer (IntLit _ p) = do
+        updatePos p
+        return intType
+    infer (FloatLit _ p) = do
+        updatePos p
+        return floatType
+    infer (DoubleLit _ p) = do
+        updatePos p
+        return doubleType
+    infer (CharLit _ p) = do
+        updatePos p
+        return charType
+    infer (StringLit _ p) = do
+        updatePos p
+        return stringType
 
 instance Inferable Value where
     infer (Literal lit) = infer lit
@@ -79,13 +94,12 @@ instance Inferable Value where
         pTs <- mapM (const fresh) ps
         tv <- fresh
         let typ = foldTypes pTs tv
-        _aftParsT <- applyParams (Param <$> ps) typ
+        aftParsT <- applyParams (Param <$> ps) typ
         bT <- infer body
-        constrain tv bT
-        -- return (aftParsT :-> bT)
-        return typ
-    infer (Tuple arr) =
-        tupleOf <$> mapM infer (A.elems arr)
+        constrain tv typ
+        return (aftParsT :-> bT)
+    infer (Tuple arr) = tupleOf <$>
+        mapM infer (A.elems arr)
     infer (Array arr) = do
         tv <- fresh
         arrayOf <$> foldM (\t1 val -> do
@@ -134,7 +148,7 @@ instance Inferable Pattern where
     infer (OrPtrn p1 p2) = do
         t1 <- infer p1
         t2 <- infer p2
-        constrain t2 t1
+        constrain t1 t2
         return t2
 
 
@@ -219,12 +233,14 @@ inferTop (FuncDef name params body) = inNewScope $ do
         Nothing -> throw (MissingReturn name)
         Just typ -> return typ
     tv <- fresh
+    let typ = aftParsT :-> bT
     -- Does this get reversed?
     constrain (aftParsT :-> tv) bT
-    constrain (aftParsT :-> bT) sT
-    pushUndefGlobal name (aftParsT :-> bT)
+    constrain typ sT
+    pushUndefGlobal name typ
     return ()
 inferTop (DataDef vis name tps ctors) = do
+    updatePos name
     tvs <- mapM (const fresh) tps
     let typ = Type name tvs
     let ctorNames = map ctorName ctors
@@ -242,6 +258,7 @@ inferTop (TypeAlias _vis _alias _typ) = do
 -- its fields.
 inferCtor :: Type -> Ctor -> Infer ()
 inferCtor pT (Record name vis fields) = do
+    updatePos name
     types <- forM fields $ \(Field name' typ) -> do
         pushGlobal name' vis typ
         return $! typ
@@ -249,6 +266,7 @@ inferCtor pT (Record name vis fields) = do
     pushGlobal name vis typ
     return ()
 inferCtor pT (SumType name vis types) = do
+    updatePos name
     let typ = foldTypes types pT
     pushGlobal name vis typ
     return ()
@@ -284,10 +302,14 @@ applyParams (p:ps) (typ :-> types) = do
         -- it takes `typ` into account
         go ptrn = case ptrn of
             Param name -> do
+                updatePos name
                 pushScoped Imut name typ
                 return typ
-            Hole _ -> return typ
+            Hole pos -> do
+                updatePos pos
+                return typ
             CtorPtrn name args -> do
+                updatePos name
                 dType <- searchGlobals name
                 typ' <- applyParams args dType
                 constrain typ' typ
@@ -299,7 +321,11 @@ applyParams (p:ps) (typ :-> types) = do
                 typ'' <- applyParams ptrns' typ'
                 constrain typ'' typ
                 return typ''
-            LitPtrn lit -> infer lit
+            LitPtrn lit -> do
+                updatePos lit
+                typ' <- infer lit
+                constrain typ typ'
+                return typ'
             OrPtrn p1 p2 -> do
                 t1 <- go p1
                 t2 <- go p2
