@@ -72,6 +72,7 @@ posEndCol = srcEndCol . getPos
 
 -- | returns the source code in its range
 getCodeAsRed :: HasSrcPos a => a -> [String] -> String
+getCodeAsRed _ [] = []
 getCodeAsRed a lines' = case getPos a of
     UnknownPos -> error "unknown position"
     SrcPos sl_ sc_ el_ ec_ ->
@@ -79,7 +80,9 @@ getCodeAsRed a lines' = case getPos a of
             ec = fromIntegral (max sc_ ec_)
             sl = fromIntegral (max sl_ el_)
             el = fromIntegral (max sl_ el_)
-            lns = take (1 + el - sl) (drop sl lines')
+            -- lns = take (1 + el - sl) (drop sl lines')
+            lns = drop (sl - 1) (take el lines')
+            -- lns = lines'
         in case lns of
             [] -> error "invalid position"
             (ln:lns') ->

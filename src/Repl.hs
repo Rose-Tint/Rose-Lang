@@ -32,7 +32,7 @@ print' :: Pretty a => a -> Repl ()
 print' a = do
     -- prepends " => " to each line
     let str = prependLines "= | " (pretty a)
-    lift (putStr (processString str))
+    lift (putStr (uncolor (processString str)))
 
 prompt :: Repl String
 prompt = do
@@ -57,9 +57,10 @@ promptMulti = do
         return $! str ++ ('\n':rest)
 
 readCmd :: String -> Repl Cmd
-readCmd ('t':rest) = case runAlex rest replP of
-    Left err -> throwE err
-    Right val -> return (TypeOf val)
+readCmd ('t':rest) =
+    case runAlex rest replP of
+        Left err -> throwE err
+        Right val -> return (TypeOf val)
 readCmd ('l':rest) = return (Load (words rest))
 readCmd ('m':rest) = return (Load (modToPath <$> words rest))
 readCmd ('q':_) = return Quit
@@ -79,7 +80,7 @@ eval (':':rest) = do
         TypeOf val -> case makeInference emptyTable val of
             Left err ->
                 let errInfo = ErrInfo (getPos err) (Right err)
-                    src = lines (takeWhile (==' ') rest)
+                    src = lines (tail rest)
                 in throwE ("<stdin>"+|(src,errInfo))
             Right scheme -> print' scheme
         Help -> print' "\
@@ -98,9 +99,10 @@ evalInput = prompt >>= eval
 repl :: IO ()
 repl = do
     hSetEcho stderr False
+    hSetEcho stdout False
     eith <- runExceptT evalInput
     case eith of
-        Left err -> putStr $ processString $
+        Left err -> putStr $ uncolor $ processString $
             prependLines "! | " (pretty err)
         Right _ -> return ()
     repl

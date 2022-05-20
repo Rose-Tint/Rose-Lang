@@ -61,13 +61,13 @@ instance HasSrcPos Error where
 
 instance Pretty ([String], ErrInfo) where
     pretty (_, (ErrInfo pos@UnknownPos werr)) = case werr of
-        Left wrn -> "::"-|pos|-":$yWarning: $R"+|wrn|+"\n"
-        Right err -> "::"-|pos|-": $rError: $R"+|err|+"\n"
+        Left wrn -> "::"-|pos|-":$yWarning: $R\n    "+|wrn|+"\n"
+        Right err -> "::"-|pos|-": $rError: $R\n    "+|err|+"\n"
     pretty (lns, (ErrInfo pos_ werr)) = case werr of
-        Left wrn -> "::"-|pos|-":$yWarning: $R"+|wrn|+
+        Left wrn -> "::"-|pos|-":$yWarning: $R\n    "+|wrn|+
             fmtSrcLns stLn endLn (getCodeAsRed pos lns)|+
             "\n#8 $y#"+|col|+" $r#"+|width|+"^$R\n"
-        Right err -> "::"-|pos|-": $rError: $R"+|err|+
+        Right err -> "::"-|pos|-": $rError: $R\n    "+|err|+
             fmtSrcLns stLn endLn (getCodeAsRed pos lns)|+
             "\n#8 $y#"+|col|+" $r#"+|width|+"^$R\n"
         where
