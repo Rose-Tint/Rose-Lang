@@ -8,7 +8,7 @@ module Typing.Inferable (
 
 import Prelude hiding (lookup)
 
-import Control.Monad (foldM, forM)
+import Control.Monad (foldM, forM, unless)
 import qualified Data.Array as A (elems)
 
 import AST
@@ -22,8 +22,8 @@ import Typing.Solver
 import Typing.Type
 import Typing.TypeDecl
 
-import Text.Pretty
-import Debug.Trace
+-- import Text.Pretty
+-- import Debug.Trace
 
 
 -- inferTopLevel :: [Expr] -> 
@@ -61,19 +61,21 @@ instance Inferable Literal where
     infer StringLit{} = return stringType
 
 instance Inferable Value where
-    infer (Literal lit) = let !_ = traceId ("LITERAL"+|lit) in infer lit
-    infer (VarVal name) = searchScopeds name
+    infer (Literal lit) = infer lit
+    infer (VarVal name) = do
+        updatePos name
+        searchScopeds name
     infer (Application v1 v2) = do
         t1 <- infer v1
         t2 <- infer v2
         tv <- fresh
-        let !_ = traceId ("v1, v2     : "+|", "`seps`[v1,v2])
-        let !_ = traceId ("t1, t2, tv : "+|", "`seps`[t1,t2,tv])
-        let !_ = traceId ("~~~~~~~~~~~~")
-        constrain (t2 :-> tv) t1
+        constrain t1 (t2 :-> tv)
         return tv
-    infer (CtorCall name) = searchGlobals name
+    infer (CtorCall name) = do
+        updatePos name
+        searchGlobals name
     infer (Lambda ps body) = inNewScope $ do
+        unless (null ps) (updatePos (head ps))
         pTs <- mapM (const fresh) ps
         tv <- fresh
         let typ = foldTypes pTs tv
@@ -111,10 +113,15 @@ instance Inferable Value where
 
 -- TODO: Consider un-instantiating??
 instance Inferable Pattern where
-    infer (Param name) =
-        funcType <$> pushParam name
-    infer Hole{} = fresh
+    infer (Param name) = do
+        updatePos name
+        func <- pushParam name
+        return $! funcType func
+    infer (Hole p) = do
+        updatePos p
+        fresh
     infer (CtorPtrn name args) = do
+        updatePos name
         t1 <- searchGlobals name
         -- t2 <- applyPtrns arg args
         t2 <- applyParams args t1
