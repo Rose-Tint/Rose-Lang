@@ -124,9 +124,9 @@ type TokenAction = AlexInput -> Int -> Alex Token
 
 
 fromAlexPosn :: AlexPosn -> Int -> SrcPos
-fromAlexPosn (AlexPn _off ln col) len =
+fromAlexPosn (AlexPn off ln col) _len =
     let col' = fromIntegral col
-    in SrcPos ln col' ln (col' + fromIntegral len)
+    in SrcPos off ln col'
 
 mkVar :: (Var -> Token) -> TokenAction
 mkVar ctor (pos, _, _, str) len = return
@@ -194,12 +194,11 @@ lexError :: String -> Alex a
 lexError msg = do
     (pos_, _, _, input) <- alexGetInput
     let pos = fromAlexPosn pos_ 0
-        lno = posStartLine pos
+        lno = posLine pos
         line = "..." ++ takeWhile (/= '\n') input
     alexError $
-        "::"-|pos|-|Red|+": Error parsing a "+|msg|+":\n"
-        +|Purple|+|4.>lno|+" | "+|Reset|+|line|+"\n"
-        -- +|replicate (posCol + 8) ' '|+|Red|+"^"
+        "::"-|pos|-": $rError parsing a "+|msg|+
+        ":\n$p"+|4.>lno|+" | $R"+|line|+"\n"
 
 lexer :: (Token -> Alex a) -> Alex a
 lexer = (alexMonadScan >>=)

@@ -1,4 +1,5 @@
 TODO:
+    - WRITE TESTS
     - Change Rose file-extensions
         - from ".th"
         - to ".ro" or ".rose"
@@ -7,23 +8,20 @@ TODO:
         - decide syntactic difference
             - initial symbol, or something else?
     - Rename `Expr` to `Top`
-    - Rework the command line
     - change `NewVar`'s `TypeDecl` parameter to just `Type`
-    - Add `SpanPos` ctor for `SrcPos`
 
 IN-PROGRESS:
-    - WRITE TESTS
     - LLVM back-end
     - add Type inference
         - type-system already (mostly) implemented, just not used.
     - ideas to allow `Infer` (and `Solver`?) to update
       the symbol-table:
-        - use `State` while analyzing top-level expressions, or
+        - use `State` while analyzing top-level expressions
         - allow `Solver` to modify a type-env when solving
         - `Infer = WriterT Cons (StateT Int Analyzer)`
             - the problem is, Analyzer imports Infer.
             - i could make `Infer` a transformer to be
               able to use in monadically in Analyzer,
               but that doesnt give access to the table.
-        - Maybe just completely give up on Analyzer, but
-          it would violate "seperation of concerns"
+        - Maybe just completely give up on Analyzer
+            - violates "seperation of concerns"

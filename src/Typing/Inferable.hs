@@ -128,7 +128,7 @@ instance Inferable Value where
     -}
     infer (Array arr) = do
         tv <- fresh
-        arrayOf <$> foldM (τ1 val -> do
+        arrayOf <$> foldM (\ t1 val -> do
             t2 <- infer val
             constrain t1 t2
             return t2
@@ -301,7 +301,7 @@ inferTop (FuncDef name params body) = inNewScope $ do
     let typ = aftParsT :-> bT
     -- Does this get reversed?
     constrain (aftParsT :-> tv) bT
-    constrain typ sT
+    -- constrain typ sT
     pushUndefGlobal name typ
     return ()
 inferTop (DataDef vis name tps ctors) = do
