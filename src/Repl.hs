@@ -58,7 +58,7 @@ promptMulti = do
 
 readCmd :: String -> Repl Cmd
 readCmd ('t':rest) = case runAlex rest replP of
-    Left err -> throwE err
+    Left err -> throwE ("<stdin>"++err)
     Right val -> return (TypeOf val)
 readCmd ('l':rest) = return (Load (words rest))
 readCmd ('m':rest) = return (Load (modToPath <$> words rest))
