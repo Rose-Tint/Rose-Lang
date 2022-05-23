@@ -14,6 +14,7 @@ module Data.Table (
     lookupGlobal,
     lookupScoped,
     lookupScoped',
+    lookupNewestScope,
 
     mkCtor,
 
@@ -161,6 +162,11 @@ lookupScoped' name = foldl (\prev scp -> case prev of
     Nothing -> M.lookup name scp
     Just dta -> Just dta
     ) Nothing . tblScopeds
+
+lookupNewestScope :: Var -> Table -> Maybe Func
+lookupNewestScope name tbl = case tblScopeds tbl of
+    [] -> lookupGlobal name tbl
+    scps -> M.lookup name (last scps)
 
 addScope :: Table -> Table
 addScope tbl = tbl { tblScopeds = (empty:tblScopeds tbl) }

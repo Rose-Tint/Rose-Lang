@@ -101,8 +101,9 @@ instance Pretty Error where
             newLine = posLine new
             origLine = posLine orig
     pretty (BindError _var _t2) = "Type-Binding error"
-    pretty (InfiniteType tv typ) =
-        "Cannot create the infinite type `"+|tv|+" ~ "+|typ|+"`"
+    pretty (InfiniteType tv typ) = "Occurs Check"++
+        "\n    Cannot create the infinite type `"
+            +|tv|+" ~ "+|typ|+"`"
     pretty (MissingReturn name) =
         "Missing return statement in function body of `$y"
         +|name|+"$R`"

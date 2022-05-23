@@ -9,6 +9,10 @@ TODO:
             - initial symbol, or something else?
     - Rename `Expr` to `Top`
     - change `NewVar`'s `TypeDecl` parameter to just `Type`
+    - Problem with function application in parser
+        - Lambdas parse individually
+        - i.e. `a b => a` == `a (b => a)`
+        - i.e. `a => a + 1` == `(a => a) + 1`
 
 IN-PROGRESS:
     - LLVM back-end

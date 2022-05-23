@@ -90,7 +90,8 @@ import Typing.TypeDecl
 -- https://stackoverflow.com/questions/27630269
 %nonassoc APP
 
-%right if then else "=>" "(" "[" ";"
+%right if then else "(" "[" ";"
+%left "=>"
 %nonassoc return
 
 

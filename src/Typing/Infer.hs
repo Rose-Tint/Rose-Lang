@@ -14,12 +14,12 @@ module Typing.Infer (
 
     searchGlobals,
     searchScopeds,
+    findScoped,
 
-    pushUndefCtor,
     pushUndefGlobal,
     pushGlobal,
-    pushParam,
     pushScoped,
+    pushNewScoped,
     pushData,
 
     gets,
@@ -28,9 +28,8 @@ module Typing.Infer (
     jumpAllowed,
     setPurityIn,
     purity,
-
-    findScoped,
     inNewScope,
+
     instantiate,
     generalize,
     constrain,
@@ -149,10 +148,20 @@ allowJumpsIn m = do
     modify $ \s -> s { jumpAllowed = prev }
     return $! x
 
-pushUndefCtor :: Monad m => Var -> Type -> AnalyzerT m Func
-pushUndefCtor name typ = do
-    let dta = mkCtor name Export typ
-    modifyEnv (insertGlobal name dta)
+pushNewScoped :: Mutab -> Var -> Type -> Infer Func
+pushNewScoped mut name typ = do
+    mData <- gets (lookupNewestScope name . table)
+    case mData of
+        Nothing -> pushScoped mut name typ
+        Just dta ->
+            let orig = Var (varName name) (getPos dta)
+            in throw (Redefinition orig name)
+
+pushScoped :: Monad m => Mutab -> Var -> Type -> AnalyzerT m Func
+pushScoped mut name typ = do
+    pur <- gets purity
+    let dta = Func typ Intern pur mut (getPos name)
+    modifyEnv (insertScoped name dta)
     return dta
 
 pushUndefGlobal :: Monad m => Var -> Type -> AnalyzerT m Func
@@ -167,21 +176,6 @@ pushGlobal name vis typ = do
     pur <- gets purity
     let dta = Func typ vis pur Imut (getPos name)
     modifyEnv (insertGlobal name dta)
-    return dta
-
-pushScoped :: Monad m => Mutab -> Var -> Type -> AnalyzerT m Func
-pushScoped mut name typ = do
-    pur <- gets purity
-    let dta = Func typ Intern pur mut (getPos name)
-    modifyEnv (insertScoped name dta)
-    return dta
-
-pushParam :: Monad m => Var -> AnalyzerT m Func
-pushParam name = do
-    pur <- gets purity
-    typ <- fresh
-    let dta = Func typ Intern pur Imut (getPos name)
-    modifyEnv (insertScoped name dta)
     return dta
 
 pushData :: Monad m => Var -> Visib -> Type -> [Var] -> AnalyzerT m Data
