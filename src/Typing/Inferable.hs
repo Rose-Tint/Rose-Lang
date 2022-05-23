@@ -157,7 +157,7 @@ instance Inferable Value where
     infer (MatchVal e1 cases) = do
         t1 <- infer e1
         tv <- fresh
-        t2 <- foldM (\t2 (en, en') -> do
+        t2 <- foldM (\ t2 (en, en') -> do
             ptrnT <- infer en
             bodyT <- infer en'
             constrain ptrnT t1
@@ -187,8 +187,8 @@ instance Inferable Pattern where
         tv <- fresh
         return tv
     {- ^
-    x : (\t1 -> ... -> \tn -> σ) ∈ Γ
-    \G |- e1 : \t1  ...  \G |- en : \tn
+    x : (τ1 -> ... -> τn -> σ) ∈ Γ
+    Γ |- e1 : τ1  ...  Γ |- en : τn
     -----------------------------------
     Γ ⊢ [x e1 ... en] : σ
     -}
@@ -225,9 +225,9 @@ instance Inferable Pattern where
 -- made, it will return `Nothing`.
 inferStmt :: Stmt -> Infer (Maybe Type)
 {- ^
-\G |- e1 : Bool    \G |- e2 : \t1    \G |- e3 : \t2
+Γ |- e1 : Bool    Γ |- e2 : τ1    Γ |- e3 : τ2
 -------------------------------------------------
-\G |- if e1 e2 else e3 : `mergeStmts` \t2 \t3
+Γ |- if e1 e2 else e3 : `mergeStmts` τ2 τ3
 -}
 inferStmt (IfElse e1 e2 e3) = do
     condT <- infer e1
@@ -238,10 +238,10 @@ inferStmt (IfElse e1 e2 e3) = do
     return Nothing
     -- return t3'
 {- ^
-\G |- e1 : \t1    \G, e1, e2 |- e2 : Bool
-\G, e1 |- e3 : \t2    \G, e1, e2, e3 |- e4 : \t3
+Γ |- e1 : τ1    Γ, e1, e2 |- e2 : Bool
+Γ, e1 |- e3 : τ2    Γ, e1, e2, e3 |- e4 : τ3
 ----
-\G |- loop (e1; e2; e3) e4 : `Nothing`
+Γ |- loop (e1; e2; e3) e4 : `Nothing`
 -}
 inferStmt (Loop init' cond iter body) = do
     inNewScope $ do
@@ -258,10 +258,10 @@ inferStmt (Loop init' cond iter body) = do
             _ -> throw $ OtherError
                 "invalid condition expression"
 {- ^
-\G |- e1 : \t1    \G |- e2 : \t1    \G, e2 |- e2' : \t2
-...  \G |- en : \t1    \G, en |- en' : \t2
+Γ |- e1 : τ1    Γ |- e2 : τ1    Γ, e2 |- e2' : τ2
+...  Γ |- en : τ1    Γ, en |- en' : τ2
 ---------------------------------------------------
-\G |- match e1 { e2 '->' e2'  ...  en '->' en' } : \t2
+Γ |- match e1 { e2 '->' e2'  ...  en '->' en' } : τ2
 -}
 inferStmt (Match e1 es) = do
     t1 <- infer e1
@@ -269,9 +269,9 @@ inferStmt (Match e1 es) = do
     return Nothing
     -- return (Just t2)
 {- ^
-x : \s \nel \G    \G, x : \s |- e : \s
+x : σ ∉ Γ    Γ, x : σ |- e : σ
 --------------------------------------
-\G, x : \t |- let x = e : `Nothing` -- \s
+Γ, x : τ |- let x = e : `Nothing` -- σ
 -}
 inferStmt (NewVar mut name _tyd e) = do
     -- tv <- fresh
@@ -284,9 +284,9 @@ inferStmt (NewVar mut name _tyd e) = do
     return Nothing
     -- return (Just typ)
 {- ^
-x : \s \el \G    \G |- e : \s
+x : σ ∈ Γ    Γ |- e : σ
 -----------------------------
-\G |- x = e : `Nothing` -- \s
+Γ |- x = e : `Nothing` -- σ
 -}
 inferStmt (Reassignment x e) = do
     t1 <- findScoped x
@@ -295,9 +295,9 @@ inferStmt (Reassignment x e) = do
     return Nothing
     -- return (Just t2)
 {- ^
-\G |- e : \t
-------------
-\G |- return e : \t
+Γ |- e : τ
+-----------------
+Γ |- return e : τ
 -}
 inferStmt (Return val) = do
     typ <- infer val
@@ -408,16 +408,6 @@ mergeStmts Nothing (Just typ) = return (Just typ)
 mergeStmts (Just t1) (Just t2) = do
     constrain t2 t1
     return (Just t2)
-
--- applyPtrns :: Pattern -> [Pattern] -> Infer Type
--- applyPtrns val [] = infer val
--- applyPtrns v1 (v2:vs) = do
---     t1 <- infer v1
---     t2 <- applyPtrns v2 vs
---     tv <- fresh
---     let typ = t2 :-> tv
---     constrain t1 typ
---     return typ
 
 applyParams :: [Pattern] -> Type -> Infer Type
 applyParams [] typ = return typ
