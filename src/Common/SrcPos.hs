@@ -69,10 +69,10 @@ instance HasSrcPos a => HasSrcPos [a] where
 
 instance Pretty SrcPos where
     terse UnknownPos = "?"
-    terse (SrcPos ln col _) = ln|+","+|col
+    terse (SrcPos _off ln col) = ln|+","+|col
     pretty UnknownPos = "(unknown)"
-    pretty (SrcPos ln col _) =
+    pretty (SrcPos _off ln col) =
         "ln "+|ln|+", col "+|col
     detailed UnknownPos = "(unknown)"
-    detailed (SrcPos ln col _) =
+    detailed (SrcPos _off ln col) =
         "line "+|ln|+", column "+|col
