@@ -71,7 +71,7 @@ type Analyzer = State AnState
 
 type Infer = AnalyzerT
     (WriterT Cons
-    (Except ErrInfo))
+    (Except Error))
 
 
 mkState :: Table -> AnState
@@ -89,7 +89,7 @@ runAnalyzer an =
     in (a, table s)
 
 runInfer :: Table -> Infer a
-    -> Either ErrInfo (a, Cons, Table)
+    -> Either Error (a, Cons, Table)
 runInfer tbl inf = case runExcept wsResult of
     Left err -> Left err
     Right ((a, s), cons) -> Right (a, cons, table s)
@@ -97,10 +97,7 @@ runInfer tbl inf = case runExcept wsResult of
         wsResult = runWriterT (runStateT inf (mkState tbl))
 
 throw :: Error -> Infer a
-throw err  = do
-    pos <- gets position
-    let ei = ErrInfo pos (Right err)
-    lift (lift (throwE ei))
+throw = lift . lift . throwE
 
 throwUndef :: Var -> Infer a
 throwUndef name = do

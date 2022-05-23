@@ -24,7 +24,7 @@ runAnalysis exprs = do
     trace "Symbol-Table.txt" tbl
     return tbl
 
-printAnalysisErrors :: [ErrInfo] -> Builder ()
+printAnalysisErrors :: [Error] -> Builder ()
 printAnalysisErrors [] = return ()
 printAnalysisErrors es = do
     lns <- gets (lines . sourceCode)
