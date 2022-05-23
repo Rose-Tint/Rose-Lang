@@ -6,11 +6,15 @@ import Control.Monad.Trans.Except
 import qualified Data.Set as S
 
 import Analysis.Error
+import Common.SrcPos
 import Common.Var
 import qualified Data.VarMap as M
 import Typing.Type
 import Typing.Scheme
 import Typing.Substitution
+
+-- import Debug.Trace
+-- import Text.Pretty
 
 
 -- Constraint: `(t1, t2)` states that an occurrence
@@ -22,10 +26,10 @@ type Unifier = (Subst, Cons)
 type Solver a = Except Error a
 
 
-runSolver :: Type -> Cons -> Either Error Scheme
+runSolver :: Type -> Cons -> Either ErrInfo Scheme
 runSolver typ cons =
     case runExcept (solver (nullSubst, cons)) of
-        Left err -> Left err
+        Left err -> Left (ErrInfo (err <?> typ) (Right err))
         Right sub ->
             let typ' = apply sub typ
                 vars = S.toList (ftv typ' <> ftv sub)

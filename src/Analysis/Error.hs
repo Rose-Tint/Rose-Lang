@@ -2,6 +2,8 @@
 
 module Analysis.Error (
     Error(..),
+    Warning(..),
+    ErrInfo(..),
 ) where
 
 import Common.SrcPos
@@ -27,6 +29,19 @@ data Error
     | InfiniteType Var Type
     | MissingReturn Var -- name of function
     | OtherError String
+    -- deriving (Eq)
+
+data Warning
+    = ShadowsName
+        Var -- original
+        Var -- new
+    deriving (Eq)
+
+data ErrInfo
+    = ErrInfo {
+        emPos :: SrcPos,
+        emError :: Either Warning Error
+    }
 
 
 instance HasSrcPos Error where
@@ -38,20 +53,35 @@ instance HasSrcPos Error where
     getPos (MissingReturn name) = getPos name
     getPos _ = UnknownPos
 
-instance Pretty ([String], Error) where
-    pretty (lns, err) = header|+|srcCode
+instance HasSrcPos Warning where
+    getPos (ShadowsName _orig new) = getPos new
+
+instance Pretty ([String], ErrInfo) where
+    pretty (lns, (ErrInfo pos_ werr)) = header|+|srcCode
         where
-            header = "::"-|pos|-": $rError:$R "+|err
+            header = case werr of
+                Left wrn -> "::"-|pos|-":$yWarning:$R "+|wrn
+                Right err -> "::"-|pos|-": $rError:$R "+|err
             srcCode = case pos of
                 UnknownPos -> ""
                 _ -> "\n$p"+|5.>lno|+" | $R"+|line|+
                      "\n#8 $y#"+|col|+" $r^$R"
-            pos = getPos err
+            pos = werr <?> pos_
             col = posCol pos - 1 :: Int
             lno = posLine pos
             line| lno < 0 = "(NEGATIVE LINE NUMBER)"
                 | lno > length lns = "(EOF)"
                 | otherwise = lns !! (lno - 1)
+
+
+instance Pretty Warning where
+    pretty (ShadowsName orig new) =
+        "`"+|new|+"`<ln "+|newLine|+
+        "> shadows `"
+        +|orig|+"`<ln "+|origLine|+">\n"
+        where
+            newLine = posLine new
+            origLine = posLine orig
 
 instance Pretty Error where
     pretty (TypeMismatch ex fnd) =

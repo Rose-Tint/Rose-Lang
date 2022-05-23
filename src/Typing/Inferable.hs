@@ -23,7 +23,7 @@ import Typing.Type
 import Typing.TypeDecl
 
 
-inferTopLevel :: [Expr] -> Either Error Table
+inferTopLevel :: [Expr] -> Either ErrInfo Table
 inferTopLevel [] = Right emptyTable
 inferTopLevel exprs = case runInfer emptyTable inf of
     Left err -> Left err
@@ -31,7 +31,7 @@ inferTopLevel exprs = case runInfer emptyTable inf of
     where
         inf = mapM_ inferTop exprs
 
-makeInference :: Table -> Infer Type -> Either Error Scheme
+makeInference :: Table -> Infer Type -> Either ErrInfo Scheme
 makeInference tbl inf = case runInfer tbl inf of
     Left err -> Left err
     Right (typ, cons, _tbl) -> runSolver typ cons
