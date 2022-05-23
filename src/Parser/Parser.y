@@ -90,8 +90,7 @@ import Typing.TypeDecl
 -- https://stackoverflow.com/questions/27630269
 %nonassoc APP
 
-%right if then else "(" "[" ";"
-%left "=>"
+%right if then else "=>" "(" "[" ";"
 %nonassoc return
 
 
@@ -317,11 +316,12 @@ Lambda :: { Value }
     : SmallIds1 "=>" Term    { Lambda $1 $3 }
 
 SmallIds1 :: { [Var] }
-    : SmallIds1_ %prec APP { reverse $1 }
+    : SmallIds1_    { reverse $1 }
 
+-- the %prec here somehow resolves a r/r conflict :idk:
 SmallIds1_ :: { [Var] }
-    : SmallIds1_ small_id    { ($2:$1) }
-    | small_id               { [$1] }
+    : SmallIds1_ small_id   { ($2:$1) }
+    | small_id %prec APP    { [$1] }
 
 SmallIds0 :: { [Var] }
     : SmallIds1_    { reverse $1 }
