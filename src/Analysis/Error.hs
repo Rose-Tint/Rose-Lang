@@ -28,8 +28,9 @@ data Error
     | BindError Var Type
     | InfiniteType Var Type
     | MissingReturn Var -- name of function
+    -- | IllegalBreak SrcPos
+    -- | IllegalContinue SrcPos
     | OtherError String
-    | FalseError
     -- deriving (Eq)
 
 data Warning
@@ -147,4 +148,3 @@ instance Pretty Error where
         "Missing return statement in function body of `$y"
         +|name|+"$R`"
     pretty (OtherError msg) = show msg
-    pretty FalseError = ""

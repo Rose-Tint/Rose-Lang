@@ -42,8 +42,8 @@ class Inferable a where
 
 
 instance Inferable Type where
-    infer (Type name tps) =
-        Type name <$> mapM infer tps
+    infer (Type name types) =
+        Type name <$> mapM infer types
     infer TypeVar{} = fresh
     infer (t1 :-> t2) = do
         t1' <- infer t1
@@ -74,18 +74,38 @@ instance Inferable Literal where
 
 instance Inferable Value where
     infer (Literal lit) = infer lit
+    {- ^
+    x : σ ∈ Γ
+    -----------------------
+    Γ ⊢ x : σ
+    -}
     infer (VarVal name) = do
         updatePos name
         searchScopeds name
+    {- ^
+    Γ ⊢ e1 : τ1 -> τ2    Γ ⊢ e2 : τ1
+    --------------------------------
+    Γ ⊢ e1 e2 : τ2
+    -}
     infer (Application v1 v2) = do
         t1 <- infer v1
         t2 <- infer v2
         tv <- fresh
         constrain t1 (t2 :-> tv)
         return tv
+    {- ^
+    x: σ ∈ Γ
+    ---------
+    Γ ⊢ x : σ
+    -}
     infer (CtorCall name) = do
         updatePos name
         searchGlobals name
+    {- ^
+    Γ, (x1 : τ1, ..., xn : τn) ⊢ e : τ(n+1)
+    ----------------------------
+    Γ ⊢ λ(x1 ... xn) => e : (τ1 -> ... -> τ(n+1))
+    -}
     infer (Lambda ps body) = inNewScope $ do
         unless (null ps) (updatePos (head ps))
         pTs <- mapM (const fresh) ps
@@ -95,15 +115,29 @@ instance Inferable Value where
         bT <- infer body
         constrain tv typ
         return (aftParsT :-> bT)
-    infer (Tuple arr) = tupleOf <$>
-        mapM infer (A.elems arr)
+    {- ^
+    Γ ⊢ e1 : τ1    ...    Γ ⊢ en : τn
+    ---------------------------------
+    Γ ⊢ (e1, ..., en) : (τ1, ..., τn)
+    -}
+    infer (Tuple arr) = tupleOf <$> mapM infer (A.elems arr)
+    {- ^
+    Γ ⊢ e1 : τ1    ...    Γ ⊢ en : τ1
+    ------------------------------
+    Γ ⊢ [e1, ..., en] : [τ1]
+    -}
     infer (Array arr) = do
         tv <- fresh
-        arrayOf <$> foldM (\t1 val -> do
+        arrayOf <$> foldM (τ1 val -> do
             t2 <- infer val
             constrain t1 t2
             return t2
             ) tv arr
+    {- ^
+    Γ ⊢ e1 : Bool    Γ ⊢ e2 : τ1    Γ ⊢ e3 : τ1
+    -------------------------------------------
+    Γ ⊢ if e1 then e2 else e3 : e3
+    -}
     infer (IfElseVal cond tr fa) = do
         cT <- infer cond
         tT <- infer tr
@@ -111,6 +145,12 @@ instance Inferable Value where
         constrain cT boolType
         constrain tT fT
         return tT
+    {- ^
+    Γ ⊢ e1 : τ1    (Γ ⊢ e2 : τ1    Γ ⊢ e3 : τ2
+    ...    Γ ⊢ en : τ1    Γ ⊢ e(++n) : τ2)
+    -----------------------------------------------
+    Γ ⊢ match e1 { (e2 => e3 ... en => e(n+1)) } : τ2
+    -}
     infer (MatchVal val cases) = do
         vT <- infer val
         tv <- fresh
@@ -124,13 +164,26 @@ instance Inferable Value where
 
 -- TODO: Consider un-instantiating??
 instance Inferable Pattern where
+    {- ^
+    ------------
+    Γ ⊢ x : τ
+    -}
     infer (Param name) = do
         updatePos name
         func <- pushParam name
         return $! funcType func
+    {- ^
+    ------------
+    Γ ⊢ _ : τ
+    -}
     infer (Hole p) = do
         updatePos p
         fresh
+    {- ^
+    x: σ ∈ Γ ... ???
+    ------------
+    Γ ⊢ [x e1 ... e2] : σ
+    -}
     infer (CtorPtrn name args) = do
         updatePos name
         t1 <- searchGlobals name
@@ -139,8 +192,18 @@ instance Inferable Pattern where
         -- constrain t1 (t2 :-> tv)
         -- return (t2 :-> t1)
         return t2
+    {- ^
+    Γ ⊢ e1 : τ1  ...  Γ ⊢ en : τn
+    ---------------------------------------
+    Γ ⊢ [(e1, ..., e2)] : (τ1, ..., τn)
+    -}
     infer (TuplePtrn args) = tupleOf <$> mapM infer args
     infer (LitPtrn lit) = infer lit
+    {- ^
+    Γ ⊢ e1 : τ1  ...  Γ ⊢ en : τ1
+    -----------------------------------
+    Γ ⊢ [e1, en] : τ1
+    -}
     infer (OrPtrn p1 p2) = do
         t1 <- infer p1
         t2 <- infer p2
@@ -222,6 +285,12 @@ inferTop :: Expr -> Infer ()
 inferTop (FuncDecl _pur vis name (TypeDecl _ typ)) = do
     pushGlobal name vis typ
     return ()
+{- ^
+Γ ⊢ f : σ    (Γ ⊢ x1 : τ1 ... Γ ⊢ xn : τn)
+Γ, f, x1, ..., xn : σ ⊢ e : τ'
+---------------------------------------------------
+Γ, σ ⊢ f x1 ... xn e : τ1 -> ... -> τn -> τ'
+-}
 inferTop (FuncDef name params body) = inNewScope $ do
     sT <- searchGlobals name
     aftParsT <- applyParams params sT

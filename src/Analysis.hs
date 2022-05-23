@@ -29,6 +29,4 @@ printAnalysisErrors [] = return ()
 printAnalysisErrors es = do
     lns <- gets (lines . sourceCode)
     name <- gets moduleName
-    forM_ es $ \e -> case emError e of
-        Right FalseError -> return ()
-        _ -> message $ "\n"+|name|+|(lns, e)|+"\n"
+    forM_ es $ \e -> message $ "\n"+|name|+|(lns, e)|+"\n"
