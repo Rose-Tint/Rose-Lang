@@ -205,7 +205,7 @@ Term :: { Value }
         let (var:vars) = fmap VarVal $1
         in valueFromList var vars
         }
-    | LetIn                 { $1 }
+    -- | LetIn                 { $1 }
     | Lambda                { $1 }
     | FuncCall              { $1 }
     | "(" Term ")"          { $2 }
@@ -281,7 +281,7 @@ NewVar :: { Stmt }
 
 NewVarTypeDecl :: { Maybe Type }
     : TypeDecl      { Just $1 }
-    | {- empty -}   { Nothing }
+    -- | {- empty -}   { Nothing } -- apparently this is somehow unused??
 
 FuncCall :: { Value }
     : Term infix_id         { Application (VarVal $2) $1 }
@@ -313,8 +313,8 @@ SmallIds0 :: { [Var] }
     : SmallIds1_    { reverse $1 }
     | {- empty -}   { [] }
 
-LetIn :: { Value }
-    : let small_id "=" Term in Term { LetIn $2 $4 $6 }
+-- LetIn :: { Value }
+--     : let small_id "=" Term in Term { LetIn $2 $4 $6 }
 
 Loop :: { Stmt }
     : loop "(" Expr Expr Expr ")" StmtBody  { Loop $3 $4 $5 $7 }
