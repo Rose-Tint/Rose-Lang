@@ -21,12 +21,12 @@ import Typing.Solver
 import Typing.Type
 
 
-inferTopLevel :: [Expr] -> (Table, [ErrInfo])
-inferTopLevel [] = (emptyTable, [])
-inferTopLevel exprs =
+inferTopLevel :: Table -> [Expr] -> (Table, [ErrInfo])
+inferTopLevel tbl [] = (tbl, [])
+inferTopLevel tbl exprs =
     let inf = mapM_ inferTop exprs
-        Inf _ _cons tbl errs = runInfer emptyTable inf
-    in (tbl, errs)
+        Inf _ _cons tbl' errs = runInfer tbl inf
+    in (tbl', errs)
 
 makeInference :: Table -> Infer Type -> Either [ErrInfo] Scheme
 makeInference tbl inf =

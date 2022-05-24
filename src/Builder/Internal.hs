@@ -9,14 +9,24 @@ module Builder.Internal (
     Builder,
     Stream,
     runBuilder,
+
     (??>),
     (?!>),
     io,
+
+    loadObjectFile,
+    objFileExists,
+    modToObjPath,
+
     hasBeenVisited,
     finalizeVisit,
+
+    getDir,
+    getCurrTraceDir,
+    getBinDir,
+
     filePath,
     moduleName,
-    currBuildDir,
     visitedFiles,
     sourceCode,
 ) where
@@ -29,19 +39,26 @@ import qualified Control.Monad.Trans.State as S (
     gets,
     modify,
     )
+import Data.Binary (decodeFile)
 import Data.Set (Set, empty, insert, member)
+import System.Directory (
+    createDirectoryIfMissing,
+    doesFileExist,
+    )
 
 import Cmd
+import Common.Module
+import Data.Table
 
 
 type Stream = String
 
 data BldState = BldState {
         filePath :: FilePath,
-        moduleName :: String,
+        moduleName :: ModName,
         -- current build directory, as opposed to
         -- baseBuildDir, which is the base
-        currBuildDir :: FilePath,
+        -- currBuildDir :: FilePath,
         -- list of visited files
         visitedFiles :: Set FilePath,
         sourceCode :: Stream
@@ -54,7 +71,7 @@ type Builder a = ReaderT
 
 
 newState :: BldState
-newState = BldState [] [] [] empty ""
+newState = BldState [] (End "") empty ""
 
 runBuilder :: Builder a -> CmdLine -> IO a
 runBuilder bld cmd = evalStateT (runReaderT bld cmd) newState
@@ -85,10 +102,47 @@ hasBeenVisited path = do
 
 finalizeVisit :: Builder ()
 finalizeVisit = do
-    baseDir <- asks baseBuildDir
     modify $ \s -> s {
+        filePath = "",
+        moduleName = End "",
         visitedFiles = insert (filePath s) (visitedFiles s),
-        sourceCode = "",
-        currBuildDir = baseDir
+        sourceCode = ""
         }
     return ()
+
+loadObjectFile :: ModName -> Builder (Maybe Table)
+loadObjectFile name = do
+    exists <- objFileExists name
+    if exists then do
+        path <- modToObjPath name
+        tbl <- io (decodeFile path)
+        return (Just tbl)
+    else
+        return Nothing
+
+objFileExists :: ModName -> Builder Bool
+objFileExists name = do
+    path <- modToObjPath name
+    exists <- io (doesFileExist path)
+    return exists
+
+modToObjPath :: ModName -> Builder FilePath
+modToObjPath name = do
+    bin <- getBinDir
+    let path = bin ++ modToFile name ".o"
+    return $! path
+
+getDir :: String -> Builder FilePath
+getDir str = do
+    base <- asks baseBuildDir
+    let !dir = base ++ "/" ++ str ++ "/"
+    io (createDirectoryIfMissing True dir)
+    return dir
+
+getCurrTraceDir :: Builder FilePath
+getCurrTraceDir = do
+    curr <- gets (modToDir . moduleName)
+    getDir ("trace/" ++ curr)
+
+getBinDir :: Builder FilePath
+getBinDir = getDir "bin"

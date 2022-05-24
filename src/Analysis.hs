@@ -12,14 +12,18 @@ import Text.Pretty
 import Typing.Inferable
 
 
-runAnalysis :: [Expr] -> Builder Table
-runAnalysis exprs = do
+writeObjFile :: Table -> Builder ()
+writeObjFile tbl = writeBin ".o" tbl
+
+runAnalysis :: Table -> [Expr] -> Builder Table
+runAnalysis tbl exprs = do
     name <- gets moduleName
     debug ("Analyzing ["+|name|+"]\n")
-    let (tbl, errs) = inferTopLevel exprs
+    let (tbl', errs) = inferTopLevel tbl exprs
     printAnalysisErrors errs
-    trace "Symbol-Table.txt" tbl
-    return tbl
+    traceFile "Symbol-Table.txt" tbl'
+    writeObjFile tbl'
+    return tbl'
 
 printAnalysisErrors :: [ErrInfo] -> Builder ()
 printAnalysisErrors [] = return ()

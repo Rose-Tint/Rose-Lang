@@ -5,14 +5,16 @@ import Data.Time (diffUTCTime, getCurrentTime)
 import System.Exit (exitFailure)
 
 import Analysis
-import AST (ParseTree(..))
+import AST (ParseTree(..), Import)
 import Builder
 import Cmd
+import Common.Module
 import Common.Var
+import Data.Table
 import Parser
 import Repl
 import Text.Pretty
-import Utils.FilePath (modToPath)
+import qualified Utils.FilePath as Utils
 
 
 build :: Builder ()
@@ -24,17 +26,33 @@ build = do
     let diff = diffUTCTime timeEnd timeStart
     message ("Finished in "+|diff|+"\n")
 
-buildFile :: FilePath -> Builder ()
-buildFile [] = return ()
-buildFile path = hasBeenVisited path >>= \skip ->
-    if skip then return () else do
+buildFile :: FilePath -> Builder Table
+buildFile [] = return emptyTable
+buildFile path = do
+    skip <- hasBeenVisited path
+    if skip then do
+        return emptyTable
+    else do
         bReadFile path
         name <- gets moduleName
         message ("Building Module ["+|name|+"]\n")
-        ParseTree imports tree <- parseFile
-        _ <- runAnalysis tree
-        mapM_ (buildFile.modToPath.varName) imports
+        ParseTree imports exprs <- parseFile
+        tbl <- loadImports imports
+        tbl' <- runAnalysis tbl exprs
+        mapM_ (buildFile.Utils.modToPath.varName) imports
         finalizeVisit
+        return tbl'
+
+loadImports :: [Import] -> Builder Table
+loadImports [] = return emptyTable
+loadImports (Var str _:imports) = do
+    let name = strToMod str
+    mTable <- loadObjectFile name
+    case mTable of
+        Nothing -> loadImports imports
+        Just tbl1 -> do
+            tbl2 <- loadImports imports
+            return $! (unionTable tbl1 tbl2)
 
 main :: IO ()
 main = do

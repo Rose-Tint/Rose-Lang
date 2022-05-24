@@ -7,6 +7,7 @@ infixr 6 :/
 data Path
     = String :/ Path
     | Endpoint String
+    deriving (Eq, Ord)
 
 
 infixr 8 //

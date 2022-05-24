@@ -30,7 +30,7 @@ common general
         Cmd,
         Cmd.Flags,
         Cmd.Warnings,
-        -- Common.Module, (WIP)
+        Common.Module,
         Common.Specifiers,
         Common.SrcPos,
         Common.Var,

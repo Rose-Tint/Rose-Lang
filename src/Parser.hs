@@ -19,5 +19,5 @@ parseFile = do
     case parse src of
         Left msg -> fatal $ Red|+|name|+|msg|+"\n"
         Right parseTree -> do
-            trace "Parse-Tree.txt" parseTree
+            traceFile "Parse-Tree.txt" parseTree
             return parseTree
