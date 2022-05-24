@@ -1,13 +1,13 @@
 module Main (main) where
 
-import Control.Monad (unless, forM_)
+import Control.Monad (unless)
 import Data.Time (diffUTCTime, getCurrentTime)
 import System.Exit (exitFailure)
 
 import Analysis
+import AST (ParseTree(..))
 import Builder
 import Cmd
-import Common.Module
 import Common.Var
 import Parser
 import Repl
@@ -31,10 +31,9 @@ buildFile path = hasBeenVisited path >>= \skip ->
         bReadFile path
         name <- gets moduleName
         message ("Building Module ["+|name|+"]\n")
-        Module imports tree <- parseFile
+        ParseTree imports tree <- parseFile
         _ <- runAnalysis tree
-        forM_ imports $ \(Import (Var name' _)) ->
-            buildFile (modToPath name')
+        mapM_ (buildFile.modToPath.varName) imports
         finalizeVisit
 
 main :: IO ()

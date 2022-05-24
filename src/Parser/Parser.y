@@ -3,7 +3,6 @@ module Parser.Parser (runAlex, rose, replP) where
 
 import Data.Array (listArray)
 
-import Common.Module
 import Common.Specifiers
 import Common.Var
 import AST
@@ -92,15 +91,15 @@ import Typing.TypeDecl
 
 %%
 
-Module :: { Module }
-    : Imports0 TopLevelExprs0  { Module (reverse $1) (reverse $2) }
+Module :: { ParseTree }
+    : Imports0 TopLevelExprs0  { ParseTree (reverse $1) (reverse $2) }
 
 Imports0 :: { [Import] }
     : {- empty -}       { [] }
     | Imports0 Import   { ($2:$1) }
 
 Import :: { Import }
-    : import big_id { Import $2 }
+    : import big_id { {-Import-} $2 }
 
 TopLevelExprs0 :: { [Expr] }
     : {- empty -}                   { [] }

@@ -30,7 +30,7 @@ common general
         Cmd,
         Cmd.Flags,
         Cmd.Warnings,
-        Common.Module,
+        -- Common.Module, (WIP)
         Common.Specifiers,
         Common.SrcPos,
         Common.Var,
@@ -54,6 +54,7 @@ common general
         Utils.FilePath,
         Utils.List,
         Utils.String
+        -- Utils.Path (WIP)
 
     build-tool-depends:
         alex:alex   >= 3.2,

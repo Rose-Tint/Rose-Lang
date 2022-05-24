@@ -2,16 +2,16 @@ module Parser (
     parseFile,
 ) where
 
-import Common.Module
+import AST (ParseTree)
 import Builder
 import Parser.Parser (runAlex, rose)
 import Text.Pretty
 
 
-parse :: String -> Either String Module
+parse :: String -> Either String ParseTree
 parse str = runAlex str rose
 
-parseFile :: Builder Module
+parseFile :: Builder ParseTree
 parseFile = do
     name <- gets moduleName
     debug ("Parsing   ["+|name|+"]\n")
