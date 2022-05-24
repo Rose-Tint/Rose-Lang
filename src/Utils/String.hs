@@ -38,7 +38,7 @@ similarity (lc:lcs) (rc:rcs) =
 areSimilar :: String -> String -> Bool
 {-# INLINE areSimilar #-}
 areSimilar s1 s2 = similarity s1 s2 <=
-    min 3 (max (length s1) (length s2))
+    min 2 (max (length s1) (length s2))
 
 strToShortBS :: String -> ShortByteString
 strToShortBS = toShort . pack
