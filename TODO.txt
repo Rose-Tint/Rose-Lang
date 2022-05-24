@@ -12,8 +12,14 @@ TODO:
 
 IN-PROGRESS:
     - LLVM back-end
-    - add Type inference
-        - type-system already (mostly) implemented, just not used.
+    - have `Infer` be a RWS, where
+        - the `Reader` component is a table given by the
+          imports
+        - the `Writer` component is a table of the
+          undefined variables
+            - requires that top level definitions can
+              change, and thus would not be in the `Infer`
+              monad...
     - ideas to allow `Infer` (and `Solver`?) to update
       the symbol-table:
         - use `State` while analyzing top-level expressions
