@@ -32,9 +32,9 @@ buildFile path = hasBeenVisited path >>= \skip ->
         name <- gets moduleName
         message ("Building Module ["+|name|+"]\n")
         Module imports tree <- parseFile
-        forM_ imports $ \(Import (Var modName _) _) ->
-            buildFile (modToPath modName)
         _ <- runAnalysis tree
+        forM_ imports $ \(Import (Var name' _)) ->
+            buildFile (modToPath name')
         finalizeVisit
 
 main :: IO ()
