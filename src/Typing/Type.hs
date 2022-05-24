@@ -1,9 +1,13 @@
+{-# LANGUAGE LambdaCase #-}
+
 module Typing.Type  (
     Type(..),
     typeToList,
     foldTypes,
     renameTypeVars,
 ) where
+
+import Data.Binary
 
 import Common.SrcPos
 import Common.Var
@@ -75,3 +79,33 @@ renameTypeVars = snd . go 0
         go !i (TupleType types) =
             let (i', types') = for i types
             in (i', TupleType types')
+
+
+instance Binary Type where
+    put (Type name pars) = do
+        putWord8 0
+        put name
+        putList pars
+    -- the actual name of type-vars ultimately
+    -- doesnt matter
+    put (TypeVar _) = putWord8 1
+    put (t1 :-> t2) = do
+        putWord8 2
+        put t1
+        put t2
+    put (TupleType types) = do
+        putWord8 3
+        putList types
+    put (ArrayType typ) = do
+        putWord8 4
+        put typ
+
+    get = getWord8 >>= \case
+        0 -> Type <$> get <*> get
+        -- arbitrary name ("a")
+        1 -> return (TypeVar (prim "a"))
+        2 -> (:->) <$> get <*> get
+        3 -> TupleType <$> get
+        4 -> ArrayType <$> get
+        n -> fail $ "Binary.get :: Type: "++
+            "unknown flag ("+|n|+")"

@@ -28,6 +28,7 @@ module Data.Table (
     getSimilarVars,
 ) where
 
+import Data.Binary
 import Data.Maybe (mapMaybe)
 
 import Common.SrcPos
@@ -205,3 +206,31 @@ instance Pretty Table where
         "Types:\n"+|indentCatLns (M.assocs typs)|+"\n\n"+|
         "Globals:\n"+|indentCatLns (M.assocs glbs)|+"\n\n"+|
         "Scopeds:\n"+|indentCatLns (concatMap M.assocs scps)
+
+instance Binary Data where
+    put (Data typ ctors pos) = do
+        put typ
+        putList ctors
+        put pos
+    get = Data <$> get <*> get <*> get
+
+instance Binary Func where
+    put (Func typ pur pos) = do
+        put typ
+        put pur
+        put pos
+    get = Func <$> get <*> get <*> get
+
+instance Binary Trait where
+    put (Trait meths impls pos) = do
+        putList meths
+        putList impls
+        put pos
+    get = Trait <$> get <*> get <*> get
+
+instance Binary Table where
+    put (Table types traits glbs _scps) = do
+        put types
+        put traits
+        put glbs
+    get = Table <$> get <*> get <*> get <*> pure []

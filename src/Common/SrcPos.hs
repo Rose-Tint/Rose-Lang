@@ -1,3 +1,5 @@
+{-# LANGUAGE LambdaCase #-}
+
 module Common.SrcPos (
     Offset,
     Line,
@@ -10,6 +12,8 @@ module Common.SrcPos (
     posCol,
     posLine,
 ) where
+
+import Data.Binary
 
 import Text.Pretty
 
@@ -76,3 +80,22 @@ instance Pretty SrcPos where
     detailed UnknownPos = "(unknown)"
     detailed (SrcPos _off ln col) =
         "line "+|ln|+", column "+|col
+
+instance Binary SrcPos where
+    put UnknownPos = putWord8 0
+    put (SrcPos off ln col) = do
+        putWord8 1
+        put off
+        put ln
+        put col
+
+    get = getWord8 >>= \case
+        0 -> return UnknownPos
+        1 -> SrcPos <$> get <*> get <*> get
+            -- off <- get
+            -- ln <- get
+            -- col <- get
+            -- return (SrcPos off ln col)
+        n -> fail $ "Binary.get :: SrcPos: " ++
+            "unknown flag ("+|n|+")"
+        

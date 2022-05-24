@@ -45,6 +45,7 @@ import Text.Printf
 import Data.Char (isDigit)
 import Data.Int
 import Data.List (intercalate)
+import Data.Word
 import Utils.String
 
 
@@ -202,9 +203,17 @@ instance Pretty Color where
 instance PrintfArg Color where
     formatArg = formatString . pretty
 
-instance Pretty Int8
-
 instance Pretty Int
+instance Pretty Int8
+instance Pretty Int16
+instance Pretty Int32
+instance Pretty Int64
+
+instance Pretty Word
+instance Pretty Word8
+instance Pretty Word16
+instance Pretty Word32
+instance Pretty Word64
 
 instance Pretty NominalDiffTime
 

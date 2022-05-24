@@ -1,3 +1,5 @@
+{-# LANGUAGE LambdaCase #-}
+
 module Common.Var (
     Var(..),
     prim,
@@ -5,6 +7,7 @@ module Common.Var (
     isLarge,
 ) where
 
+import Data.Binary
 import Data.Char
 import Data.Function (on)
 import Data.Ord (comparing)
@@ -45,3 +48,10 @@ isSmall = not . isLarge
 isLarge :: Var -> Bool
 isLarge (Var "" _) = False
 isLarge (Var (c:_) _) = isUpper c
+
+
+instance Binary Var where
+    put (Var name pos) = do
+        put name
+        put pos
+    get = Var <$> get <*> get

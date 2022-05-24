@@ -84,7 +84,7 @@ instance Inferable Value where
     {- ^
     Γ, x : τ1 ⊢ e : τ2
     --------------------
-    Γ ⊢ λx. e : τ1 -> τ2
+    Γ ⊢ λx.e : τ1 -> τ2
     -}
     infer (Lambda x e) = do
         updatePos x
