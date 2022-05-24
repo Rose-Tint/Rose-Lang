@@ -4,11 +4,11 @@ trait Resource a {
     impure with<(a -> b) -> a -> b>
 }
 
-impl Resource {
-    with f resource {
-        open resource;
-        let result = f resource;
-        close resource;
-        return result;
-    }
-}
+-- impl Resource {
+--     with f resource {
+--         open resource;
+--         let result = f resource;
+--         close resource;
+--         return result;
+--     }
+-- }

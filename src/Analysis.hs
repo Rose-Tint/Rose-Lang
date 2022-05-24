@@ -16,11 +16,8 @@ runAnalysis :: [Expr] -> Builder Table
 runAnalysis exprs = do
     name <- gets moduleName
     debug ("Analyzing ["+|name|+"]\n")
-    tbl <- case inferTopLevel exprs of
-        Left err -> do
-            printAnalysisErrors [err]
-            return emptyTable
-        Right tbl -> return tbl
+    let (tbl, errs) = inferTopLevel exprs
+    printAnalysisErrors errs
     trace "Symbol-Table.txt" tbl
     return tbl
 

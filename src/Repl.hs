@@ -75,7 +75,8 @@ eval (':':rest) = readCmd rest >>= \case
         print' "Thanks for playing!"
         lift exitSuccess
     TypeOf val -> case makeInference emptyTable (infer val) of
-        Left err -> throwE ("<stdin>"+|(lines (tail rest),err))
+        Left errs -> throwE $ concatMap
+            (\err -> "<stdin>"+|(lines (tail rest),err)) errs
         Right scheme -> print' scheme
     Help -> print' "\
 \Usage: [COMMAND] [EXPRESSION]\n\

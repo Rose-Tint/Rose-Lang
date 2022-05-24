@@ -15,41 +15,38 @@ data Token
     | TSmall Var
     | TInfix Var
     | THole Pattern
-    | TEq SrcPos
-    | TColon SrcPos
-    | TSemi SrcPos
-    | TPipe SrcPos
-    | TArrow SrcPos
-    | TEqArrow SrcPos
-    | TComma SrcPos
-    | TLParen SrcPos
-    | TRParen SrcPos
-    | TLBrace SrcPos
-    | TRBrace SrcPos
-    | TLBracket SrcPos
-    | TRBracket SrcPos
-    | TLAngle SrcPos
-    | TRAngle SrcPos
-    | TUsing SrcPos
-    | TPure SrcPos
-    | TImpure SrcPos
-    | TLet SrcPos
-    | TMut SrcPos
-    | TIntern SrcPos
-    | TExport SrcPos
-    | TExtern SrcPos
-    | TImport SrcPos
-    | TReturn SrcPos
-    | TIf SrcPos
-    | TThen SrcPos
-    | TElse SrcPos
-    | TMatch SrcPos
-    | TLoop SrcPos
-    | TBreak SrcPos
-    | TContinue SrcPos
-    | TImpl SrcPos
-    | TTrait SrcPos
-    | TData SrcPos
+    | TEq
+    | TColon
+    | TSemi
+    | TPipe
+    | TArrow
+    | TEqArrow
+    | TComma
+    | TLParen
+    | TRParen
+    | TLBrace
+    | TRBrace
+    | TLBracket
+    | TRBracket
+    | TLAngle
+    | TRAngle
+    | TPure
+    | TImpure
+    | TLet
+    | TIn
+    | TExtern
+    | TImport
+    | TReturn
+    | TIf
+    | TThen
+    | TElse
+    | TMatch
+    | TLoop
+    | TBreak
+    | TContinue
+    | TImpl
+    | TTrait
+    | TData
     | TEOF
 
 
@@ -59,42 +56,7 @@ instance HasSrcPos Token where
     getPos (TSmall var) = getPos var
     getPos (TInfix var) = getPos var
     getPos (THole hole) = getPos hole
-    getPos (TEq p) = p
-    getPos (TColon p) = p
-    getPos (TSemi p) = p
-    getPos (TPipe p) = p
-    getPos (TArrow p) = p
-    getPos (TEqArrow p) = p
-    getPos (TComma p) = p
-    getPos (TLParen p) = p
-    getPos (TRParen p) = p
-    getPos (TLBrace p) = p
-    getPos (TRBrace p) = p
-    getPos (TLBracket p) = p
-    getPos (TRBracket p) = p
-    getPos (TLAngle p) = p
-    getPos (TRAngle p) = p
-    getPos (TUsing p) = p
-    getPos (TPure p) = p
-    getPos (TImpure p) = p
-    getPos (TLet p) = p
-    getPos (TMut p) = p
-    getPos (TIntern p) = p
-    getPos (TExport p) = p
-    getPos (TExtern p) = p
-    getPos (TImport p) = p
-    getPos (TReturn p) = p
-    getPos (TIf p) = p
-    getPos (TThen p) = p
-    getPos (TElse p) = p
-    getPos (TMatch p) = p
-    getPos (TLoop p) = p
-    getPos (TBreak p) = p
-    getPos (TContinue p) = p
-    getPos (TImpl p) = p
-    getPos (TTrait p) = p
-    getPos (TData p) = p
-    getPos TEOF = UnknownPos
+    getPos _ = UnknownPos
 
 instance Pretty Token where
     terse (TValue val) = "value ("+|val|+")"
@@ -118,13 +80,10 @@ instance Pretty Token where
     terse TRBracket{} = "']'"
     terse TLAngle{} = "'<'"
     terse TRAngle{} = "'>'"
-    terse TUsing{} = "keyword 'using'"
     terse TPure{} = "keyword 'pure'"
     terse TImpure{} = "keyword 'impure'"
     terse TLet{} = "keyword 'let'"
-    terse TMut{} = "keyword 'mut'"
-    terse TIntern{} = "keyword 'intern'"
-    terse TExport{} = "keyword 'export'"
+    terse TIn{} = "keyword 'in'"
     terse TExtern{} = "keyword 'extern'"
     terse TImport{} = "keyword 'import'"
     terse TReturn{} = "keyword 'return'"
@@ -160,13 +119,10 @@ instance Pretty Token where
     pretty TRBracket{} = "]"
     pretty TLAngle{} = "<"
     pretty TRAngle{} = ">"
-    pretty TUsing{} = "using"
     pretty TPure{} = "pure"
     pretty TImpure{} = "impure"
     pretty TLet{} = "let"
-    pretty TMut{} = "mut"
-    pretty TIntern{} = "intern"
-    pretty TExport{} = "export"
+    pretty TIn{} = "in"
     pretty TExtern{} = "extern"
     pretty TImport{} = "import"
     pretty TReturn{} = "return"
@@ -202,13 +158,10 @@ instance Pretty Token where
     detailed TRBracket{} = "TRBracket"
     detailed TLAngle{} = "TLAngle"
     detailed TRAngle{} = "TRAngle"
-    detailed TUsing{} = "TUsing"
     detailed TPure{} = "TPure"
     detailed TImpure{} = "TImpure"
     detailed TLet{} = "TLet"
-    detailed TMut{} = "TMut"
-    detailed TIntern{} = "TIntern"
-    detailed TExport{} = "TExport"
+    detailed TIn{} = "TIn"
     detailed TExtern{} = "TExtern"
     detailed TImport{} = "TImport"
     detailed TReturn{} = "TReturn"

@@ -5,14 +5,13 @@ module Common.Module (
 ) where
 
 import AST.Expr
-import Common.Specifiers
 import Common.Var
 import Text.Pretty
 
 
 data Module = Module [Import] [Expr]
 
-data Import = Import Var Visib
+data Import = Import Var
 
 data Item
     = TraitItem { itemName :: Var }
@@ -32,10 +31,9 @@ instance Pretty Module where
             +|indentCatLnsD exprs
 
 instance Pretty Import where
-    pretty (Import name vis) =
-        "import "+|vis|+" "+|name
-    detailed (Import name vis) =
-        "("*|vis|*") "*|name
+    pretty (Import name) =
+        "import "+|name
+    detailed (Import name) = pretty name
 
 instance Pretty Item where
     terse = terse . itemName

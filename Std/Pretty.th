@@ -26,13 +26,11 @@ impl Pretty String {
 }
 
 impl Pretty Int {
-    pretty n {
-        let mut x<Int> = n;
-        let mut str<String> = default;
-        loop (x < 10) {
-            str = append (intToChar (x % 10)) str;
-            x = x / 10;
-        }
-        return str;
+    pretty n = match x >= 10 {
+        [True] =>
+            let frst = intToChar (x % 10) in
+            let rest = pretty (x // 10) in
+                    append frst rest;
+        [False] => intToChar (x % 10);
     }
 }

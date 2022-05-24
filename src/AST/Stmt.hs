@@ -1,22 +1,21 @@
 module AST.Stmt (
     Stmt(..),
-    MatchCase(..),
+    StmtCase(..),
 ) where
 
 import AST.Value
 import AST.Pattern
-import Common.Specifiers
 import Common.SrcPos
 import Common.Var
 import Text.Pretty
-import Typing.TypeDecl
+import Typing.Type
 
 
 data Stmt
     = IfElse Value Stmt Stmt
     | Loop Stmt Stmt Stmt Stmt
-    | Match Value [MatchCase]
-    | NewVar Mutab !Var TypeDecl Value
+    | Match Value [StmtCase]
+    | NewVar !Var (Maybe Type) Value
     | Reassignment !Var Value
     | Return Value
     | ValStmt Value
@@ -25,14 +24,14 @@ data Stmt
     | NullStmt
     | Compound [Stmt]
 
-data MatchCase = Case Pattern Stmt
+data StmtCase = StmtCase Pattern Stmt
 
 
 instance HasSrcPos Stmt where
     getPos (IfElse val _ _) = getPos val
     getPos (Loop stmt _ _ _) = getPos stmt
     getPos (Match val _) = getPos val
-    getPos (NewVar _ name _ _) = getPos name
+    getPos (NewVar name _ _) = getPos name
     getPos (Reassignment name _) = getPos name
     getPos (Return val) = getPos val
     getPos (ValStmt val) = getPos val
@@ -47,8 +46,8 @@ instance Pretty Stmt where
         "loop ("+|init'|+"; "+|cond|+"; "+|iter|+") "+|body
     pretty (Match val cases) = "match ("+|val|+") {\n"
         +|indentCatLns cases|+"}"
-    pretty (NewVar mut name typ val) =
-        "let "+|mut|+" "+|name|+|typ|+" = "+|val|+";"
+    pretty (NewVar name typ val) =
+        "let "+|name|+|typ|+" = "+|val|+";"
     pretty (Reassignment var val) = var|+" = "+|val|+";"
     pretty Continue = "continue;"
     pretty Break = "break;"
@@ -70,9 +69,8 @@ instance Pretty Stmt where
     detailed (Match val cases) =
         "Match: "*|val|*"\n"+|
             (indentCatLns $ fmap ("Case: "*|) cases)
-    detailed (NewVar mut name typ val) =
-        "New Variable:\n    Mutab.: "*|mut|*
-        "\n    Type: "*|typ|*
+    detailed (NewVar name typ val) =
+        "New Variable:\n    Type: "*|typ|*
         "\n    Name: "+|name|+
         "\n    Value: "*|val
     detailed (Reassignment var val) =
@@ -85,6 +83,6 @@ instance Pretty Stmt where
     detailed NullStmt = "Null Statement"
     detailed (Compound ss) = indentCatLns ss
 
-instance Pretty MatchCase where
-    pretty (Case p b) = p|+" "+|b
+instance Pretty StmtCase where
+    pretty (StmtCase p b) = p|+" -> "+|b
 

@@ -86,14 +86,11 @@ tokens :-
     "["                         { reserved TLBracket }
     "]"                         { reserved TRBracket }
     "_"                         { hole }
-    using                       { reserved TUsing }
     pure                        { reserved TPure `andBegin` func_ }
     impure                      { reserved TImpure `andBegin` func_ }
     let                         { reserved TLet `andBegin` var_ }
-    mut                         { reserved TMut }
-    intern                      { reserved TIntern }
-    export                      { reserved TExport }
-    extern                      { reserved TExtern }
+    in                          { reserved TIn }
+    extern                      { reserved TExtern `andBegin` func_ }
     import                      { reserved TImport }
     return                      { reserved TReturn }
     if                          { reserved TIf }
@@ -136,9 +133,8 @@ hole :: TokenAction
 hole (pos, _, _, _) _ = return
     (THole (Hole (fromAlexPosn pos 1)))
 
-reserved :: (SrcPos -> Token) -> TokenAction
-reserved tok (pos, _, _, _) len = return
-    (tok (fromAlexPosn pos len))
+reserved :: Token -> TokenAction
+reserved tok _ _len = return tok
 
 integer :: Int -> TokenAction
 integer _ _ 0 = lexError "integral literal"

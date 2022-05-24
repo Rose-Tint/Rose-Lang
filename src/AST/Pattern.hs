@@ -17,7 +17,6 @@ data Pattern
     | CtorPtrn Var [Pattern]
     | TuplePtrn [Pattern]
     | LitPtrn Literal
-    | OrPtrn Pattern Pattern
 
 
 -- | calculates the generality of a pattern by
@@ -26,7 +25,6 @@ generality :: Pattern -> Specificity
 generality (CtorPtrn _ ps) = sum (generality <$> ps)
 generality (TuplePtrn ps) = sum (generality <$> ps)
 generality LitPtrn{} = 0
-generality (OrPtrn p1 p2) = generality p1 + generality p2
 generality _ = 1
 
 
@@ -36,7 +34,6 @@ instance HasSrcPos Pattern where
     getPos (CtorPtrn name _) = getPos name
     getPos (TuplePtrn p) = getPos (head p)
     getPos (LitPtrn lit) = getPos lit
-    getPos (OrPtrn p _) = getPos p
 
 instance Pretty Pattern where
     pretty (Param name) = pretty name
@@ -50,5 +47,4 @@ prettyHelper (CtorPtrn name args) =
 prettyHelper (TuplePtrn ptrns) =
     "("+|", "`seps`ptrns|+")"
 prettyHelper (LitPtrn lit) = pretty lit
-prettyHelper (OrPtrn p1 p2) = p1|+", "+|p2
 prettyHelper ptrn = pretty ptrn

@@ -8,34 +8,34 @@ module Typing.Inferable (
 
 import Prelude hiding (lookup)
 
-import Control.Monad (foldM, forM)
+import Control.Monad (foldM, unless)
 import qualified Data.Array as A (elems)
 
 import AST
 import Analysis.Error
-import Common.Specifiers
 import Data.Table
 import Typing.Infer
 import Typing.Primitives
 import Typing.Scheme
 import Typing.Solver
 import Typing.Type
-import Typing.TypeDecl
 
 
-inferTopLevel :: [Expr] -> Either ErrInfo Table
-inferTopLevel [] = Right emptyTable
-inferTopLevel exprs = case runInfer emptyTable inf of
-    Left err -> Left err
-    Right ((), _cons, tbl) -> Right tbl
-    where
-        inf = mapM_ inferTop exprs
+inferTopLevel :: [Expr] -> (Table, [ErrInfo])
+inferTopLevel [] = (emptyTable, [])
+inferTopLevel exprs =
+    let inf = mapM_ inferTop exprs
+        Inf _ _cons tbl errs = runInfer emptyTable inf
+    in (tbl, errs)
 
-makeInference :: Table -> Infer Type
-    -> Either ErrInfo Scheme
-makeInference tbl inf = case runInfer tbl inf of
-    Left err -> Left err
-    Right (typ, cons, _tbl) -> runSolver typ cons
+makeInference :: Table -> Infer Type -> Either [ErrInfo] Scheme
+makeInference tbl inf =
+    let Inf typ cons _tbl errs = runInfer tbl inf
+    in case runSolver typ cons of
+        Left err -> Left (err:errs)
+        Right scheme -> case errs of
+            [] -> Right scheme
+            _ -> Left errs
 
 
 class Inferable a where
@@ -55,15 +55,9 @@ instance Inferable Literal where
 instance Inferable Value where
     infer (Literal lit) = infer lit
     {- ^
-    -- if bound:
     x : σ ∈ Γ
-    ------------
+    ---------
     Γ ⊢ x : σ
-
-    else (if unbound):
-    x : σ ∉ Γ
-    ------------
-    Γ, x ⊢ x : σ
     -}
     infer (VarVal name) = do
         updatePos name
@@ -87,33 +81,17 @@ instance Inferable Value where
     infer (CtorCall name) = do
         updatePos name
         searchGlobals name
-    infer (Lambda [] _) = throw $ OtherError
-        "Missing parameters from lambda expression"
     {- ^
     Γ, x : τ1 ⊢ e : τ2
     --------------------
     Γ ⊢ λx. e : τ1 -> τ2
     -}
-    infer (Lambda [x] e) = do
+    infer (Lambda x e) = do
         updatePos x
         tv <- fresh
         ty <- inNewScope $ do
-            pushScoped Imut x tv
+            pushScoped x tv
             infer e
-        return (tv :-> ty)
-    {- ^
-    Γ, (x1 : τ1, ..., xn : τn) ⊢ e : τ(n+1)
-    ---------------------------------------------
-    Γ ⊢ λ(x1 ... xn) => e : (τ1 -> ... -> τ(n+1))
-    -}
-    infer (Lambda (x:xs) body) = do
-        updatePos x
-        tv <- fresh
-        ty <- inNewScope $ do
-            pushScoped Imut x tv
-            -- safe to do bc of prev pattern.
-            -- it's basically just desugaring.
-            infer (Lambda xs body)
         return (tv :-> ty)
     {- ^
     Γ ⊢ e1 : τ1  ...  Γ ⊢ en : τn
@@ -137,6 +115,21 @@ instance Inferable Value where
             ) tv arr
         return (arrayOf t1)
     {- ^
+    x : σ ∉ Γ    Γ, x : σ ⊢ e1 : σ    Γ, x : σ ⊢ e2 : τ
+    ----------------------------------------------------
+    Γ ⊢ let x = e1 in e2 : τ
+    -}
+    infer (LetIn x e1 e2) = do
+        updatePos x
+        typ <- inNewScope $ do
+            tv <- fresh
+            pushNewScoped x tv
+            t1 <- infer e1
+            constrain tv t1
+            t2 <- infer e2
+            return t2
+        return typ
+    {- ^
     Γ ⊢ e1 : Bool    Γ ⊢ e2 : τ1    Γ ⊢ e3 : τ1
     -------------------------------------------
     Γ ⊢ if e1 then e2 else e3 : τ1
@@ -157,7 +150,7 @@ instance Inferable Value where
     infer (MatchVal e1 cases) = do
         t1 <- infer e1
         tv <- fresh
-        t2 <- foldM (\ t2 (en, en') -> do
+        t2 <- foldM (\ t2 (ValCase en en') -> do
             ptrnT <- infer en
             bodyT <- infer en'
             constrain ptrnT t1
@@ -176,7 +169,7 @@ instance Inferable Pattern where
     infer (Param name) = do
         updatePos name
         tv <- fresh
-        pushScoped Imut name tv
+        pushScoped name tv
         return tv
     {- ^
     ---------
@@ -207,16 +200,6 @@ instance Inferable Pattern where
         ts <- mapM infer es
         return (tupleOf ts)
     infer (LitPtrn lit) = infer lit
-    {- ^
-    Γ ⊢ e1 : τ1  ...  Γ ⊢ e2 : τ1
-    -----------------------------
-    Γ ⊢ [e1, e2] : τ1
-    -}
-    infer (OrPtrn e1 e2) = do
-        t1 <- infer e1
-        t2 <- infer e2
-        constrain t1 t2
-        return t2
 
 
 -- | Returns `Just t` only if it can guarantee
@@ -255,8 +238,10 @@ inferStmt (Loop init' cond iter body) = do
             ValStmt val -> do
                 cT <- infer val
                 constrain cT boolType
-            _ -> throw $ OtherError
-                "invalid condition expression"
+            _ -> do
+                throw $ OtherError
+                    "invalid condition expression"
+                return ()
 {- ^
 Γ |- e1 : τ1    Γ |- e2 : τ1    Γ, e2 |- e2' : τ2
 ...  Γ |- en : τ1    Γ, en |- en' : τ2
@@ -273,14 +258,14 @@ x : σ ∉ Γ    Γ, x : σ |- e : σ
 --------------------------------------
 Γ, x : τ |- let x = e : `Nothing` -- σ
 -}
-inferStmt (NewVar mut name _tyd e) = do
+inferStmt (NewVar name _tyd e) = do
     -- tv <- fresh
     -- pushNewScoped name tv
     -- not ideal (doesn't allow for recursion), but
     -- this way is simpler and true-er to the rule
     -- above
     typ <- inNewScope (infer e)
-    pushNewScoped mut name typ
+    pushNewScoped name typ
     return Nothing
     -- return (Just typ)
 {- ^
@@ -313,26 +298,24 @@ inferStmt (Compound body) =
         ) Nothing body
 inferStmt Break = do
     legal <- gets jumpAllowed
-    if not legal then
-        throw $ OtherError "illegal `break`"
-    else
-        return Nothing
+    unless legal $
+        throw (OtherError "illegal `break`")
+    return Nothing
 inferStmt Continue = do
     legal <- gets jumpAllowed
-    if not legal then
-        throw $ OtherError "illegal `continue`"
-    else
-        return Nothing
+    unless legal $
+        throw (OtherError "illegal `continue`")
+    return Nothing
 inferStmt NullStmt = return Nothing
 
-inferCases :: Type -> [MatchCase] -> Infer (Maybe Type)
+inferCases :: Type -> [StmtCase] -> Infer (Maybe Type)
 inferCases _ [] = return Nothing
-inferCases t1 [Case ptrn body] = do
+inferCases t1 [StmtCase ptrn body] = do
     ptrnT <- infer ptrn
     constrain ptrnT t1
     mT <- inferStmt body
     return mT
-inferCases t1 (Case ptrn body:cases) = do
+inferCases t1 (StmtCase ptrn body:cases) = do
     ptrnT <- infer ptrn
     constrain ptrnT t1
     mT1 <- inferStmt body
@@ -345,8 +328,8 @@ inferCases t1 (Case ptrn body:cases) = do
         _ -> return Nothing
 
 inferTop :: Expr -> Infer ()
-inferTop (FuncDecl _pur vis name (TypeDecl _ typ)) = do
-    pushGlobal name vis typ
+inferTop (FuncDecl _pur name typ) = do
+    pushGlobal name typ
     return ()
 {- ^
 Γ ⊢ f : σ    (Γ ⊢ x1 : τ1 ... Γ ⊢ xn : τn)
@@ -358,45 +341,39 @@ inferTop (FuncDef name params body) = inNewScope $ do
     sT <- searchGlobals name
     aftParsT <- applyParams params sT
     bT <- inferStmt body >>= \case
-        Nothing -> throw (MissingReturn name)
+        Nothing -> do
+            throw (MissingReturn name)
+            tv <- fresh
+            return tv
         Just typ -> return typ
     tv <- fresh
     let typ = aftParsT :-> bT
     -- Does this get reversed?
     constrain (aftParsT :-> tv) bT
     -- constrain typ sT
-    pushUndefGlobal name typ
+    pushGlobal name typ
     return ()
-inferTop (DataDef vis name tps ctors) = do
+inferTop (DataDef name tps ctors) = do
     updatePos name
     tvs <- mapM (const fresh) tps
     let typ = Type name tvs
     let ctorNames = map ctorName ctors
     mapM_ (inferCtor typ) ctors
-    pushData name vis typ ctorNames
+    pushData name typ ctorNames
     return ()
-inferTop (TraitDecl _vis _ctx _name _tps fns) = do
+inferTop (TraitDecl _ctx _name _tps fns) = do
     mapM_ inferTop fns
-inferTop (TraitImpl _ctx _name _types fns) = do
-    mapM_ inferTop fns
-inferTop (TypeAlias _vis _alias _typ) = do
+inferTop (TraitImpl _ctx _name _types _fns) = do
     return ()
+    -- mapM_ inferTop fns
 
 -- |Creates globals for the `Ctor` and, if applicable,
 -- its fields.
 inferCtor :: Type -> Ctor -> Infer ()
-inferCtor pT (Record name vis fields) = do
-    updatePos name
-    types <- forM fields $ \(Field name' typ) -> do
-        pushGlobal name' vis typ
-        return $! typ
-    let typ = foldTypes types pT
-    pushGlobal name vis typ
-    return ()
-inferCtor pT (SumType name vis types) = do
+inferCtor pT (SumType name types) = do
     updatePos name
     let typ = foldTypes types pT
-    pushGlobal name vis typ
+    pushGlobal name typ
     return ()
 
 -- if both bodies guarantee a return, then this can
@@ -421,7 +398,7 @@ applyParams (p:ps) (typ :-> types) = do
         go ptrn = case ptrn of
             Param name -> do
                 updatePos name
-                pushScoped Imut name typ
+                pushScoped name typ
                 return typ
             Hole pos -> do
                 updatePos pos
@@ -444,12 +421,9 @@ applyParams (p:ps) (typ :-> types) = do
                 typ' <- infer lit
                 constrain typ typ'
                 return typ'
-            OrPtrn p1 p2 -> do
-                t1 <- go p1
-                t2 <- go p2
-                constrain t1 t2
-                return t2
 applyParams pars typ = do
     tvs <- mapM (const fresh) pars
     tv <- fresh
-    throw (TypeMismatch (typ :-> foldTypes tvs tv) typ)
+    let typ' = typ :-> foldTypes tvs tv
+    throw (TypeMismatch typ' typ)
+    return typ'

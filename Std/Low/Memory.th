@@ -1,14 +1,14 @@
-data Pointer a = intern Ptr<Int>
+data Pointer a = Ptr<Int>
 
 
 impure malloc<Int -> Pointer a>
 
 impure new<a -> Pointer a>
-new a {
-    let mut ptr = malloc (memSizeOf a);
-    setPtr a ptr;
-    return ptr;
-}
+-- new a {
+--     let mut ptr = malloc (memSizeOf a);
+--     setPtr a ptr;
+--     return ptr;
+-- }
 
 -- is this pure due to depending only
 -- on the input?

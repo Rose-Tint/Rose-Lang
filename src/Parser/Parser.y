@@ -33,54 +33,50 @@ import Typing.TypeDecl
 %lexer { lexer } { TEOF }
 %monad { Alex }
 
--- when 'using' a token, it will use its position
 %tokentype { Token }
 %token
     -- keywords
-    using           { TUsing $$    }
-    pure            { TPure $$     }
-    impure          { TImpure $$   }
-    let             { TLet $$      }
-    mut             { TMut $$      }
-    intern          { TIntern $$   }
-    export          { TExport $$   }
-    extern          { TExtern $$   }
-    import          { TImport $$   }
-    return          { TReturn $$   }
-    if              { TIf $$       }
-    then            { TThen $$     }
-    else            { TElse $$     }
-    match           { TMatch $$    }
-    loop            { TLoop $$     }
-    break           { TBreak $$    }
-    continue        { TContinue $$ }
-    impl            { TImpl $$     }
-    trait           { TTrait $$    }
-    data            { TData $$     }
+    pure            { TPure     }
+    impure          { TImpure   }
+    let             { TLet      }
+    in              { TIn      }
+    extern          { TExtern   }
+    import          { TImport   }
+    return          { TReturn   }
+    if              { TIf       }
+    then            { TThen     }
+    else            { TElse     }
+    match           { TMatch    }
+    loop            { TLoop     }
+    break           { TBreak    }
+    continue        { TContinue }
+    impl            { TImpl     }
+    trait           { TTrait    }
+    data            { TData     }
     -- reserved symbols
-    "="             { TEq $$       }
-    ":"             { TColon $$    }
-    ";"             { TSemi $$     }
-    "|"             { TPipe $$     }
-    "->"            { TArrow $$    }
-    "=>"            { TEqArrow $$  }
-    ","             { TComma $$    }
+    "="             { TEq       }
+    ":"             { TColon    }
+    ";"             { TSemi     }
+    "|"             { TPipe     }
+    "->"            { TArrow    }
+    "=>"            { TEqArrow  }
+    ","             { TComma    }
     -- groupers
-    "("             { TLParen $$   }
-    ")"             { TRParen $$   }
-    "{"             { TLBrace $$   }
-    "}"             { TRBrace $$   }
-    "["             { TLBracket $$ }
-    "]"             { TRBracket $$ }
-    "<"             { TLAngle $$   }
-    ">"             { TRAngle $$   }
+    "("             { TLParen   }
+    ")"             { TRParen   }
+    "{"             { TLBrace   }
+    "}"             { TRBrace   }
+    "["             { TLBracket }
+    "]"             { TRBracket }
+    "<"             { TLAngle   }
+    ">"             { TRAngle   }
     -- literals
-    literal         { TValue $$    }
+    literal         { TValue $$ }
     -- identifiers
-    big_id          { TBig $$      }
-    small_id        { TSmall $$    }
-    infix_id        { TInfix $$    }
-    "_"             { THole $$     }
+    big_id          { TBig $$   }
+    small_id        { TSmall $$ }
+    infix_id        { TInfix $$ }
+    "_"             { THole $$  }
 
 %nonassoc infix_id
 %left big_id small_id
@@ -104,41 +100,35 @@ Imports0 :: { [Import] }
     | Imports0 Import   { ($2:$1) }
 
 Import :: { Import }
-    : import Vis big_id { Import $3 $2 }
+    : import big_id { Import $2 }
 
 TopLevelExprs0 :: { [Expr] }
     : {- empty -}                   { [] }
     | TopLevelExprs0 TopLevelExpr    { ($2:$1) }
 
 TopLevelExpr :: { Expr }
-    : FuncDecl  { $1 }
-    | FuncDef   { $1 }
-    | DataDef   { $1 }
-    | TypeAlias { $1 }
-    | TraitDecl { $1 }
-    | TraitImpl { $1 }
+    : FuncDecl   { $1 }
+    | FuncDef    { $1 }
+    | DataDef    { $1 }
+    | TraitDecl  { $1 }
+    | TraitImpl  { $1 }
 
 FuncDecl :: { Expr }
-    : Pur Vis small_id TypeDecl            { FuncDecl $1 $2 $3 $4 }
-    | Pur Vis "(" infix_id ")" TypeDecl    { FuncDecl $1 $2 $4 $6 }
-    | extern Pur Vis small_id TypeDecl     { FuncDecl $2 $3 $4 $5 }
+    : Pur small_id TypeDecl            { FuncDecl $1 $2 $3 }
+    | Pur "(" infix_id ")" TypeDecl    { FuncDecl $1 $3 $5 }
+    | extern Pur small_id TypeDecl     { FuncDecl $2 $3 $4 }
 
 Pur :: { Purity }
     : pure      { Pure }
     | impure    { Impure }
 
-Vis :: { Visib }
-    : {- empty -}   { Export }
-    | export        { Export }
-    | intern        { Intern }
-
-TypeDecl :: { TypeDecl }
-    : "<" CtxSeq ":" ArrowSepTypes1 ">" { typeDecl $2 $4 }
-    | "<" ArrowSepTypes1 ">" { typeDecl [] $2 }
+TypeDecl :: { Type }
+    : "<" CtxSeq ":" ArrowSepTypes1 ">" { $4 }
+    | "<" ArrowSepTypes1 ">"            { $2 }
 
 CtxSeq :: { [Constraint] }
-    : CtxSeq "," Constraint  { ($3:$1) }
-    | Constraint              { [$1]    }
+    : CtxSeq "," Constraint { ($3:$1) }
+    | Constraint            { [$1]    }
 
 Constraint :: { Constraint }
     : big_id SmallIds0   { Constraint $1 $2 }
@@ -215,6 +205,7 @@ Term :: { Value }
         let (var:vars) = fmap VarVal $1
         in valueFromList var vars
         }
+    | LetIn                 { $1 }
     | Lambda                { $1 }
     | FuncCall              { $1 }
     | "(" Term ")"          { $2 }
@@ -233,14 +224,14 @@ StmtBody :: { Stmt }
     | Body  { $1 }
 
 Match :: { Stmt }
-    : MatchHead "{" Cases1 "}" { Match $1 $3 }
+    : MatchHead "{" StmtCases1 "}" { Match $1 $3 }
 
 MatchHead :: { Value }
     : match Term { $2 }
 
-Cases1 :: { [MatchCase] }
-    : Cases1 Case   { ($2:$1) }
-    | Case          { [$1] }
+StmtCases1 :: { [StmtCase] }
+    : StmtCases1 StmtCase   { ($2:$1) }
+    | StmtCase          { [$1] }
 
 Pattern :: { Pattern }
     : "_"                   { $1 }
@@ -251,7 +242,6 @@ PatternItem :: { Pattern }
     : literal       { LitPtrn $1 }
     | TuplePattern  { $1 }
     | CtorPattern   { $1 }
-    | OrPattern     { $1 }
 
 TuplePattern :: { Pattern }
     : "(" CommaSepPtrn2 ")" { TuplePtrn $2 }
@@ -273,15 +263,12 @@ Patterns0_ :: { [Pattern] }
     : {- empty -}       { [] }
     | Patterns0 Pattern  { ($2:$1) }
 
-OrPattern :: { Pattern }
-    : PatternItem "," PatternItem { $1 `OrPtrn` $3 }
-
-Case :: { MatchCase }
-    : Pattern "->" Expr {Case $1 (
+StmtCase :: { StmtCase }
+    : Pattern "->" Expr { StmtCase $1 (
         case $3 of
             ValStmt val -> Return val
             stmt -> stmt)}
-    | Pattern Body      { Case $1 $2 }
+    | Pattern Body      { StmtCase $1 $2 }
 
 Expr :: { Stmt }
     : NewVar                { $1 }
@@ -290,12 +277,11 @@ Expr :: { Stmt }
     | ";"                   { NullStmt }
 
 NewVar :: { Stmt }
-    : let small_id NewVarTypeDecl "=" TermStmt        { NewVar Mut $2 $3 $5 }
-    | let mut small_id NewVarTypeDecl "=" TermStmt    { NewVar Imut $3 $4 $6 }
+    : let small_id NewVarTypeDecl "=" TermStmt  { NewVar $2 $3 $5 }
 
-NewVarTypeDecl :: { TypeDecl }
-    : TypeDecl      { $1 }
-    | {- empty -}   { typeDecl [] (TypeVar (prim "")) } -- thats not right...
+NewVarTypeDecl :: { Maybe Type }
+    : TypeDecl      { Just $1 }
+    | {- empty -}   { Nothing }
 
 FuncCall :: { Value }
     : Term infix_id         { Application (VarVal $2) $1 }
@@ -308,12 +294,12 @@ TermStmt :: { Value }
     -- | if Term then Term else Term { IfElseVal $2 $4 $6 }
     | MatchHead "{" TermCases "}" { MatchVal $1 $3 }
 
-TermCases :: { [(Pattern, Value)] }
-    : Pattern "=>" TermStmt { [($1, $3)] }
-    | TermCases Pattern "=>" TermStmt { (($2,$4):$1) }
+TermCases :: { [ValCase] }
+    : Pattern "=>" TermStmt { [ValCase $1 $3] }
+    | TermCases Pattern "=>" TermStmt { (ValCase $2 $4:$1) }
 
 Lambda :: { Value }
-    : SmallIds1 "=>" Term    { Lambda $1 $3 }
+    : SmallIds1 "=>" Term    { mkLambda $1 $3 }
 
 SmallIds1 :: { [Var] }
     : SmallIds1_    { reverse $1 }
@@ -326,6 +312,9 @@ SmallIds1_ :: { [Var] }
 SmallIds0 :: { [Var] }
     : SmallIds1_    { reverse $1 }
     | {- empty -}   { [] }
+
+LetIn :: { Value }
+    : let small_id "=" Term in Term { LetIn $2 $4 $6 }
 
 Loop :: { Stmt }
     : loop "(" Expr Expr Expr ")" StmtBody  { Loop $3 $4 $5 $7 }
@@ -343,21 +332,18 @@ Stmts0_ :: { [Stmt] }
     | Stmts0_ Stmt  { ($2:$1) }
 
 DataDef :: { Expr }
-    : data Vis big_id SmallIds0 CtorList    { DataDef $2 $3 $4 $5 }
+    : data big_id SmallIds0 CtorList    { DataDef $2 $3 $4 }
 
 CtorList :: { [Ctor] }
     : "=" CtorDef           { [$2] }
     | CtorList "|" CtorDef  { ($3:$1) }
 
 CtorDef :: { Ctor }
-    : Vis big_id                        { SumType $2 $1 [] }
-    | Vis big_id "<" ArrowSepTypes1 ">" { SumType $2 $1 (typeToList $4) }
-
-TypeAlias :: { Expr }
-    : using Vis big_id "=" Type  { TypeAlias $2 $3 $5 }
+    : big_id                        { SumType $1 [] }
+    | big_id "<" ArrowSepTypes1 ">" { SumType $1 (typeToList $3) }
 
 TraitDecl :: { Expr }
-    : trait Vis TraitCtx big_id SmallIds1 "{" MethodDecls1 "}"    { TraitDecl $2 $3 $4 $5 $7 }
+    : trait TraitCtx big_id SmallIds1 "{" MethodDecls1 "}"    { TraitDecl $2 $3 $4 $6 }
 
 TraitCtx :: { Context }
     : {- empty -}       { Ctx [] }

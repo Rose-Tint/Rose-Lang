@@ -1,3 +1,5 @@
+{-# LANGUAGE FlexibleInstances #-}
+
 module Data.Table (
     Data(..),
     Func(..),
@@ -43,21 +45,17 @@ default (Int, Double)
 
 data Data = Data {
     dataType :: Type,
-    dataVis :: Visib,
     dataCtors :: [Var],
     dataPos :: SrcPos
     }
 
 data Func = Func {
     funcType :: Type,
-    funcVis :: Visib,
     funcPur :: Purity,
-    funcMut :: Mutab,
     funcPos :: SrcPos
     }
 
 data Trait = Trait {
-    traitVis :: Visib,
     traitMeths :: [Var],
     traitImpls :: [Type],
     traitPos :: SrcPos
@@ -96,27 +94,18 @@ emptyTable = Table
         (prim "Double", primData doubleType []),
         (prim "String", primData stringType []),
         (prim "Char", primData charType []),
-        (prim "[]", primData
-            (arrayOf (TypeVar (prim "a0")))
-            []),
-        (prim "(,)", primData
-            (arrayOf (TypeVar (prim "a0")))
-            [])
+        (prim "[]", primData (arrayOf (TypeVar (prim "a0"))) []),
+        (prim "(,)", primData (arrayOf (TypeVar (prim "a0"))) [])
     ])
     empty
     (fromList [
         (prim "True", primFunc boolType),
-        (prim "False", primFunc boolType),
-        (prim "+", primFunc (intType :-> intType :-> intType)),
-        (prim ".", primFunc (
-            (tv "a1" :-> tv "a2") :-> (tv "a0" :-> tv "a1") :-> tv "a2")),
-        (prim "++", primFunc (stringType :-> stringType :-> stringType))
+        (prim "False", primFunc boolType)
     ])
     []
     where
-        tv = TypeVar . prim
-        primFunc t = Func t Export Pure Imut UnknownPos
-        primData t cs = Data t Export cs UnknownPos
+        primFunc t = Func t Pure UnknownPos
+        primData t cs = Data t cs UnknownPos
 
 insertType :: Var -> Data -> Table -> Table
 insertType sym dta tbl = tbl {
@@ -140,8 +129,8 @@ insertScoped sym dta tbl =
         [] -> tbl { tblScopeds = [insert' empty] }
         (scp:scps) -> tbl { tblScopeds = (insert' scp:scps) }
 
-mkCtor :: Var -> Visib -> Type -> Func
-mkCtor name vis scheme = Func scheme vis Pure Imut (getPos name)
+mkCtor :: Var -> Type -> Func
+mkCtor name scheme = Func scheme Pure (getPos name)
 
 lookupType :: Var -> Table -> Maybe Data
 lookupType name = M.lookup name . tblTypes
@@ -205,7 +194,14 @@ instance HasSrcPos Func where
 instance HasSrcPos Trait where
     getPos = traitPos
 
+instance Pretty (String, Data) where
+    pretty (name, Data typ _ctors _pos) = 10.<name|+" | "+|30.<typ
+
+instance Pretty (String, Func) where
+    pretty (name, Func typ _pur _pos) = 10.<name|+" | "+|30.<typ
+
 instance Pretty Table where
-    pretty = const ""
-    -- pretty (Table types trts glbs scps) =
-    --     types|+"\n\n"+|trts|+"\n\n"+|glbs|+"\n\n"+|scps
+    pretty (Table typs _trts glbs scps) =
+        "Types:\n"+|indentCatLns (M.assocs typs)|+"\n\n"+|
+        "Globals:\n"+|indentCatLns (M.assocs glbs)|+"\n\n"+|
+        "Scopeds:\n"+|indentCatLns (concatMap M.assocs scps)

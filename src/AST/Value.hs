@@ -1,7 +1,9 @@
 module AST.Value (
     Value(..),
+    ValCase(..),
     ValArray,
-    valueFromList
+    valueFromList,
+    mkLambda,
 ) where
 
 import Data.Array
@@ -23,14 +25,21 @@ data Value
     | CtorCall Var
     | Tuple ValArray
     | Array ValArray
-    | Lambda [Var] Value
+    | Lambda Var Value
+    | LetIn Var Value Value
     | IfElseVal Value Value Value
-    | MatchVal Value [(Pattern, Value)]
+    | MatchVal Value [ValCase]
+
+data ValCase = ValCase Pattern Value
 
 
 valueFromList :: Value -> [Value] -> Value
 valueFromList val [] = val
 valueFromList v1 (v2:vs) = Application v1 (valueFromList v2 vs)
+
+mkLambda :: [Var] -> Value -> Value
+mkLambda [] = id
+mkLambda (p:ps) = Lambda p . mkLambda ps
 
 
 instance HasSrcPos Value where
@@ -38,8 +47,8 @@ instance HasSrcPos Value where
     getPos (VarVal var) = getPos var
     getPos (Application val _) = getPos val
     getPos (CtorCall name) = getPos name
-    getPos (Lambda [] val) = getPos val
-    getPos (Lambda (val:_) _) = getPos val
+    getPos (Lambda par _) = getPos par
+    getPos (LetIn name _ _) = getPos name
     getPos (IfElseVal val _ _) = getPos val
     getPos (MatchVal val _) = getPos val
     getPos _ = UnknownPos
@@ -61,8 +70,16 @@ instance Pretty Value where
     pretty (CtorCall name) = "("+|name|+")"
     pretty (Tuple arr) = "("+|", "`seps`elems arr|+")"
     pretty (Array arr) = "[ "+|", "`seps`elems arr|+" ]"
-    pretty (Lambda ps body) =
-        "("+|" "`seps`ps|+" => "+|body|+")"
+    pretty (Lambda par body) =
+        let (pars, body') = sepLambda body
+            pars' = (par:pars)
+        in "("+|" "`seps`pars'|+" => "+|body'|+")"
+        where
+            sepLambda (Lambda par' body') =
+                let (pars, body'') = sepLambda body'
+                in ((par':pars), body'')
+            sepLambda body' = ([], body')
+    pretty (LetIn name v1 v2) = "let "+|name|+" = "+|v1|+" in "+|v2
     pretty (IfElseVal cnd tr fa) =
         "(if ("+|cnd|+") then "+|tr|+" else "+|fa|+")"
     pretty MatchVal{} = "{- MATCH-VALUE (im lazy...) -}"

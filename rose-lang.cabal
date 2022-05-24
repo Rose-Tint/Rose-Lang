@@ -19,7 +19,6 @@ common general
         Analysis,
         Analysis.Error,
         AST,
-        AST.Ctor,
         AST.Expr,
         AST.Literal,
         AST.Pattern,

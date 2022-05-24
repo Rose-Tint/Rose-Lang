@@ -1,6 +1,7 @@
 {-# LANGUAGE Rank2Types #-}
 
 module Typing.Infer (
+    Inference(..),
     AnalyzerT,
     Analyzer,
     Infer,
@@ -16,7 +17,6 @@ module Typing.Infer (
     searchScopeds,
     findScoped,
 
-    pushUndefGlobal,
     pushGlobal,
     pushScoped,
     pushNewScoped,
@@ -39,7 +39,6 @@ import Prelude hiding (lookup)
 
 import Control.Monad (replicateM)
 import Control.Monad.Trans.Class
-import Control.Monad.Trans.Except
 import Control.Monad.Trans.State
 import Control.Monad.Trans.Writer
 import qualified Data.Set as S
@@ -70,7 +69,9 @@ type Analyzer = State AnState
 
 type Infer = AnalyzerT
     (WriterT Cons
-    (Except ErrInfo))
+    (Writer [ErrInfo]))
+
+data Inference a = Inf !a Cons Table [ErrInfo]
 
 
 mkState :: Table -> AnState
@@ -87,21 +88,20 @@ runAnalyzer an =
     let (a, s) = runState an (mkState emptyTable)
     in (a, table s)
 
-runInfer :: Table -> Infer a
-    -> Either ErrInfo (a, Cons, Table)
-runInfer tbl inf = case runExcept wsResult of
-    Left err -> Left err
-    Right ((a, s), cons) -> Right (a, cons, table s)
+runInfer :: Table -> Infer a -> Inference a
+runInfer tbl inf =
+    let (((a, s), cons), errs) = runWriter wsResult
+    in Inf a cons (table s) errs
     where
         wsResult = runWriterT (runStateT inf (mkState tbl))
 
-throw :: Error -> Infer a
+throw :: Error -> Infer ()
 throw err  = do
     pos <- gets position
     let ei = ErrInfo pos (Right err)
-    lift (lift (throwE ei))
+    lift (lift (tell [ei]))
 
-throwUndef :: Var -> Infer a
+throwUndef :: Var -> Infer ()
 throwUndef name = do
     similars <- gets (getSimilarVars name . table)
     throw (Undefined name similars)
@@ -148,39 +148,33 @@ allowJumpsIn m = do
     modify $ \s -> s { jumpAllowed = prev }
     return $! x
 
-pushNewScoped :: Mutab -> Var -> Type -> Infer Func
-pushNewScoped mut name typ = do
+pushNewScoped :: Var -> Type -> Infer Func
+pushNewScoped name typ = do
     mData <- gets (lookupNewestScope name . table)
     case mData of
-        Nothing -> pushScoped mut name typ
-        Just dta ->
+        Nothing -> pushScoped name typ
+        Just dta -> do
             let orig = Var (varName name) (getPos dta)
-            in throw (Redefinition orig name)
+            throw (Redefinition orig name)
+            return dta
 
-pushScoped :: Mutab -> Var -> Type -> Infer Func
-pushScoped mut name typ = do
+pushScoped :: Var -> Type -> Infer Func
+pushScoped name typ = do
     pur <- gets purity
-    let dta = Func typ Intern pur mut (getPos name)
+    let dta = Func typ pur (getPos name)
     modifyEnv (insertScoped name dta)
     return dta
 
-pushUndefGlobal :: Var -> Type -> Infer Func
-pushUndefGlobal name typ = do
+pushGlobal :: Var -> Type -> Infer Func
+pushGlobal name typ = do
     pur <- gets purity
-    let dta = Func typ Export pur Imut (getPos name)
+    let dta = Func typ pur (getPos name)
     modifyEnv (insertGlobal name dta)
     return dta
 
-pushGlobal :: Var -> Visib -> Type -> Infer Func
-pushGlobal name vis typ = do
-    pur <- gets purity
-    let dta = Func typ vis pur Imut (getPos name)
-    modifyEnv (insertGlobal name dta)
-    return dta
-
-pushData :: Var -> Visib -> Type -> [Var] -> Infer Data
-pushData name vis typ ctors = do
-    let dta = Data typ vis ctors (getPos name)
+pushData :: Var -> Type -> [Var] -> Infer Data
+pushData name typ ctors = do
+    let dta = Data typ ctors (getPos name)
     modifyEnv (insertType name dta)
     return dta
 
@@ -188,7 +182,11 @@ searchGlobals :: Var -> Infer Type
 searchGlobals name = do
     mData <- gets (lookupGlobal name . table)
     case mData of
-        Nothing -> throwUndef name
+        Nothing -> do
+            -- throwUndef name
+            tv <- fresh
+            pushGlobal name tv
+            return tv
         Just dta -> return $! funcType dta
 
 searchScopeds :: Var -> Infer Type
@@ -202,7 +200,11 @@ findScoped :: Var -> Infer Type
 findScoped name = do
     mData <- gets (lookupScoped' name . table)
     case mData of
-        Nothing -> throwUndef name
+        Nothing -> do
+            throwUndef name
+            tv <- fresh
+            pushGlobal name tv
+            return tv
         Just dta -> return $! funcType dta
 
 instantiate :: Scheme -> Infer Type

@@ -3,8 +3,6 @@ import Std.IO.Output
 import Std.IO.Input
 
 
-using FilePath = String
-
 data OpenMode
     = Write
     | Append
@@ -12,7 +10,7 @@ data OpenMode
     | ReadWrite
 
 
-impl Resource FilePath {
+impl Resource String {
     close [Path p] = closeFile p;
     with [Path p] f {
         let hdl<Handle> = openFile p ReadWrite;
@@ -23,10 +21,10 @@ impl Resource FilePath {
 }
 
 
-impure openFile<FilePath -> OpenMode -> Handle>
+impure openFile<String -> OpenMode -> Handle>
 
-impure readFile<FilePath -> String>
+impure readFile<String -> String>
 readFile p = with p hGetContents;
 
-impure appendFile<FilePath -> String -> Void>
+impure appendFile<String -> String -> Void>
 appendFile p = with p hPutStr;
