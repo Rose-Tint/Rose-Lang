@@ -2,7 +2,6 @@ module Typing.Solver (
     runSolver,
 ) where
 
-import Control.Monad (liftM)
 import Control.Monad.Trans.Except
 import qualified Data.Set as S
 

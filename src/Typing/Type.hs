@@ -4,13 +4,20 @@ module Typing.Type  (
     Type(..),
     typeToList,
     foldTypes,
-    renameTypeVars,
+    rename,
 ) where
 
+import Control.Monad.Trans.State (
+    State,
+    evalState,
+    gets,
+    modify,
+    )
 import Data.Binary
 
 import Common.SrcPos
 import Common.Var
+import qualified Data.VarMap as M
 import Text.Pretty
 
 
@@ -54,32 +61,22 @@ instance Pretty Type where
     pretty (ArrayType typ) = "["+|typ|+"]"
 
 
--- not yet right. Needs more info such as vars in scope
-renameTypeVars :: Type -> Type
-renameTypeVars = snd . go 0
+rename :: Type -> Type
+rename = flip evalState (M.empty, 0) . go
     where
-        for :: Int -> [Type] -> (Int, [Type])
-        for !i [] = (i, [])
-        for !i (t:ts) =
-            let (i', t') = go i t
-                (i'', ts') = for i' ts
-            in (i'', (t':ts'))
-        go :: Int -> Type -> (Int, Type)
-        go !i (Type name types) =
-            let (i', types') = for i types
-            in (i', Type name types')
-        go !i (TypeVar (Var name pos)) =
-            (i + 1, TypeVar (Var (name|+|i) pos))
-        go !i (t1 :-> t2) =
-            let (i', t1') = go i t1
-                (i'', t2') = go i' t2
-            in (i'', t1' :-> t2')
-        go !i (ArrayType typ) =
-            let (i', typ') = go i typ
-            in (i', ArrayType typ')
-        go !i (TupleType types) =
-            let (i', types') = for i types
-            in (i', TupleType types')
+        letters = (:[]) <$> ['a'..'z']
+        go :: Type -> State (M.VarMap Var, Int) Type
+        go (Type name types) = Type name <$> mapM go types
+        go (TypeVar var) = gets (M.lookup var . fst) >>= \case
+            Nothing -> do
+                i <- gets snd
+                let var' = Var (letters !! i) (getPos var)
+                modify $ \(!m, !c) -> (M.insert var var' m, c + 1)
+                return (TypeVar var')
+            Just var' -> return (TypeVar var')
+        go (t1 :-> t2) = (:->) <$> go t1 <*> go t2
+        go (ArrayType typ) = ArrayType <$> go typ
+        go (TupleType types) = TupleType <$> mapM go types
 
 
 instance Binary Type where
@@ -101,12 +98,14 @@ instance Binary Type where
         putWord8 4
         put typ
 
-    get = getWord8 >>= \case
-        0 -> Type <$> get <*> get
-        -- arbitrary name ("a")
-        1 -> return (TypeVar (prim "a"))
-        2 -> (:->) <$> get <*> get
-        3 -> TupleType <$> get
-        4 -> ArrayType <$> get
-        n -> fail $ "Binary.get :: Type: "++
-            "unknown flag ("+|n|+")"
+    get = do
+        typ <- getWord8 >>= \case
+            0 -> Type <$> get <*> get
+            -- arbitrary name ("a")
+            1 -> return (TypeVar (prim "a"))
+            2 -> (:->) <$> get <*> get
+            3 -> TupleType <$> get
+            4 -> ArrayType <$> get
+            n -> fail $ "Binary.get :: Type: "++
+                "unknown flag ("+|n|+")"
+        return $! rename typ
