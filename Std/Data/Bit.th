@@ -1,14 +1,5 @@
 pure (<<) <Integral n : n -> n -> n>
-(<<) = rose_shiftl__;
-
 pure (&) <Integral n : n -> n -> n>
-(&) = rose_and__;
-
 pure (|) <Integral n : n -> n -> n>
-(|) = rose_or__;
-
 pure (^) <Integral n : n -> n -> n>
-(^) = rose_xor__;
-
 pure (>>) <Integral n : n -> n -> n>
-(>>) = rose_shiftr__;
