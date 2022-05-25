@@ -2,102 +2,102 @@
 
 module Repl (repl) where
 
+import Data.Binary (decodeFile)
+import Data.List (isPrefixOf)
+import Control.Monad (foldM)
+import Control.Monad.IO.Class
 import Control.Monad.Trans.Class (lift)
-import Control.Monad.Trans.Except
-import Data.List (stripPrefix, isPrefixOf)
+import Control.Monad.Trans.State
+import System.Console.Repline
+import System.Directory (doesFileExist)
 import System.IO
-import System.Exit (exitSuccess)
 
-import AST.Value
-import Data.Table (emptyTable)
+import Common.Module
+import Data.Table
+import qualified Data.VarMap as M
 import Parser.Parser (runAlex, replP)
 import Typing.Inferable
 import Text.Pretty
-import Utils.FilePath (modToPath)
 
 
-data Cmd
-    = TypeOf !Value
-    | Load [FilePath]
-    | Quit
-    | Help
-
-type Repl = ExceptT String IO
+type Repl = HaskelineT (StateT Table IO)
 
 
-prependLines :: String -> String -> String
-prependLines pre = unlines . fmap (pre++) . lines
+printM :: (MonadIO m, Pretty a) => a -> m ()
+printM = liftIO . putStrLn . pretty
 
-print' :: Pretty a => a -> Repl ()
-print' a = do
-    -- prepends " => " to each line
-    let str = prependLines "= | " (pretty a)
-    lift (putStr (uncolor (processString str)))
+replOpts :: ReplOpts (StateT Table IO)
+replOpts = ReplOpts {
+    banner = \ml -> case ml of
+        MultiLine -> return "+ |"
+        SingleLine -> return "? |",
+    command = typeOf, -- TEMP
+    options = [
+        ("t", typeOf),
+        ("type", typeOf),
+        ("l", load),
+        ("load", load),
+        ("b", browse),
+        ("browse", browse),
+        ("q", const abort),
+        ("quit", const abort)
+        ],
+    prefix = Just ':',
+    multilineCommand = Nothing,
+    tabComplete = Combine (Word0 completer) File,
+    initialiser = return (),
+    finaliser = return Exit
+    }
 
-prompt :: Repl String
-prompt = do
-    lift $ putStr "? | "
-    lift $ hFlush stdout
-    str <- lift getLine
-    case stripPrefix ":{" str of
-        Nothing -> return str
-        Just suffix -> do
-            rest <- promptMulti
-            return $! suffix ++ rest
+completer :: WordCompleter (StateT Table IO)
+completer = go . reverse
+    where
+        go str = do
+            let cmds = (':':) . fst
+                    <$> options replOpts
+                opts = filter (str `isPrefixOf`) cmds
+            return opts
 
-promptMulti :: Repl String
-promptMulti = do
-    lift $ putStr "+ | "
-    lift $ hFlush stdout
-    str <- lift getLine
-    if ":}" `isPrefixOf` str then
-        return ""
-    else do
-        rest <- promptMulti
-        return $! str ++ ('\n':rest)
+typeOf :: Cmd Repl
+typeOf str = case runAlex str replP of
+    Left err -> printM ("<stdin>"+|err)
+    Right val -> do
+        table <- lift get
+        case makeInference table (infer val) of
+            Left errs -> printM $ concatMap (\err ->
+                "<stdin>"+|(lines (tail str),err)
+                ) errs
+            Right scheme -> printM scheme
 
-readCmd :: String -> Repl Cmd
-readCmd ('t':rest) = case runAlex rest replP of
-    Left err -> throwE ("<stdin>"++err)
-    Right val -> return (TypeOf val)
-readCmd ('l':rest) = return (Load (words rest))
-readCmd ('m':rest) = return (Load (modToPath <$> words rest))
-readCmd ('q':_) = return Quit
-readCmd ('h':_) = return Help
-readCmd [] = throwE "expected command"
-readCmd str = throwE ("unknown command: '"+|str|+"'")
+browse :: Cmd Repl
+browse _ = do
+    table <- lift get
+    let types = dataType <$> M.elems (tblTypes table)
+        glbs = M.assocs (tblGlobals table)
+    mapM_ (printM . ("data "+|)) types
+    mapM_ (\(k,v) -> printM (k|+" :: "*|funcType v)) glbs
 
-eval :: String -> Repl ()
-eval [] = return ()
-eval (':':rest) = readCmd rest >>= \case
-    Load _ -> throwE "'load' not yet implemented"
-    Quit -> do
-        print' "Thanks for playing!"
-        lift exitSuccess
-    TypeOf val -> case makeInference emptyTable (infer val) of
-        Left errs -> throwE $ concatMap
-            (\err -> "<stdin>"+|(lines (tail rest),err)) errs
-        Right scheme -> print' scheme
-    Help -> print' "\
-\Usage: [COMMAND] [EXPRESSION]\n\
-\Commands:\n\
-\    :q          Exits REPL\n\
-\    :h          Displays help information\n\
-\    :t          Displays the type of the expression\n\
-\    :l          Loads data from filepaths\n\
-\    :m          Loads data from modules\n"
-eval _ = throwE "evaluation not yet implemented"
-
-evalInput :: Repl ()
-evalInput = prompt >>= eval
+load :: Cmd Repl
+load str = do
+    let mods = strToMod <$> words str
+    tbl <- lift get
+    tbl' <- foldM (\prev mdl -> do
+        let file = "Rose-Build/bin/"++modToFile mdl ".o"
+        exists <- liftIO (doesFileExist file)
+        if exists then do
+            table <- liftIO (decodeFile file)
+            return $! unionTable prev table
+        else do
+            printM ("Could not find module: "+|mdl)
+            return prev
+        ) tbl mods
+    lift (put tbl')
+    return ()
 
 repl :: IO ()
 repl = do
     hSetEcho stderr False
     hSetEcho stdout False
-    eith <- runExceptT evalInput
-    case eith of
-        Left err -> putStr $ uncolor $ processString $
-            prependLines "! | " (pretty err)
-        Right _ -> return ()
-    repl
+    evalStateT repl' emptyTable
+    where
+        repl' = evalReplOpts replOpts

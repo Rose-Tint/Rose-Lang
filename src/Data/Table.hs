@@ -95,8 +95,8 @@ emptyTable = Table
         (prim "Double", primData doubleType []),
         (prim "String", primData stringType []),
         (prim "Char", primData charType []),
-        (prim "[]", primData (arrayOf (TypeVar (prim "a0"))) []),
-        (prim "(,)", primData (arrayOf (TypeVar (prim "a0"))) [])
+        (prim "[]", primData (arrayOf tv) []),
+        (prim "(,)", primData (tupleOf [tv,tv]) [])
     ])
     empty
     (fromList [
@@ -105,6 +105,7 @@ emptyTable = Table
     ])
     []
     where
+        tv = TypeVar (prim "")
         primFunc t = Func t Pure UnknownPos
         primData t cs = Data t cs UnknownPos
 
