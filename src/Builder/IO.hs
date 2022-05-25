@@ -62,17 +62,16 @@ writeBin ext a = do
     return ()
 
 trace' :: Pretty a => a -> Builder ()
-trace' = io . putStrLn . pretty
+trace' = io . putStrLn . ("~~| "*|)
 
 trace :: Pretty a => a -> Builder ()
 trace a = cmdTrace ??> io (putStrLn ("~~| "*|a))
 
 traceFile :: Pretty a => FilePath -> a -> Builder ()
-traceFile path a = do
+traceFile path a = cmdTrace ??> do
     dir <- getCurrTraceDir
-    cmdTrace ??> io (writeFile
-        (dir ++ path)
-        (uncolor $! processString (detailed a)))
+    let str = uncolor (processString (detailed a))
+    io (writeFile (dir ++ path) str)
 
 myPutStr :: Int -> String -> Builder ()
 myPutStr thresh str = ((thresh <=).verbosity) ??> io

@@ -45,7 +45,7 @@ replOpts = ReplOpts {
     prefix = Just ':',
     multilineCommand = Nothing,
     tabComplete = Combine (Word0 completer) File,
-    initialiser = return (),
+    initialiser = load "Std.Prelude",
     finaliser = return Exit
     }
 
