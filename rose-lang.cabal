@@ -45,6 +45,7 @@ common general
         Typing.Constraint,
         Typing.Infer,
         Typing.Inferable,
+        Typing.Kind,
         Typing.Primitives,
         Typing.Scheme,
         Typing.Solver,
