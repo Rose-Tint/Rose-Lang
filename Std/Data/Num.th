@@ -1,0 +1,12 @@
+trait Num a {
+    pure (+)<a -> a -> a>
+    pure (-)<a -> a -> a>
+    pure fromInt<Int -> a>
+    pure toInt<a -> Int>
+}
+
+pure dec<Num a : a -> a>
+dec a = a - fromInt 1;
+
+pure inc<Num a : a -> a>
+inc a = a + fromInt 1;

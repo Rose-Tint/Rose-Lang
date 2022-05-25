@@ -8,6 +8,7 @@ import Std.Data.Default
 import Std.Data.Hash
 import Std.Data.List
 import Std.Data.Maybe
+import Std.Data.Num
 import Std.Data.String
 import Std.Data.Tree
 import Std.Function
