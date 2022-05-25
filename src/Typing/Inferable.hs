@@ -71,7 +71,7 @@ instance Inferable Value where
         t1 <- infer v1
         t2 <- infer v2
         tv <- fresh
-        constrain t1 (t2 :-> tv)
+        constrain (t2 :-> tv) t1
         return tv
     {- ^
     x: σ ∈ Γ
@@ -125,7 +125,7 @@ instance Inferable Value where
             tv <- fresh
             pushNewScoped x tv
             t1 <- infer e1
-            constrain tv t1
+            constrain t1 tv
             t2 <- infer e2
             return t2
         return typ
@@ -138,8 +138,9 @@ instance Inferable Value where
         condT <- infer e1
         t2 <- infer e2
         t3 <- infer e3
-        constrain condT boolType
+        constrain boolType condT
         constrain t2 t3
+        constrain t3 t2
         return t3
     {- ^
     Γ ⊢ e1 : τ1    (Γ ⊢ e2 : τ1    Γ ⊢ e3 : τ2
@@ -154,7 +155,7 @@ instance Inferable Value where
             ptrnT <- infer en
             bodyT <- infer en'
             constrain ptrnT t1
-            constrain bodyT t2
+            constrain t2 bodyT
             return bodyT
             ) tv cases
         return t2
@@ -216,7 +217,7 @@ inferStmt (IfElse e1 e2 e3) = do
     condT <- infer e1
     t2 <- allowJumpsIn (inferStmt e2)
     t3 <- allowJumpsIn (inferStmt e3)
-    constrain condT boolType
+    constrain boolType condT
     _t3' <- mergeStmts t2 t3
     return Nothing
     -- return t3'
@@ -237,7 +238,7 @@ inferStmt (Loop init' cond iter body) = do
         inferCond cond' = case cond' of
             ValStmt val -> do
                 cT <- infer val
-                constrain cT boolType
+                constrain boolType cT
             _ -> do
                 throw $ OtherError
                     "invalid condition expression"
@@ -312,12 +313,12 @@ inferCases :: Type -> [StmtCase] -> Infer (Maybe Type)
 inferCases _ [] = return Nothing
 inferCases t1 [StmtCase ptrn body] = do
     ptrnT <- infer ptrn
-    constrain ptrnT t1
+    constrain t1 ptrnT
     mT <- inferStmt body
     return mT
 inferCases t1 (StmtCase ptrn body:cases) = do
     ptrnT <- infer ptrn
-    constrain ptrnT t1
+    constrain t1 ptrnT
     mT1 <- inferStmt body
     mT2 <- inferCases t1 cases
     -- can't use `mergeStmts` bc ALL cases must return
@@ -346,11 +347,8 @@ inferTop (FuncDef name params body) = inNewScope $ do
             tv <- fresh
             return tv
         Just typ -> return typ
-    tv <- fresh
     let typ = aftParsT :-> bT
-    -- Does this get reversed?
-    constrain (aftParsT :-> tv) bT
-    -- constrain typ sT
+    constrain sT typ
     pushGlobal name typ
     return ()
 inferTop (DataDef name tps ctors) = do
@@ -383,47 +381,50 @@ mergeStmts Nothing Nothing = return Nothing
 mergeStmts (Just typ) Nothing = return (Just typ)
 mergeStmts Nothing (Just typ) = return (Just typ)
 mergeStmts (Just t1) (Just t2) = do
-    constrain t2 t1
+    constrain t1 t2
     return (Just t2)
 
 applyParams :: [Pattern] -> Type -> Infer Type
-applyParams [] typ = return typ
-applyParams (p:ps) (typ :-> types) = do
-    typ' <- go p
-    constrain typ' typ
-    applyParams ps types
-    where
-        -- this is different from just inferring b/c
-        -- it takes `typ` into account
-        go ptrn = case ptrn of
-            Param name -> do
-                updatePos name
-                pushScoped name typ
-                return typ
-            Hole pos -> do
-                updatePos pos
-                return typ
-            CtorPtrn name args -> do
-                updatePos name
-                dType <- searchGlobals name
-                typ' <- applyParams args dType
-                constrain typ' typ
-                return typ'
-            TuplePtrn ptrns' -> do
-                -- not quite right...
-                types' <- mapM (const fresh) ptrns'
-                let typ' = foldr1 (:->) types'
-                typ'' <- applyParams ptrns' typ'
-                constrain typ'' typ
-                return typ''
-            LitPtrn lit -> do
-                updatePos lit
-                typ' <- infer lit
-                constrain typ typ'
-                return typ'
-applyParams pars typ = do
-    tvs <- mapM (const fresh) pars
+applyParams ptrns typ = do
+    pTs <- mapM infer ptrns
     tv <- fresh
-    let typ' = typ :-> foldTypes tvs tv
-    throw (TypeMismatch typ' typ)
-    return typ'
+    constrain typ (foldTypes pTs tv)
+    return tv
+-- applyParams [] typ = return typ
+-- applyParams (p:ps) (typ :-> types) = do
+--     typ' <- go p
+--     constrain typ typ'
+--     applyParams ps types
+--     where
+--         -- this is different from just inferring b/c
+--         -- it takes `typ` into account
+--         go ptrn = case ptrn of
+--             Param name -> do
+--                 updatePos name
+--                 pushScoped name typ
+--                 return typ
+--             Hole pos -> do
+--                 updatePos pos
+--                 return typ
+--             CtorPtrn name args -> do
+--                 updatePos name
+--                 dType <- searchGlobals name
+--                 typ' <- applyParams args dType
+--                 constrain dType typ'
+--                 return typ'
+--             TuplePtrn ptrns' -> do
+--                 -- not quite right...
+--                 types' <- mapM (const fresh) ptrns'
+--                 let typ' = foldr1 (:->) types'
+--                 typ'' <- applyParams ptrns' typ'
+--                 return typ''
+--             LitPtrn lit -> do
+--                 updatePos lit
+--                 typ' <- infer lit
+--                 return typ'
+-- applyParams pars typ = do
+--     tvs <- mapM (const fresh) pars
+--     tv <- fresh
+--     let typ' = typ :-> foldTypes tvs tv
+--     throw (TypeMismatch typ' typ)
+--     return typ'

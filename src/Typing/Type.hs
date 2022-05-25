@@ -54,6 +54,7 @@ instance Pretty Type where
     pretty (ArrayType typ) = "["+|typ|+"]"
 
 
+-- not yet right. Needs more info such as vars in scope
 renameTypeVars :: Type -> Type
 renameTypeVars = snd . go 0
     where

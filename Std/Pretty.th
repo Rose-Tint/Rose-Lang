@@ -25,12 +25,12 @@ impl Pretty String {
     pretty = id;
 }
 
-impl Pretty Int {
-    pretty n = match x >= 10 {
-        [True] =>
-            let frst = intToChar (x % 10) in
-            let rest = pretty (x // 10) in
-                    append frst rest;
-        [False] => intToChar (x % 10);
-    }
-}
+-- impl Pretty Int {
+--     pretty n = match x >= 10 {
+--         [True] =>
+--             let frst = intToChar (x % 10) in
+--             let rest = pretty (x // 10) in
+--                     append frst rest;
+--         [False] => intToChar (x % 10);
+--     }
+-- }
