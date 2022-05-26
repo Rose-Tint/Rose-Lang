@@ -1,6 +1,3 @@
-{-# LANGUAGE TypeSynonymInstances #-}
-{-# LANGUAGE FlexibleInstances    #-}
-
 module Typing.Scheme (
     Scheme(..),
 ) where
@@ -18,5 +15,5 @@ data Scheme = Forall [Var] Type
 instance Pretty Scheme where
     terse (Forall _ typ) = terse typ
     pretty (Forall [] typ) = pretty typ
-    pretty (Forall vs typ) = 
+    pretty (Forall vs typ) =
         "forall "+|" "`seps`vs|+" . "+|typ
