@@ -24,13 +24,13 @@ type Repl = HaskelineT (StateT Table IO)
 
 
 printM :: (MonadIO m, Pretty a) => a -> m ()
-printM = liftIO . putStrLn . pretty
+printM = liftIO . putStrLn . uncolor . processString . pretty
 
 replOpts :: ReplOpts (StateT Table IO)
 replOpts = ReplOpts {
-    banner = \ml -> case ml of
-        MultiLine -> return "+ |"
-        SingleLine -> return "? |",
+    banner = \case
+        SingleLine -> return ">>| "
+        MultiLine -> return "+ | ",
     command = typeOf, -- TEMP
     options = [
         ("t", typeOf),
