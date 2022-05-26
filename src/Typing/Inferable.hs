@@ -354,7 +354,7 @@ inferTop (FuncDef name params body) = inNewScope $ do
 inferTop (DataDef name tps ctors) = do
     updatePos name
     tvs <- mapM (const fresh) tps
-    let typ = Type name tvs
+    let typ = TypeCon name tvs
     let ctorNames = map ctorName ctors
     mapM_ (inferCtor typ) ctors
     pushData name typ ctorNames

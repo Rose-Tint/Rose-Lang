@@ -42,7 +42,7 @@ runSolver typ cons =
 unify :: Type -> Type -> Solver Subst
 unify (TypeVar nm) typ = bind nm typ
 unify typ (TypeVar nm) = bind nm typ
-unify t1@(Type nm1 ts1) t2@(Type nm2 ts2)
+unify t1@(TypeCon nm1 ts1) t2@(TypeCon nm2 ts2)
     | nm1 /= nm2 = throwE (TypeMismatch t1 t2)
     | length ts1 == length ts2 = unifyMany ts1 ts2
 unify (l1 :-> l2) (r1 :-> r2) = unifyMany [l1, l2] [r1, r2]

@@ -25,8 +25,8 @@ infixr 9 :->
 
 data Type
     -- | A defined type (i.e. Int, Maybe a)
-    = Type !Var [Type]
-    | TypeVar !Var
+    = TypeCon Var [Type]
+    | TypeVar Var
     -- | Application type (i.e. a -> b, a -> String)
     | Type :-> Type
     | TupleType [Type]
@@ -45,18 +45,19 @@ foldTypes (t1:ts) t2 = t1 :-> foldTypes ts t2
 
 
 instance HasSrcPos Type where
-    getPos (Type name _) = getPos name
+    getPos (TypeCon name _) = getPos name
     getPos (TypeVar name) = getPos name
     getPos (t1 :-> t2) = t1 <?> t2
     getPos (TupleType types) = foldr (<?>) UnknownPos types
     getPos (ArrayType typ) = getPos typ
 
 instance Pretty Type where
-    pretty (Type name []) = pretty name
-    pretty (Type name types) = name|+" "+|" "`seps`types
+    pretty (TypeCon name []) = pretty name
+    pretty (TypeCon name types) = name|+" "+|" "`seps`types
     pretty (TypeVar name) = pretty name
     pretty (t1@(_ :-> _) :-> t2) = "("+|t1|+") -> "+|t2
     pretty (t1 :-> t2) = t1|+" -> "+|t2
+    pretty (TupleType []) = "(,)"
     pretty (TupleType types) = "("+|", "`seps`types|+")"
     pretty (ArrayType typ) = "["+|typ|+"]"
 
@@ -66,7 +67,7 @@ rename = flip evalState (M.empty, 0) . go
     where
         letters = (:[]) <$> ['a'..'z']
         go :: Type -> State (M.VarMap Var, Int) Type
-        go (Type name types) = Type name <$> mapM go types
+        go (TypeCon name types) = TypeCon name <$> mapM go types
         go (TypeVar var) = gets (M.lookup var . fst) >>= \case
             Nothing -> do
                 i <- gets snd
@@ -80,7 +81,7 @@ rename = flip evalState (M.empty, 0) . go
 
 
 instance Binary Type where
-    put (Type name pars) = do
+    put (TypeCon name pars) = do
         putWord8 0
         put name
         putList pars
@@ -100,9 +101,9 @@ instance Binary Type where
 
     get = do
         typ <- getWord8 >>= \case
-            0 -> Type <$> get <*> get
+            0 -> TypeCon <$> get <*> get
             -- arbitrary name ("a")
-            1 -> return (TypeVar (prim "a"))
+            1 -> return (TypeVar (prim ""))
             2 -> (:->) <$> get <*> get
             3 -> TupleType <$> get
             4 -> ArrayType <$> get

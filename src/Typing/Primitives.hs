@@ -14,22 +14,22 @@ import Typing.Type
 
 
 boolType :: Type
-boolType = Type (prim "Boolean") []
+boolType = TypeCon (prim "Bool") []
 
 intType :: Type
-intType = Type (prim "Int") []
+intType = TypeCon (prim "Int") []
 
 floatType :: Type
-floatType = Type (prim "Float") []
+floatType = TypeCon (prim "Float") []
 
 doubleType :: Type
-doubleType = Type (prim "Double") []
+doubleType = TypeCon (prim "Double") []
 
 stringType :: Type
-stringType = Type (prim "String") []
+stringType = TypeCon (prim "String") []
 
 charType :: Type
-charType = Type (prim "Char") []
+charType = TypeCon (prim "Char") []
 
 arrayOf :: Type -> Type
 arrayOf = ArrayType

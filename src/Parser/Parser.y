@@ -140,7 +140,7 @@ ArrowSepTypes1 :: { Type }
     | ArrowSepTypes1 "->" Type { $1 :-> $3 }
 
 Type :: { Type }
-    : big_id Types0             { Type $1 $2 }
+    : big_id Types0             { TypeCon $1 $2 }
     | small_id                  { TypeVar $1 }
     | "[" Type "]"              { ArrayType $2 }
     | "(" CommaSepTypes2 ")"    { TupleType $2 }

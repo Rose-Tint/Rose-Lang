@@ -44,12 +44,12 @@ class Substable a where
     ftv :: a -> S.Set Var
 
 instance Substable Type where
-    apply s (Type nm types) = Type nm (apply s <$> types)
+    apply s (TypeCon nm types) = TypeCon nm (apply s <$> types)
     apply s typ@(TypeVar nm) = findWithDefault typ nm s
     apply s (t1 :-> t2) = apply s t1 :-> apply s t2
     apply s (TupleType types) = TupleType (apply s <$> types)
     apply s (ArrayType typ) = ArrayType (apply s typ)
-    ftv (Type _ types) = foldMap ftv types
+    ftv (TypeCon _ types) = foldMap ftv types
     ftv (TypeVar nm) = S.singleton nm
     ftv (t1 :-> t2) = ftv t1 `S.union` ftv t2
     ftv (TupleType types) = foldMap ftv types
