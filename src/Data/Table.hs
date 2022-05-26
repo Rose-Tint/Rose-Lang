@@ -96,7 +96,7 @@ emptyTable = Table
         (prim "String", primData stringType []),
         (prim "Char", primData charType []),
         (prim "[]", primData (arrayOf tv) []),
-        (prim "(,)", primData (tupleOf [tv,tv]) [])
+        (prim "(,)", primData (tupleOf []) [])
     ])
     empty
     (fromList [
