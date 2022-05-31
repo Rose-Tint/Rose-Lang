@@ -1,6 +1,7 @@
 module Main (main) where
 
 import Control.Monad (unless)
+import Data.Time (getCurrentTime, diffUTCTime)
 import System.Exit (exitFailure)
 
 import Cmd
@@ -18,7 +19,16 @@ main = do
     unless (null errs) $ do
         mapM_ putStrLn errs
         exitFailure
-    case task of
+    time $ case task of
         Repl -> runRepl cmd
         Build -> buildWithThorn cmd
         NoTask -> runCompiler cmd
+
+time :: IO a -> IO a
+time io = do
+    start <- getCurrentTime
+    x <- io
+    end <- getCurrentTime
+    let diff = diffUTCTime end start
+    putStrLn ("Finished in " ++ show diff)
+    return x
