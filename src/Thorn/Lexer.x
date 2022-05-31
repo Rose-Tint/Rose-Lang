@@ -1,4 +1,6 @@
 {
+{-# OPTIONS_GHC -Wno-unused-imports #-}
+
 module Thorn.Lexer (
     Alex(..),
     runAlex,
