@@ -9,6 +9,11 @@ import AST
 import Data.Table
 
 
+data GState = GS {
+    gsIndex :: !Int,
+    gsTable :: !Table
+    }
+
 -- | Makes a pass to gather all identifiers
 type Gather = StateT Table ()
 
@@ -29,11 +34,3 @@ instance Gatherable Value where
     gather (VarVal name) =
         pushVar name (TypeVar (Var "" (getPos name)))
     gather (Application v1 v2) = gather v1 >> gather v2
-
-    | CtorCall Var
-    | Tuple ValArray
-    | Array ValArray
-    | Lambda Var Value
-    | LetIn Var Value Value
-    | IfElseVal Value Value Value
-    | MatchVal Value [ValCase]

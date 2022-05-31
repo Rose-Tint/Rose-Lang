@@ -71,7 +71,7 @@ traceFile :: Pretty a => FilePath -> a -> Builder ()
 traceFile path a = cmdTrace ??> do
     dir <- getCurrTraceDir
     let str = uncolor (processString (detailed a))
-    io (writeFile (dir ++ path) str)
+    io (writeFile (dir ++ path ++ ".trace") str)
 
 myPutStr :: Int -> String -> Builder ()
 myPutStr thresh str = ((thresh <=).verbosity) ??> io

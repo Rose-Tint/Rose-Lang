@@ -9,11 +9,9 @@ import AST.Literal as AST'
 import AST.Pattern as AST'
 import AST.Stmt as AST'
 import AST.Value as AST'
-import Common.Var (Var)
+import Common.Module (Import)
 import Text.Pretty
 
-
-type Import = Var
 
 data ParseTree = ParseTree [Import] [Expr]
 

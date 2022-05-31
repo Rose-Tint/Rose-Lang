@@ -3,6 +3,7 @@
 module Repl (repl) where
 
 import Data.Binary (decodeFile)
+import Data.ByteString.Lazy.Char8 (pack)
 import Data.List (isPrefixOf)
 import Control.Monad (foldM)
 import Control.Monad.IO.Class
@@ -12,6 +13,7 @@ import System.Console.Repline
 import System.Directory (doesFileExist)
 import System.IO
 
+import Analysis.Error
 import Common.Module
 import Data.Table
 import qualified Data.VarMap as M
@@ -59,13 +61,13 @@ completer = go . reverse
             return opts
 
 typeOf :: Cmd Repl
-typeOf str = case runAlex str replP of
+typeOf str = case runAlex (pack str) replP of
     Left err -> printM ("<stdin>"+|err)
     Right val -> do
         table <- lift get
         case makeInference table (infer val) of
             Left errs -> printM $ concatMap (\err ->
-                "<stdin>"+|(lines (tail str),err)
+                "<stdin>"+|(ErrMsg (lines (tail str)) err)
                 ) errs
             Right scheme -> printM scheme
 

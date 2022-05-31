@@ -3,6 +3,7 @@ module Parser.Parser (runAlex, rose, replP) where
 
 import Data.Array (listArray)
 
+import Common.Module
 import Common.Specifiers
 import Common.Var
 import AST
@@ -99,7 +100,7 @@ Imports0 :: { [Import] }
     | Imports0 Import   { ($2:$1) }
 
 Import :: { Import }
-    : import big_id { {-Import-} $2 }
+    : import big_id { strToMod (varName $2) }
 
 TopLevelExprs0 :: { [Expr] }
     : {- empty -}                   { [] }

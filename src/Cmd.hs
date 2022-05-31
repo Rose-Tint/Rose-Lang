@@ -80,7 +80,7 @@ defaultCmd = CmdLine {
 readCmdOpts :: CmdLine -> [CmdOpt] -> IO CmdLine
 readCmdOpts = foldM (\cmd opt -> case opt of
         Verbose Nothing -> return $ cmd
-            { verbosity = 2 }
+            { verbosity = 3 }
         Verbose (Just str) -> case mReadInt 10 str of
             Nothing -> error
                 "error reading verbosity level"

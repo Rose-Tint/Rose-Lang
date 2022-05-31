@@ -7,6 +7,7 @@ module Parser.Lexer (
     lexError,
 ) where
 
+import qualified Data.ByteString.Lazy.Char8 as BS
 import Text.Read (readMaybe)
 
 import Common.SrcPos
@@ -17,7 +18,7 @@ import Text.Pretty
 import Utils.String
 }
 
-%wrapper "monad"
+%wrapper "monad-bytestring"
 
 $oct_digit      = [0-7]
 $hex_digit      = [A-Fa-f0-9]
@@ -105,29 +106,30 @@ tokens :-
     $sign? 0 [Bb] [01]+         { integer 2 }
     $sign? 0 [Oo] $oct_digit+   { integer 8 }
     $sign? @decimal             { integer 10 }
-    $sign? 0 @hex              { integer 16 }
+    $sign? 0 @hex               { integer 16 }
     @floating                   { float }
     @floating[Ff]               { double }
     @qual @small_id             { mkVar TSmall }
     @qual @big_id               { mkVar TBig }
     @qual @operator             { mkVar TInfix }
 
-
-{
-alexEOF :: Alex Token
+-- this lets the error messaging give a the proper position
+{alexEOF :: Alex Token
 alexEOF = return TEOF
 
-type TokenAction = AlexInput -> Int -> Alex Token
+
+type TokenAction = AlexInput -> Int64 -> Alex Token
 
 
-fromAlexPosn :: AlexPosn -> Int -> SrcPos
+fromAlexPosn :: AlexPosn -> Int64 -> SrcPos
 fromAlexPosn (AlexPn off ln col) _len =
     let col' = fromIntegral col
     in SrcPos off ln col'
 
 mkVar :: (Var -> Token) -> TokenAction
-mkVar ctor (pos, _, _, str) len = return
-    (ctor (Var (take len str) (fromAlexPosn pos len)))
+mkVar ctor (pos, _, str, _) len = return (ctor (Var
+    (BS.unpack$ BS.take len str)
+    (fromAlexPosn pos len)))
 
 hole :: TokenAction
 hole (pos, _, _, _) _ = return
@@ -138,63 +140,73 @@ reserved tok _ _len = return tok
 
 integer :: Int -> TokenAction
 integer _ _ 0 = lexError "integral literal"
+{-
 integer base (pos, _, _, ('+':str)) len = return
     (TValue (IntLit
-        (negate (readInt base (take len str)))
+        (negate (readInt base (BS.unpack $ BS.take len str)))
         (fromAlexPosn pos len)))
 integer base (pos, _, _, ('-':str)) len = return
     (TValue (IntLit
-        (negate (readInt base (take len str)))
+        (negate (readInt base (BS.unpack $ BS.take len str)))
         (fromAlexPosn pos len)))
-integer base (pos, _, _, str) len = return
+-}
+integer base (pos, _, str, _) len = return
     (TValue (IntLit
-        (readInt base (take len str))
+        (readInt base (BS.unpack $ BS.take len str))
         (fromAlexPosn pos len)))
 
 float :: TokenAction
-float (pos, _, _, str) len =
-    case readMaybe (take len str) :: Maybe Float of
+float (pos, _, bs, _) len =
+    let str = BS.unpack (BS.take len bs)
+    in case readMaybe str :: Maybe Float of
         Nothing -> lexError "float literal"
         Just n -> return (TValue
             (FloatLit n (fromAlexPosn pos len)))
 
 double :: TokenAction
-double (pos, _, _, str) len =
-    case readMaybe (take len str) :: Maybe Double of
+double (pos, _, bs, _) len =
+    let str = BS.unpack (BS.take len bs)
+    in case readMaybe str :: Maybe Double of
         Nothing -> lexError "float literal"
         Just n -> return (TValue
             (DoubleLit n (fromAlexPosn pos len)))
 
 char :: TokenAction
-char (pos, _, _, ('\\':ch:_)) len =
-    let ch' = case ch of
-            'a' -> '\a'
-            'b' -> '\b'
-            'f' -> '\f'
-            'n' -> '\n'
-            'r' -> '\r'
-            't' -> '\t'
-            'v' -> '\v'
-            _ -> ch
-    in return (TValue
-        (CharLit ch' (fromAlexPosn pos len)))
-char (pos, _, _, (ch:_)) 1 = return
-    (TValue (CharLit ch (fromAlexPosn pos 1)))
-char _ _ = lexError "character literal"
+char (pos, _, bs, _) len = case BS.uncons bs of
+    Just (ch, bs') ->
+        let ch' = case ch of
+                '\\' -> case BS.head bs' of
+                    'a' -> '\a'
+                    'b' -> '\b'
+                    'f' -> '\f'
+                    'n' -> '\n'
+                    'r' -> '\r'
+                    't' -> '\t'
+                    'v' -> '\v'
+                    _ -> ch
+                _ -> ch
+        in return (TValue
+            (CharLit ch (fromAlexPosn pos len)))
+    Nothing -> lexError "character literal"
 
 string :: TokenAction
-string (pos, _, _, str) len = return
-    (TValue (StringLit (take len str) (fromAlexPosn pos len)))
+string (pos, _, str, _) len = return
+    (TValue (StringLit
+        (BS.unpack (BS.take len str))
+        (fromAlexPosn pos len)))
 
 lexError :: String -> Alex a
 lexError msg = do
-    (pos_, _, _, input) <- alexGetInput
-    let pos = fromAlexPosn pos_ 0
+    (aPos, _, input, _) <- alexGetInput
+    let pos = fromAlexPosn aPos 0
         lno = posLine pos
-        line = "..." ++ takeWhile (/= '\n') input
+        line = BS.append
+            (BS.pack "...")
+            (BS.takeWhile (/= '\n') input)
     alexError $
         "::"-|pos|-": $rError parsing a "+|msg|+
-        ":\n$p"+|4.>lno|+" | $R"+|line|+"\n"
+        ":\n$p"+|4.>posLine pos
+        |+" | $R"+|BS.unpack line|+"\n"
 
 lexer :: (Token -> Alex a) -> Alex a
 lexer = (alexMonadScan >>=)

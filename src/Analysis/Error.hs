@@ -4,6 +4,7 @@ module Analysis.Error (
     Error(..),
     Warning(..),
     ErrInfo(..),
+    ErrMsg(..),
 ) where
 
 import Common.SrcPos
@@ -43,6 +44,8 @@ data ErrInfo
         emError :: Either Warning Error
     }
 
+data ErrMsg = ErrMsg [String] ErrInfo
+
 
 instance HasSrcPos Error where
     getPos (TypeMismatch _ex fnd) = getPos fnd
@@ -56,8 +59,9 @@ instance HasSrcPos Error where
 instance HasSrcPos Warning where
     getPos (ShadowsName _orig new) = getPos new
 
-instance Pretty ([String], ErrInfo) where
-    pretty (lns, (ErrInfo pos_ werr)) = header|+|srcCode
+instance Pretty ErrMsg where
+    pretty (ErrMsg lns (ErrInfo pos_ werr)) =
+        header|+|srcCode
         where
             header = case werr of
                 Left wrn -> "::"-|pos|-":$yWarning:$R "+|wrn

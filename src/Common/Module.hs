@@ -1,5 +1,6 @@
 module Common.Module (
     ModName(..),
+    Import,
     modEndpoint,
     pathToMod,
     modToDir,
@@ -16,6 +17,8 @@ data ModName
     = String :. ModName
     | End String
     deriving (Eq, Ord)
+
+type Import = ModName
 
 
 modEndpoint :: ModName -> String

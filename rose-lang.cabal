@@ -16,7 +16,6 @@ build-type:         Simple
 common general
     hs-source-dirs: src
     other-modules:
-        Analysis,
         Analysis.Error,
         AST,
         AST.Expr,
@@ -34,9 +33,10 @@ common general
         Common.Specifiers,
         Common.SrcPos,
         Common.Var,
+        Compiler,
+        Data.DepGraph,
         Data.Table,
         Data.VarMap,
-        Parser,
         Parser.Lexer,
         Parser.Parser,
         Parser.Token,
