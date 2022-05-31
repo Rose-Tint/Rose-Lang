@@ -1,6 +1,6 @@
 {-# LANGUAGE LambdaCase #-}
 
-module Repl (repl) where
+module Repl (runRepl) where
 
 import Data.Binary (decodeFile)
 import Data.ByteString.Lazy.Char8 (pack)
@@ -8,12 +8,14 @@ import Data.List (isPrefixOf)
 import Control.Monad (foldM)
 import Control.Monad.IO.Class
 import Control.Monad.Trans.Class (lift)
+import Control.Monad.Trans.Reader
 import Control.Monad.Trans.State
 import System.Console.Repline
 import System.Directory (doesFileExist)
 import System.IO
 
 import Analysis.Error
+import Cmd
 import Common.Module
 import Data.Table
 import qualified Data.VarMap as M
@@ -22,13 +24,14 @@ import Typing.Inferable
 import Text.Pretty
 
 
-type Repl = HaskelineT (StateT Table IO)
+type ReplMonad = StateT Table (ReaderT CmdLine IO)
+type Repl = HaskelineT ReplMonad
 
 
 printM :: (MonadIO m, Pretty a) => a -> m ()
 printM = liftIO . putStrLn . uncolor . processString . pretty
 
-replOpts :: ReplOpts (StateT Table IO)
+replOpts :: ReplOpts ReplMonad
 replOpts = ReplOpts {
     banner = \case
         SingleLine -> return ">>| "
@@ -51,7 +54,7 @@ replOpts = ReplOpts {
     finaliser = return Exit
     }
 
-completer :: WordCompleter (StateT Table IO)
+completer :: WordCompleter ReplMonad
 completer = go . reverse
     where
         go str = do
@@ -84,7 +87,7 @@ load str = do
     let mods = strToMod <$> words str
     tbl <- lift get
     tbl' <- foldM (\prev mdl -> do
-        let file = "Rose-Build/bin/"++modToFile mdl ".o"
+        let file = "Rose-Build/bin/"++modToContFile mdl ".o"
         exists <- liftIO (doesFileExist file)
         if exists then do
             table <- liftIO (decodeFile file)
@@ -96,10 +99,10 @@ load str = do
     lift (put tbl')
     return ()
 
-repl :: IO ()
-repl = do
+runRepl :: CmdLine -> IO ()
+runRepl cmd = do
     hSetEcho stderr False
     hSetEcho stdout False
-    evalStateT repl' emptyTable
-    where
-        repl' = evalReplOpts replOpts
+    let opts = evalReplOpts replOpts
+    let st = evalStateT opts emptyTable
+    runReaderT st cmd

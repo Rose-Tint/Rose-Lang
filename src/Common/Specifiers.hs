@@ -4,7 +4,7 @@ module Common.Specifiers (
     Purity(..),
 ) where
 
-import Data.Binary 
+import Data.Binary
 
 import Text.Pretty
 

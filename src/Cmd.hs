@@ -1,3 +1,5 @@
+{-# LANGUAGE LambdaCase #-}
+
 module Cmd (
     module Cmd.Flags,
     module Cmd.Warnings,
@@ -21,8 +23,9 @@ default (Int, Double)
 
 
 data Task
-    = Build CmdLine
+    = Build
     | Repl
+    | NoTask
 
 data CmdOpt
     = Verbose (Maybe String)
@@ -110,20 +113,12 @@ getOptions = getOpt RequireOrder options . reverse
 -- that means a REPL is to be run.
 --
 -- TODO: find a better way to signal for the repl.
-readCmdLine :: IO (Task, [String])
+readCmdLine :: IO (CmdLine, Task, [String])
 readCmdLine = do
-    args <- getArgs
-    case args of
-        ("repl":args') ->
-            let errs = ("args not allowed: "++) . show <$> args'
-            in return (Repl, errs)
-        _ -> do
-            let (opts, nons, errs) = getOptions args
-                    -- :: ([CmdOpt], [String], [String])
-                cmd = defaultCmd {
-                    -- reverse the files to preserve
-                    -- their input order
-                    cmdFiles = reverse nons 
-                    }
-            cmd' <- readCmdOpts cmd opts
-            return (Build cmd', errs)
+    (task, (opts, nons, errs)) <- getArgs >>= \case
+        ("repl":args) -> return (Repl, getOptions args)
+        ("build":args) -> return (Build, getOptions args)
+        [] -> error "Command required"
+        args -> return (NoTask, getOptions args)
+    cmd <- readCmdOpts (defaultCmd{cmdFiles=nons}) opts
+    return (cmd, task, errs)

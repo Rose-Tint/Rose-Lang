@@ -1,5 +1,4 @@
 module Builder.IO (
-    bReadFile,
     writeBin,
     message,
     status,
@@ -20,19 +19,6 @@ import Cmd
 import Common.Module
 import Text.Pretty
 
-
-bReadFile :: FilePath -> Builder ()
-bReadFile path = do
-    skip <- hasBeenVisited path
-    if skip then do
-        modify $ \s -> s { sourceCode = "" }
-    else do
-        src <- io (readFile path)
-        modify $ \s -> s {
-            filePath = path,
-            moduleName = pathToMod path,
-            sourceCode = src
-            }
 
 message, status, debug :: Pretty a => a -> Builder ()
 message = myPutStr 1 . terse

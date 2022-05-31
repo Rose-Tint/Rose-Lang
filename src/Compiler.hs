@@ -38,10 +38,10 @@ data ModuleData = ModData {
     }
 
 
-compile :: Builder ()
-compile = do
-    files <- asks cmdFiles >>= mapM readFile
-    sched <- makeSchedule files
+compile :: [FilePath] -> Builder ()
+compile files = do
+    files' <- mapM readFile files
+    sched <- makeSchedule files'
     mapM_ compileModule sched
 
 -- only needs the IO portion of `Builder`
@@ -49,9 +49,9 @@ readFile :: FilePath -> Builder FileData
 readFile path = do
     let name = pathToMod path
     debug ("Parsing ["+|name|+"]\n")
-    src <- io (BS.readFile path)
+    base <- gets sourceDirectory
+    src <- io (BS.readFile (base ++ path))
     modify $ \s -> s {
-        filePath = path,
         moduleName = name
         -- sourceCode = BS.unpack src
         }
@@ -87,17 +87,14 @@ resolveDeps (FileData name imports exprs) = do
     modify $ \s -> s { moduleName = name }
     unless (null imports) $ do
         debug ("Resolving dependencies for ["+|name|+"]\n")
-        debug $ "Dependencies for ["+|name|+"]:\n"+|
-            indentCatLns imports
     tables <- forM imports $ \imp -> do
-        debug ("Looking for "+|imp|+"\n")
         loadObjectFile imp >>= \case
             Nothing -> fatal $
                 "Could not find object file for "+|imp|+
                 ".\n    Possible cause: faulty schedule"
             Just tbl -> do
-                debug ("Dependency ["+|imp|+"] of ["
-                    +|name|+"] resolved\n")
+                -- debug ("Dependency ["+|imp|+"] of ["
+                --     +|name|+"] resolved\n")
                 return tbl
     let table = foldr unionTable emptyTable tables
     return (ModData name table exprs)

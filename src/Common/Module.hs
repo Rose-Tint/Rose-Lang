@@ -4,6 +4,7 @@ module Common.Module (
     modEndpoint,
     pathToMod,
     modToDir,
+    modToContFile,
     modToFile,
     strToMod,
     normMod,
@@ -47,9 +48,25 @@ modToDir :: ModName -> FilePath
 modToDir (root :. rest) = root++"/"++modToDir rest
 modToDir (End name) = name++"/"
 
+-- | Converts a @`ModName`@ to a file-path such that the
+-- file-name is the 'endpoint' of the module name with
+-- the given extension, and the parent directory of said
+-- file is the 'endpoint' as well.
+--
+-- Examples:
+-- 1) "Std."
+--
+-- >>> modToContFile (strToMod "Std.Data.Maybe" ".abc")
+-- "Std/Data/Maybe/Maybe.abc"
+--
+-- (un-abbreviated: module to contained file)
+modToContFile :: ModName -> String -> FilePath
+modToContFile (root :. rest) ext = root++"/"++modToContFile rest ext
+modToContFile (End name) ext = name++"/"++name++ext
+
 modToFile :: ModName -> String -> FilePath
 modToFile (root :. rest) ext = root++"/"++modToFile rest ext
-modToFile (End name) ext = name++"/"++name++ext
+modToFile (End name) ext = name++ext
 
 strToMod :: String -> ModName
 strToMod "" = End ""
