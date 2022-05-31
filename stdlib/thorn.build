@@ -1,0 +1,39 @@
+project: stdlib;
+
+library stdlib: {
+    modules: {
+        Std.Control.Alternative,
+        Std.Control.Threading,
+        Std.Data.Array,
+        Std.Data.Bit,
+        Std.Data.Compare,
+        Std.Data.Complex,
+        Std.Data.Default,
+        Std.Data.Hash,
+        Std.Data.List,
+        Std.Data.Maybe,
+        Std.Data.Num,
+        Std.Data.String,
+        Std.Data.Tree,
+        Std.Function,
+        Std.IO,
+        Std.IO.File,
+        Std.IO.Handle,
+        Std.IO.Input,
+        Std.IO.Output,
+        Std.Lib,
+        Std.Low.Memory,
+        Std.Low.Resource,
+        Std.Prelude,
+        Std.Pretty,
+    }
+}
+
+library prelude: {
+    modules: {
+        Std.Data.Compare,
+        Std.Data.Num,
+        Std.Data.String,
+        Std.Prelude,
+    }
+}
