@@ -37,6 +37,7 @@ import qualified Control.Monad.Trans.State as S (
     modify,
     )
 import Data.Binary (decodeFile)
+import Data.ByteString.Lazy
 import System.Directory (
     createDirectoryIfMissing,
     doesFileExist,
@@ -47,7 +48,7 @@ import Common.Module
 import Data.Table
 
 
-type Stream = String
+type Stream = LazyByteString
 
 data BldState = BldState {
         moduleName :: ModName,
@@ -63,7 +64,7 @@ type Builder a = ReaderT
 
 
 newState :: BldState
-newState = BldState (End "") "" "" ""
+newState = BldState (End "") empty "" ""
 
 runBuilder :: Builder a -> CmdLine -> IO a
 runBuilder bld cmd = evalStateT (runReaderT bld cmd) newState

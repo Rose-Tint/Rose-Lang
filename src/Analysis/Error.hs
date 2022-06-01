@@ -7,6 +7,9 @@ module Analysis.Error (
     ErrMsg(..),
 ) where
 
+import Data.ByteString.Lazy.Char8 (unpack)
+
+import Builder.Internal (Stream)
 import Common.SrcPos
 import Common.Var
 import Text.Pretty
@@ -44,7 +47,7 @@ data ErrInfo
         emError :: Either Warning Error
     }
 
-data ErrMsg = ErrMsg [String] ErrInfo
+data ErrMsg = ErrMsg [Stream] ErrInfo
 
 
 instance HasSrcPos Error where
@@ -75,7 +78,7 @@ instance Pretty ErrMsg where
             lno = posLine pos
             line| lno < 0 = "(NEGATIVE LINE NUMBER)"
                 | lno > length lns = "(EOF)"
-                | otherwise = lns !! (lno - 1)
+                | otherwise = unpack (lns !! (lno - 1))
 
 
 instance Pretty Warning where

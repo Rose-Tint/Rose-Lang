@@ -70,7 +70,7 @@ typeOf str = case runAlex (pack str) replP of
         table <- lift get
         case makeInference table (infer val) of
             Left errs -> printM $ concatMap (\err ->
-                "<stdin>"+|(ErrMsg (lines (tail str)) err)
+                "<stdin>"+|(ErrMsg (pack <$> lines (tail str)) err)
                 ) errs
             Right scheme -> printM scheme
 
