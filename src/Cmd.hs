@@ -72,7 +72,7 @@ options = [
 defaultCmd :: CmdLine
 defaultCmd = CmdLine {
     cmdFiles = [],
-    verbosity = 1,
+    verbosity = 2,
     baseBuildDir = "Rose-Build/",
     cmdTrace = False,
     warnings = defaultWarnings,
