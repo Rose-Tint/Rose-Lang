@@ -52,8 +52,8 @@ readFile path = do
     base <- gets sourceDirectory
     src <- io (BS.readFile (base ++ path))
     modify $ \s -> s {
-        moduleName = name
-        -- sourceCode = BS.unpack src
+        moduleName = name,
+        sourceCode = src
         }
     ParseTree imps exprs <- case runAlex src rose of
         Left msg -> fatal (name|+|msg|+"\n")
@@ -65,7 +65,8 @@ readFile path = do
 -- | Sorts the file data such that for any module,
 -- every imported modules comes before it in the list.
 --
--- (in other words, imports precede their importee)
+-- (in other words, ensures thatimports precede their
+-- importee)
 makeSchedule :: [FileData] -> Builder [FileData]
 makeSchedule [] = return []
 makeSchedule files = case scheduleDepGraph edges of
@@ -85,16 +86,14 @@ makeSchedule files = case scheduleDepGraph edges of
 resolveDeps :: FileData -> Builder ModuleData
 resolveDeps (FileData name imports exprs) = do
     modify $ \s -> s { moduleName = name }
-    unless (null imports) $ do
+    unless (null imports) $
         debug ("Resolving dependencies for ["+|name|+"]\n")
-    tables <- forM imports $ \imp -> do
+    tables <- forM imports $ \imp ->
         loadObjectFile imp >>= \case
             Nothing -> fatal $
                 "Could not find object file for "+|imp|+
                 ".\n    Possible cause: faulty schedule"
             Just tbl -> do
-                -- debug ("Dependency ["+|imp|+"] of ["
-                --     +|name|+"] resolved\n")
                 return tbl
     let table = foldr unionTable emptyTable tables
     return (ModData name table exprs)
@@ -102,17 +101,18 @@ resolveDeps (FileData name imports exprs) = do
 compileModule :: FileData -> Builder ()
 compileModule fd = do
     (ModData name tbl exprs) <- resolveDeps fd
-    debug ("Analyzing ["+|name|+"]\n")
+    status ("Building module ["+|name|+"]\n")
     let (tbl', errs) = inferTopLevel tbl exprs
     traceFile "table" tbl'
-    case errs of
-        [] -> return ()
-        _ -> do
-            lns <- gets (lines . sourceCode)
-            forM_ errs $ \err -> do
-                let msg = "\n"+|name|+|
-                        ErrMsg lns err|+"\n"
-                (fatalErrors . flags) ??> fatal msg
-                message msg
+    printAnalysisErrors name errs
     writeBin ".o" tbl'
     return ()
+
+printAnalysisErrors :: ModName -> [ErrMsg] -> Builder ()
+printAnalysisErrors _ [] = return ()
+printAnalysisErrors name errs = do
+    lns <- gets (BS.lines . sourceCode)
+    forM_ errs $ \err -> do
+        let msg = "\n"+|name|+|ErrMsg lns err|+"\n"
+        (fatalErrors . flags) ??> fatal msg
+        message msg
