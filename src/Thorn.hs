@@ -64,12 +64,17 @@ buildComp :: Component -> Builder ()
 buildComp comp = do
     let name = compName comp
     message ("Building component: "+|name|+"\n")
-    base <- gets sourceDirectory
+    setDirsFromComp comp
+    let modules = compModules comp
+    compile (fmap (`modToFile` ".th") modules)
+
+setDirsFromComp :: Component -> Builder ()
+setDirsFromComp comp = do
+    buildDir <- gets buildDirectory
+    sourceDir <- gets sourceDirectory
     let cbd = compBuildDir comp
         csd = compSourceDir comp
     modify $ \s -> s {
-        buildDirectory = fromMaybe base cbd,
-        sourceDirectory = fromMaybe base csd
+        buildDirectory = fromMaybe buildDir cbd,
+        sourceDirectory = fromMaybe sourceDir csd
         }
-    let modules = compModules comp
-    compile (fmap (`modToFile` ".th") modules)
