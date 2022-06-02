@@ -108,7 +108,7 @@ compileModule fd = do
     writeBin ".o" tbl'
     return ()
 
-printAnalysisErrors :: ModName -> [ErrMsg] -> Builder ()
+printAnalysisErrors :: ModName -> [ErrInfo] -> Builder ()
 printAnalysisErrors _ [] = return ()
 printAnalysisErrors name errs = do
     lns <- gets (BS.lines . sourceCode)

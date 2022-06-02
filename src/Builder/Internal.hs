@@ -48,7 +48,7 @@ import Common.Module
 import Data.Table
 
 
-type Stream = LazyByteString
+type Stream = ByteString
 
 data BldState = BldState {
         moduleName :: ModName,
