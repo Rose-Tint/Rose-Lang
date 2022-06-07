@@ -368,6 +368,7 @@ inferTop (TraitImpl _ctx _name _types _fns) = do
 -- |Creates globals for the `Ctor` and, if applicable,
 -- its fields.
 inferCtor :: Type -> Ctor -> Infer ()
+{-# INLINE inferCtor #-}
 inferCtor pT (SumType name types) = do
     updatePos name
     let typ = foldTypes types pT
@@ -377,6 +378,7 @@ inferCtor pT (SumType name types) = do
 -- if both bodies guarantee a return, then this can
 -- as well. otherwise it cannot be guaranteed.
 mergeStmts :: Maybe Type -> Maybe Type -> Infer (Maybe Type)
+{-# INLINE mergeStmts #-}
 mergeStmts Nothing Nothing = return Nothing
 mergeStmts (Just typ) Nothing = return (Just typ)
 mergeStmts Nothing (Just typ) = return (Just typ)
@@ -385,6 +387,7 @@ mergeStmts (Just t1) (Just t2) = do
     return (Just t2)
 
 applyParams :: [Pattern] -> Type -> Infer Type
+{-# INLINE applyParams #-}
 applyParams ptrns typ = do
     pTs <- mapM infer ptrns
     tv <- fresh

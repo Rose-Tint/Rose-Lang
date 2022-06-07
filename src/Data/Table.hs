@@ -79,11 +79,13 @@ data Table = Table {
 
 
 unionTable :: Table -> Table -> Table
+{-# INLINE unionTable #-}
 unionTable (Table tys1 trs1 gls1 scs1) (Table tys2 trs2 gls2 scs2) =
     Table (tys1 <> tys2) (trs1 <> trs2) (gls1 <> gls2)
     (zipWith (<>) scs1 scs2)
 
 emptyTable :: Table
+{-# INLINABLE emptyTable #-}
 emptyTable = Table
     (fromList [
         (prim "Bool", primData
@@ -110,21 +112,25 @@ emptyTable = Table
         primData t cs = Data t cs UnknownPos
 
 insertType :: Var -> Data -> Table -> Table
+{-# INLINE insertType #-}
 insertType sym dta tbl = tbl {
     tblTypes = insert sym dta (tblTypes tbl)
     }
 
 insertTrait :: Var -> Trait -> Table -> Table
+{-# INLINE insertTrait #-}
 insertTrait sym dta tbl = tbl {
     tblTraits = insert sym dta (tblTraits tbl)
     }
 
 insertGlobal :: Var -> Func -> Table -> Table
+{-# INLINE insertGlobal #-}
 insertGlobal sym dta tbl = tbl {
     tblGlobals = insert sym dta (tblGlobals tbl)
     }
 
 insertScoped :: Var -> Func -> Table -> Table
+{-# INLINE insertScoped #-}
 insertScoped sym dta tbl =
     let insert' = insert sym dta
     in case tblScopeds tbl of
@@ -132,37 +138,46 @@ insertScoped sym dta tbl =
         (scp:scps) -> tbl { tblScopeds = (insert' scp:scps) }
 
 mkCtor :: Var -> Type -> Func
+{-# INLINE mkCtor #-}
 mkCtor name scheme = Func scheme Pure (getPos name)
 
 lookupType :: Var -> Table -> Maybe Data
+{-# INLINE lookupType #-}
 lookupType name = M.lookup name . tblTypes
 
 lookupTrait :: Var -> Table -> Maybe Trait
+{-# INLINE lookupTrait #-}
 lookupTrait name = M.lookup name . tblTraits
 
 lookupGlobal :: Var -> Table -> Maybe Func
+{-# INLINE lookupGlobal #-}
 lookupGlobal name = M.lookup name . tblGlobals
 
 lookupScoped :: Var -> Table -> Maybe Func
+{-# INLINE lookupScoped #-}
 lookupScoped name tbl = case lookupScoped' name tbl of
     Nothing -> lookupGlobal name tbl
     Just dta -> Just dta
 
 lookupScoped' :: Var -> Table -> Maybe Func
+{-# INLINE lookupScoped' #-}
 lookupScoped' name = foldl (\prev scp -> case prev of
     Nothing -> M.lookup name scp
     Just dta -> Just dta
     ) Nothing . tblScopeds
 
 lookupNewestScope :: Var -> Table -> Maybe Func
+{-# INLINE lookupNewestScope #-}
 lookupNewestScope name tbl = case tblScopeds tbl of
     [] -> lookupGlobal name tbl
     scps -> M.lookup name (last scps)
 
 addScope :: Table -> Table
+{-# INLINE addScope #-}
 addScope tbl = tbl { tblScopeds = (empty:tblScopeds tbl) }
 
 remScope :: Table -> Table
+{-# INLINE remScope #-}
 remScope tbl = tbl {
     tblScopeds = case tblScopeds tbl of
         [] -> []

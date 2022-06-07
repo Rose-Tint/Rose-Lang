@@ -12,7 +12,7 @@ import Text.Pretty
 type Specificity = Int
 
 data Pattern
-    = Param Var
+    = Param {-# UNPACK #-} !Var
     | Hole SrcPos
     | CtorPtrn Var [Pattern]
     | TuplePtrn [Pattern]

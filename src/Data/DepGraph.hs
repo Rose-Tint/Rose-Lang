@@ -16,6 +16,7 @@ data Scheduling v
 
 
 scheduleDepGraph :: Ord k => [(v, k, [k])] -> Scheduling v
+{-# INLINABLE scheduleDepGraph #-}
 scheduleDepGraph edges' =
     let (gr, nfv) = graphFromEdges' edges'
         comps = stronglyConnComp (nfv <$> topSort gr)

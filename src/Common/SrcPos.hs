@@ -27,9 +27,9 @@ type Offset = Int
 data SrcPos
     = UnknownPos
     | SrcPos {
-        srcOffset :: Offset,
-        srcLine :: Line,
-        srcCol :: Col
+        srcOffset :: {-# UNPACK #-} !Offset,
+        srcLine :: {-# UNPACK #-} !Line,
+        srcCol :: {-# UNPACK #-} !Col
     }
     deriving (Eq, Ord)
 
@@ -39,24 +39,30 @@ class HasSrcPos a where
 
 
 (<?>) :: (HasSrcPos a, HasSrcPos b) => a -> b -> SrcPos
+{-# INLINE (<?>) #-}
 a <?> b = case getPos a of
     UnknownPos -> getPos b
     pos -> pos
 
 newSrcPos :: SrcPos
+{-# INLINE newSrcPos #-}
 newSrcPos = SrcPos 0 0 0
 
 posOffset :: HasSrcPos a => a -> Offset
+{-# INLINE posOffset #-}
 posOffset = srcOffset . getPos
 
 posLine :: HasSrcPos a => a -> Line
+{-# INLINE posLine #-}
 posLine = srcLine . getPos
 
 posCol :: HasSrcPos a => a -> Col
+{-# INLINE posCol #-}
 posCol = srcCol . getPos
 
 
 instance HasSrcPos SrcPos where
+    {-# INLINABLE getPos #-}
     getPos = id
 
 instance HasSrcPos a => HasSrcPos (Maybe a) where

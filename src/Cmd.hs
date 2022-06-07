@@ -39,11 +39,11 @@ data CmdOpt
 -- everything is strict for concurrency safety
 data CmdLine = CmdLine {
     cmdFiles :: [String],
-    verbosity :: Int,
+    verbosity :: {-# UNPACK #-} !Int,
     baseBuildDir :: FilePath,
     cmdTrace :: Bool,
-    warnings :: Warnings,
-    flags :: Flags,
+    warnings :: {-# UNPACK #-} !Warnings,
+    flags :: {-# UNPACK #-} !Flags,
     threaded :: Bool
     }
 

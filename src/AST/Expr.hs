@@ -16,7 +16,7 @@ import Typing.Type
 data Expr
     = FuncDecl {
         exprPurity :: Purity,
-        exprName :: !Var,
+        exprName :: {-# UNPACK #-} !Var,
         exprType :: !Type
     }
     | FuncDef {
@@ -25,26 +25,26 @@ data Expr
         exprBody :: Stmt
     }
     | DataDef {
-        exprName :: !Var,
+        exprName :: {-# UNPACK #-} !Var,
         exprTypeVars :: [Var],
         exprCtors :: [Ctor]
     }
     | TraitDecl {
         exprCtx :: Context,
-        exprName :: !Var,
+        exprName :: {-# UNPACK #-} !Var,
         exprTypeVars :: [Var],
         exprFuncs :: [Expr]
     }
     | TraitImpl {
         exprCtx :: Context,
-        exprName :: !Var,
+        exprName :: {-# UNPACK #-} !Var,
         exprTypes :: [Type],
         exprFuncs :: [Expr]
     }
 
 data Ctor
     = SumType {
-        ctorName :: Var,
+        ctorName :: {-# UNPACK #-} !Var,
         sumTypes :: [Type]
     }
 

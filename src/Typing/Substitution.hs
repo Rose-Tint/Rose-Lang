@@ -24,17 +24,21 @@ type Subst = VarMap Type
 
 
 nullSubst :: Subst
+{-# INLINE nullSubst #-}
 nullSubst = empty
 
 compose :: Foldable t => t Subst -> Subst
+{-# INLINE compose #-}
 compose = fold
 
 infixl 8 <|>
 (<|>) :: Subst -> Subst -> Subst
+{-# INLINE (<|>) #-}
 s1 <|> s2 = fmap (apply s1) s2 `union` s1
 
 -- | Occurence check
 (~>) :: Substable a => Var -> a -> Bool
+{-# INLINE (~>) #-}
 var ~> a = var `S.member` ftv a
 
 
