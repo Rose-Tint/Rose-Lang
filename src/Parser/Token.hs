@@ -11,9 +11,9 @@ import Text.Pretty
 
 data Token
     = TValue Literal
-    | TBig Var
-    | TSmall Var
-    | TInfix Var
+    | TBig {-# UNPACK #-} !Var
+    | TSmall {-# UNPACK #-} !Var
+    | TInfix {-# UNPACK #-} !Var
     | THole Pattern
     | TEq
     | TColon

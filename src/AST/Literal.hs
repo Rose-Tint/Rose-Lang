@@ -13,7 +13,7 @@ data Literal
     | FloatLit {-# UNPACK #-} !Float SrcPos
     | DoubleLit {-# UNPACK #-} !Double SrcPos
     | CharLit {-# UNPACK #-} !Char SrcPos
-    | StringLit String SrcPos
+    | StringLit !String SrcPos
 
 
 instance HasSrcPos Literal where

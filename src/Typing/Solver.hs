@@ -22,6 +22,7 @@ type Solver a = Except Error a
 
 
 runSolver :: Type -> Cons -> Either ErrInfo Scheme
+{-# INLINABLE runSolver #-}
 runSolver typ cons =
     case runExcept (solver nullSubst cons) of
         Left err -> Left (ErrInfo (err <?> typ) (Right err))
@@ -62,6 +63,7 @@ unifyMany _ _ = throwE $ OtherError
 -- | Binds a variable to a type in a substitution.
 -- Also performs an occurence check.
 bind :: Var -> Type -> Solver Subst
+{-# INLINE bind #-}
 bind nm typ
     | typ == TypeVar nm = return nullSubst
     | nm ~> typ = throwE (InfiniteType nm typ)
@@ -72,6 +74,7 @@ bind nm typ
 -- which, when applied over a signature, yields its
 -- `principal type solution`
 solver :: Subst -> Cons -> Solver Subst
+{-# INLINABLE solver #-}
 solver !sub [] = return sub
 solver !s1 ((t1, t2):cs) = do
     s2 <- unify t1 t2

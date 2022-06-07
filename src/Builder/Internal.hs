@@ -39,7 +39,7 @@ import qualified Control.Monad.Trans.State as S (
 import Data.Binary (decodeFile)
 import Data.ByteString.Lazy
 import System.Directory (
-    createDirectoryIfMissing,
+    -- createDirectoryIfMissing,
     doesFileExist,
     )
 
@@ -114,7 +114,7 @@ getDir :: String -> Builder FilePath
 getDir str = do
     base <- asks baseBuildDir
     let !dir = base ++ "/" ++ str ++ "/"
-    io (createDirectoryIfMissing True dir)
+    -- io (createDirectoryIfMissing True dir)
     return dir
 
 getCurrTraceDir :: Builder FilePath

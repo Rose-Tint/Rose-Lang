@@ -19,18 +19,18 @@ import Text.Pretty
 type ValArray = Array Int Value
 
 data Value
-    = Literal Literal
-    | VarVal Var
-    | Application Value Value
-    | CtorCall Var
-    | Tuple ValArray
-    | Array ValArray
-    | Lambda Var Value
-    | LetIn Var Value Value
-    | IfElseVal Value Value Value
-    | MatchVal Value [ValCase]
+    = Literal !Literal
+    | VarVal {-# UNPACK #-} !Var
+    | Application !Value !Value
+    | CtorCall {-# UNPACK #-} !Var
+    | Tuple !ValArray
+    | Array !ValArray
+    | Lambda {-# UNPACK #-} !Var !Value
+    | LetIn !Var !Value !Value
+    | IfElseVal !Value !Value !Value
+    | MatchVal !Value [ValCase]
 
-data ValCase = ValCase Pattern Value
+data ValCase = ValCase !Pattern !Value
 
 
 valueFromList :: Value -> [Value] -> Value

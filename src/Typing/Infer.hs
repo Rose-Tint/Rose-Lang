@@ -57,9 +57,9 @@ import Typing.Type
 data AnState = AnState {
     jumpAllowed :: Bool,
     purity :: Purity,
-    table :: Table,
+    table :: {-# UNPACK #-} !Table,
     position :: SrcPos,
-    freshIdx :: Int
+    freshIdx :: {-# UNPACK #-} !Int
     }
 
 type Cons = [(Type, Type)]
@@ -96,25 +96,30 @@ runInfer tbl inf =
         wsResult = runWriterT (runStateT inf (mkState tbl))
 
 throw :: Error -> Infer ()
+{-# INLINABLE throw #-}
 throw err  = do
     pos <- gets position
     let ei = ErrInfo pos (Right err)
     lift (lift (tell [ei]))
 
 throwUndef :: Var -> Infer ()
+{-# INLINABLE throwUndef #-}
 throwUndef name = do
     similars <- gets (getSimilarVars name . table)
     throw (Undefined name similars)
 
 updatePos :: HasSrcPos a => a -> Infer ()
+{-# INLINE updatePos #-}
 updatePos p = case getPos p of
     UnknownPos -> return ()
     pos -> modify $ \s -> s { position = pos }
 
 freshLetters :: [String]
+{-# NOINLINE freshLetters #-}
 freshLetters = [1..] >>= flip replicateM ['a'..'z']
 
 fresh :: Infer Type
+{-# INLINABLE fresh #-}
 fresh = do
     i <- gets freshIdx
     pos <- gets position
@@ -123,9 +128,11 @@ fresh = do
     return (TypeVar var)
 
 modifyEnv :: (Table -> Table) -> Infer ()
+{-# INLINE modifyEnv #-}
 modifyEnv f = modify $ \s -> s { table = f (table s) }
 
 inNewScope :: Infer a -> Infer a
+{-# INLINABLE inNewScope #-}
 inNewScope m = do
     modifyEnv addScope
     x <- m
@@ -133,6 +140,7 @@ inNewScope m = do
     return $! x
 
 setPurityIn :: Purity -> Infer a -> Infer a
+{-# INLINABLE setPurityIn #-}
 setPurityIn pur m = do
     prev <- gets purity
     modify (\s -> s { purity = pur })
@@ -141,6 +149,7 @@ setPurityIn pur m = do
     return $! x
 
 allowJumpsIn :: Infer a -> Infer a
+{-# INLINABLE allowJumpsIn #-}
 allowJumpsIn m = do
     prev <- gets jumpAllowed
     modify $ \s -> s { jumpAllowed = True }
@@ -149,6 +158,7 @@ allowJumpsIn m = do
     return $! x
 
 pushNewScoped :: Var -> Type -> Infer Func
+{-# INLINABLE pushNewScoped #-}
 pushNewScoped name typ = do
     mData <- gets (lookupNewestScope name . table)
     case mData of
@@ -159,6 +169,7 @@ pushNewScoped name typ = do
             return dta
 
 pushScoped :: Var -> Type -> Infer Func
+{-# INLINE pushScoped #-}
 pushScoped name typ = do
     pur <- gets purity
     let dta = Func typ pur (getPos name)
@@ -166,6 +177,7 @@ pushScoped name typ = do
     return dta
 
 pushGlobal :: Var -> Type -> Infer Func
+{-# INLINE pushGlobal #-}
 pushGlobal name typ = do
     pur <- gets purity
     let dta = Func typ pur (getPos name)
@@ -173,6 +185,7 @@ pushGlobal name typ = do
     return dta
 
 pushData :: Var -> Type -> [Var] -> Infer Data
+{-# INLINE pushData #-}
 pushData name typ ctors = do
     let dta = Data typ ctors (getPos name)
     modifyEnv (insertType name dta)
@@ -190,6 +203,7 @@ searchGlobals name = do
         Just dta -> return $! funcType dta
 
 searchScopeds :: Var -> Infer Type
+{-# INLINE searchScopeds #-}
 searchScopeds name = do
     mData <- gets (lookupScoped' name . table)
     case mData of
@@ -197,6 +211,7 @@ searchScopeds name = do
         Just dta -> return $! funcType dta
 
 findScoped :: Var -> Infer Type
+{-# INLINABLE findScoped #-}
 findScoped name = do
     mData <- gets (lookupScoped' name . table)
     case mData of
@@ -208,16 +223,19 @@ findScoped name = do
         Just dta -> return $! funcType dta
 
 instantiate :: Scheme -> Infer Type
+{-# INLINABLE instantiate #-}
 instantiate (Forall vars typ) = do
     vars' <- mapM (const fresh) vars
     let sub = M.fromList (zip vars vars')
     return $! apply sub typ
 
 generalize :: Type -> Infer Scheme
+{-# INLINABLE generalize #-}
 generalize typ = do
     env <- gets table
     let vars = S.toList (ftv typ `S.difference` ftv env)
     return (Forall vars typ)
 
 constrain :: Type -> Type -> Infer ()
+{-# INLINE constrain #-}
 constrain t1 t2 = lift (tell [(t1, t2)])

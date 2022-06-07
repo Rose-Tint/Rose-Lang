@@ -12,6 +12,7 @@ data TypeDecl = TypeDecl Context Type
 
 
 typeDecl :: [Constraint] -> Type -> TypeDecl
+{-# INLINE typeDecl #-}
 typeDecl = TypeDecl . Ctx
 
 

@@ -40,12 +40,15 @@ instance Pretty Var where
 
 
 prim :: String -> Var
+{-# INLINE prim #-}
 prim s = Var s UnknownPos
 
 isSmall :: Var -> Bool
+{-# INLINE isSmall #-}
 isSmall = not . isLarge
 
 isLarge :: Var -> Bool
+{-# INLINE isLarge #-}
 isLarge (Var "" _) = False
 isLarge (Var (c:_) _) = isUpper c
 

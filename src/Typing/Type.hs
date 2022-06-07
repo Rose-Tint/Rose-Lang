@@ -25,8 +25,8 @@ infixr 9 :->
 
 data Type
     -- | A defined type (i.e. Int, Maybe a)
-    = TypeCon Var [Type]
-    | TypeVar Var
+    = TypeCon {-# UNPACK #-} !Var [Type]
+    | TypeVar {-# UNPACK #-} !Var
     -- | Application type (i.e. a -> b, a -> String)
     | Type :-> Type
     | TupleType [Type]
@@ -62,16 +62,22 @@ instance Pretty Type where
     pretty (ArrayType typ) = "["+|typ|+"]"
 
 
+-- having this *not* be local to `rename` makes this more
+-- efficient because of laziness and closures
+renameLetters :: [String]
+{-# NOINLINE renameLetters #-}
+renameLetters = (:[]) <$> ['a'..'z']
+
 rename :: Type -> Type
+{-# INLINE rename #-}
 rename = flip evalState (M.empty, 0) . go
     where
-        letters = (:[]) <$> ['a'..'z']
         go :: Type -> State (M.VarMap Var, Int) Type
         go (TypeCon name types) = TypeCon name <$> mapM go types
         go (TypeVar var) = gets (M.lookup var . fst) >>= \case
             Nothing -> do
                 i <- gets snd
-                let var' = Var (letters !! i) (getPos var)
+                let var' = Var (renameLetters !! i) (getPos var)
                 modify $ \(!m, !c) -> (M.insert var var' m, c + 1)
                 return (TypeVar var')
             Just var' -> return (TypeVar var')

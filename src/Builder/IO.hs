@@ -10,6 +10,7 @@ module Builder.IO (
     trace,
 ) where
 
+import Control.Concurrent
 import Data.Binary (Binary, encodeFile)
 import System.Exit (exitFailure)
 import System.Directory (createDirectoryIfMissing)
@@ -56,8 +57,10 @@ trace a = cmdTrace ??> io (putStrLn ("~~| "*|a))
 traceFile :: Pretty a => FilePath -> a -> Builder ()
 traceFile path a = cmdTrace ??> do
     dir <- getCurrTraceDir
-    let str = uncolor (processString (detailed a))
-    io (writeFile (dir ++ path ++ ".trace") str)
+    io $ forkIO $ do
+        let str = uncolor (processString (detailed a))
+        createDirectoryIfMissing True dir
+        writeFile (dir ++ path ++ ".trace") str
 
 myPutStr :: Int -> String -> Builder ()
 myPutStr thresh str = ((thresh <=).verbosity) ??> io
